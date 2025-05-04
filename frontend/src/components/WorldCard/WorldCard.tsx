@@ -1,6 +1,14 @@
 import './WorldCard.css';
+import { useGame } from '../../hooks/useGame';
 
 export default function WorldCard() {
+  const { location, move, hasVisited } = useGame();
+  
+  const handleStartMission = () => {
+    // Example of using the state management to move to a new location
+    move('mission-1');
+  };
+  
   return (
     <div className="world-card">
       <div className="world-header">
@@ -15,17 +23,21 @@ export default function WorldCard() {
         <div className="card-worldbuilding">
           <div className="circles-container">
             {[...Array(10)].map((_, i) => (
-              <div key={i} className="circle"></div>
+              <div 
+                key={i} 
+                className={`circle ${hasVisited(`mission-${i+1}`) ? 'visited' : ''}`}
+              ></div>
             ))}
           </div>
         </div>
         
         <div className="mission-text">
+          <p>Current Location: {location}</p>
           <p>Card textos das missões</p>
         </div>
         
         <div className="action-buttons">
-          <button className="action-btn">start</button>
+          <button className="action-btn" onClick={handleStartMission}>start</button>
           <button className="action-btn">Dica</button>
         </div>
       </div>

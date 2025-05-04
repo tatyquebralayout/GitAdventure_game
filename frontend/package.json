@@ -13,7 +13,8 @@
     "@lightenna/react-mermaid-diagram": "^1.0.17",
     "mermaid": "^11.6.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.5",
