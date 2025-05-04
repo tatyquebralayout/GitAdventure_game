@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { GitBranch, GitCommit } from '../components/GitGraph/GitGraph';
+import { commandsApi } from '../api/commandsApi';
 
 interface GitFile {
   name: string;
@@ -48,6 +49,9 @@ export function GitRepositoryProvider({ children }: GitRepositoryProviderProps) 
   const [files, setFiles] = useState<GitFile[]>([
     { name: 'index.html', status: 'committed' }
   ]);
+
+  // Track current quest step for validation
+  const [currentQuestStep, setCurrentQuestStep] = useState<number>(1);
 
   const currentBranch = branches.find(b => b.isActive)?.name || 'main';
 
@@ -125,8 +129,8 @@ export function GitRepositoryProvider({ children }: GitRepositoryProviderProps) 
     setCommits([...commits, mergeCommit]);
   };
 
-  // Parse and execute commands
-  const executeCommand = async (commandStr: string): Promise<{ success: boolean; message: string }> => {
+  // Apply Git action based on the command
+  const applyGitAction = async (commandStr: string): Promise<{ success: boolean; message: string }> => {
     const commandStr_trimmed = commandStr.trim();
     
     // Git init command
@@ -257,6 +261,42 @@ export function GitRepositoryProvider({ children }: GitRepositoryProviderProps) 
     
     // If we get here, command was not recognized or not implemented
     return { success: false, message: `Error: command not recognized: ${commandStr_trimmed}` };
+  };
+
+  // Parse and execute commands with backend validation
+  const executeCommand = async (commandStr: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      // Validate command with backend API first
+      const validationResult = await commandsApi.validateCommand(
+        commandStr, 
+        1, // Default questId
+        currentQuestStep
+      );
+      
+      // If validation fails, return the error message
+      if (!validationResult.valid) {
+        return { 
+          success: false, 
+          message: validationResult.message 
+        };
+      }
+      
+      // If validation succeeds, execute the command
+      const result = await applyGitAction(commandStr);
+      
+      // If command execution was successful and we have a next step, update step tracker
+      if (result.success && validationResult.nextStep) {
+        setCurrentQuestStep(validationResult.nextStep);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error executing command:', error);
+      return { 
+        success: false, 
+        message: `Error executing command: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
   };
 
   const value: GitRepositoryContextType = {

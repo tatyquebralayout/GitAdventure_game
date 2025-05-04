@@ -3,6 +3,8 @@
 
 import express from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
+import commandRoutes from './routes/commandRoutes';
 
 dotenv.config();
 
@@ -10,9 +12,10 @@ const app = express();
 
 // Middleware setup
 app.use(express.json());
+app.use(cors());
 
 // Routes setup
-// Example: app.use('/api/v1', routes);
+app.use('/api/commands', commandRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Gitgraph, GitgraphOptions, Mode, templateExtend, TemplateName } from '@gitgraph/react';
+import { Gitgraph, Mode, templateExtend, TemplateName } from '@gitgraph/react';
+import { GitgraphOptions as GitgraphUserOptions } from '@gitgraph/core';
 import './GitGraph.css';
 
 // Define the structure for each commit in our history
@@ -38,7 +39,6 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
       spacing: 20,
       label: {
         font: "normal 12px Arial",
-        pointerWidth: 6,
         bgColor: "#f1f8ff", // Light blue background
       },
     },
@@ -54,7 +54,7 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
   });
 
   // Options for the graph
-  const options: GitgraphOptions = {
+  const options: GitgraphUserOptions = {
     template: customTemplate,
     mode: Mode.Compact,
   };
