@@ -4,29 +4,29 @@ import { UserProgress } from "./UserProgress";
 @Entity("users")
 export class User {
   @PrimaryGeneratedColumn("uuid")
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  username: string;
+  username!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @Column({ default: 0 })
-  experience: number;
+  experience!: number;
 
   @Column({ default: 1 })
-  level: number;
+  level!: number;
 
   @CreateDateColumn({ name: "created_at" })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: "updated_at" })
-  updatedAt: Date;
+  updatedAt!: Date;
   
   @OneToMany(() => UserProgress, progress => progress.user)
-  progress: UserProgress[];
+  progress!: UserProgress[];
 }
