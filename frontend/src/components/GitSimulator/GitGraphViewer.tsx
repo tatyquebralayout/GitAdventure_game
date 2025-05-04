@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-// Correctly import GitgraphReact as the component
+// Import GitgraphReact as the component, along with other named exports
 import { GitgraphReact, templateExtend, TemplateName, GitgraphApi, GitgraphBranchApi } from '@gitgraph/react';
 import { Branch, Commit } from '../../contexts/GitRepoContextTypes';
 import './GitGraphViewer.css';
@@ -150,6 +150,7 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
 
   return (
     <div className="git-graph-viewer">
+      {/* Use the GitgraphReact component as defined in the custom types */}
       <GitgraphReact options={{ template: customTemplate }}>
         {(gitgraph: GitgraphApi) => {
           if (gitgraphRef) {

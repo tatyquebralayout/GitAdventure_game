@@ -124,16 +124,6 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
     
     // Add to Mermaid representation
     addMermaidLine(`  checkout ${branchName}`);
-    
-    // Update GitGraph if ref is available
-    if (gitgraphRef.current) {
-      // Ensure checkout method exists and call it
-      if (typeof (gitgraphRef.current as any)?.checkout === 'function') {
-        (gitgraphRef.current as any).checkout(branchName);
-      } else {
-        console.warn('gitgraphRef.current.checkout is not available');
-      }
-    }
   };
 
   const mergeBranch = (sourceBranch: string, targetBranch: string) => {
