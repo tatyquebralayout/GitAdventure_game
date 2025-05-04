@@ -1,6 +1,6 @@
 .header {
   background-color: #f8f9fa;
-  padding: 1rem;
+  padding: 8px; /* Reduzido de 1rem */
   border-bottom: 1px solid #dee2e6;
 }
 
@@ -12,6 +12,6 @@
 
 .header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.3rem; /* Reduzido de 1.5rem */
   color: #343a40;
 }

@@ -1,8 +1,8 @@
 .git-graph-viewer {
   width: 100%;
   height: 100%;
-  min-height: 240px;
-  padding: 10px;
+  min-height: 180px; /* Reduzido de 240px */
+  padding: 8px; /* Reduzido de 10px */
   background-color: white;
   border-radius: 4px;
   overflow: auto;
@@ -19,7 +19,7 @@
 /* Ajustes para visualização em telas menores */
 @media (max-width: 1100px) {
   .git-graph-viewer {
-    min-height: 300px;
+    min-height: 240px; /* Reduzido de 300px */
   }
 }
 

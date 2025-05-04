@@ -1,6 +1,27 @@
 .progress-card {
-  height: 60px;
+  height: 150px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  overflow-y: auto;
+  max-height: 150px;
+  padding: 8px;
+}
+
+.progress-card h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.progress-messages {
+  width: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.progress-message {
+  padding: 5px;
+  border-bottom: 1px solid #eee;
 }

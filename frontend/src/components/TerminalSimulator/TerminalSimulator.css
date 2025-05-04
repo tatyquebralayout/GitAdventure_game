@@ -5,14 +5,14 @@
   background-color: #1e1e1e;
   color: #f0f0f0;
   font-family: 'Courier New', monospace;
-  border-radius: 8px; /* Aumentado de 5px */
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Adicionando sombra para destaque visual */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 .terminal-header {
   background-color: #333;
-  padding: 8px 16px; /* Aumentado de 5px 10px */
+  padding: 6px 12px; /* Reduzido de 8px 16px */
   border-bottom: 1px solid #555;
   display: flex;
   justify-content: space-between;
@@ -23,21 +23,22 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 16px; /* Aumentado de 10px */
+  padding: 10px; /* Reduzido de 16px */
   overflow: hidden;
 }
 
 .terminal-output {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 16px; /* Aumentado de 10px */
-  padding: 4px;
+  margin-bottom: 10px; /* Reduzido de 16px */
+  padding: 3px; /* Reduzido de 4px */
   text-align: left;
-  line-height: 1.6; /* Melhorando o espaçamento entre linhas */
+  line-height: 1.5; /* Reduzido de 1.6 */
+  font-size: 0.95em; /* Redução no tamanho da fonte */
 }
 
 .terminal-line {
-  padding: 3px 0; /* Aumentado de 2px 0 */
+  padding: 2px 0; /* Reduzido de 3px 0 */
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -47,7 +48,7 @@
 }
 
 .terminal-command-line {
-  color: #58a6ff; /* Destaque em azul para comandos */
+  color: #58a6ff;
   font-weight: 500;
 }
 
@@ -59,13 +60,13 @@
 .terminal-input-line {
   display: flex;
   align-items: center;
-  background-color: #252525; /* Destacando a linha de input */
-  padding: 8px;
+  background-color: #252525;
+  padding: 6px; /* Reduzido de 8px */
   border-radius: 4px;
 }
 
 .terminal-prompt {
-  margin-right: 10px; /* Aumentado de 8px */
+  margin-right: 8px; /* Reduzido de 10px */
   color: #0f0;
   font-weight: bold;
 }
@@ -77,11 +78,11 @@
   outline: none;
   color: #fff;
   font-family: 'Courier New', monospace;
-  font-size: 1.05em; /* Ligeiramente maior que antes */
-  padding: 4px 0;
+  font-size: 1em; /* Reduzido de 1.05em */
+  padding: 3px 0; /* Reduzido de 4px 0 */
 }
 
-/* Adicionando estilos para mensagens de erro e sucesso */
+/* Estilos para mensagens de erro e sucesso */
 .terminal-error {
   color: #f85149;
 }
