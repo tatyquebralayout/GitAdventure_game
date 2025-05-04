@@ -74,4 +74,4 @@ jobs:
         run: pnpm install
 
       - name: Build project
-        run: pnpm build
+        run: pnpm --filter frontend build
