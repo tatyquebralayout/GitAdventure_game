@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGitRepository } from '../../contexts/GitRepositoryContext';
+import { useGitRepo } from '../../contexts/GitRepoContext';
 import './TerminalSimulator.css';
 
 export default function TerminalSimulator() {
@@ -10,8 +11,9 @@ export default function TerminalSimulator() {
   const [currentCommand, setCurrentCommand] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // Use the Git repository context
+  // Use both Git repository contexts
   const gitRepo = useGitRepository();
+  const gitRepoContext = useGitRepo();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCurrentCommand(e.target.value);
@@ -28,10 +30,11 @@ export default function TerminalSimulator() {
       setIsProcessing(true);
       
       try {
-        // Execute the command using our context
+        // Execute in both contexts to keep them in sync
+        const gitRepoResult = await gitRepoContext.executeCommand(commandText);
         const result = await gitRepo.executeCommand(commandText);
         
-        // Add result to command history
+        // Add result to command history (using the original context for backward compatibility)
         setCommandHistory(prev => [
           ...prev, 
           { 

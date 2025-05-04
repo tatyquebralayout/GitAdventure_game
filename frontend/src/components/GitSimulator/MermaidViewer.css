@@ -1,0 +1,19 @@
+.mermaid-viewer {
+  width: 100%;
+  overflow: auto;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+/* Make sure the diagram is centered */
+.mermaid-viewer > div {
+  display: flex;
+  justify-content: center;
+}
+
+/* Custom styling for the Git graph */
+:global(.gitGraph-commit) {
+  cursor: pointer;
+}

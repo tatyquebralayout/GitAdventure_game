@@ -1,0 +1,33 @@
+.git-graph-viewer {
+  width: 100%;
+  overflow: auto;
+  padding: 1rem 0;
+}
+
+/* Make sure commits are visible and interactive */
+.git-graph-viewer svg {
+  min-width: 400px;
+  overflow: visible;
+  cursor: default;
+}
+
+/* Style for commit dots */
+.git-graph-viewer .gitgraph-commit {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.git-graph-viewer .gitgraph-commit:hover {
+  transform: scale(1.2);
+}
+
+/* Style for branch labels */
+.git-graph-viewer .gitgraph-branch-label {
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Adjust message placement */
+.git-graph-viewer .gitgraph-message {
+  font-size: 12px;
+}

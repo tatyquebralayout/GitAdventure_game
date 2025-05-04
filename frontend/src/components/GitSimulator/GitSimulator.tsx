@@ -1,13 +1,65 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './GitSimulator.css';
-import GitGraph from '../GitGraph/GitGraph';
 import { useGitRepository } from '../../contexts/GitRepositoryContext';
+import { useGitRepo } from '../../contexts/GitRepoContext';
+import MermaidViewer from './MermaidViewer';
+
+declare global {
+  interface Window {
+    executeGitCommand: (command: string) => Promise<any>;
+  }
+}
+import GitGraphViewer from './GitGraphViewer';
+import VisualizationToggle, { ViewMode } from './VisualizationToggle';
 
 export default function GitSimulator() {
   const [repositoryView, setRepositoryView] = useState<'working' | 'staged' | 'committed'>('working');
+  const [viewMode, setViewMode] = useState<ViewMode>('gitgraph');
   
-  // Use the Git repository context
-  const { commits, branches, files, currentBranch } = useGitRepository();
+  // Use both Git repository contexts
+  const { 
+    commits, 
+    branches, 
+    files, 
+    currentBranch, 
+    executeCommand: executeGitRepositoryCommand 
+  } = useGitRepository();
+  
+  // Use the new GitRepoContext for Mermaid integration
+  const { 
+    mermaidLines, 
+    gitgraphRef, 
+    branches: gitRepoBranches, 
+    commits: gitRepoCommits,
+    executeCommand: executeGitRepoCommand 
+  } = useGitRepo();
+  
+  const diagramText = mermaidLines.join('\n');
+  
+  // Keep contexts in sync
+  useEffect(() => {
+    // Add a listener to intercept terminal commands
+    const originalExecuteCommand = window.executeGitCommand;
+    
+    window.executeGitCommand = async (command: string) => {
+      // Execute in both contexts to keep them in sync
+      const gitRepoResult = await executeGitRepoCommand(command);
+      const gitRepositoryResult = await executeGitRepositoryCommand(command);
+      
+      // Return result from the original context for backward compatibility
+      return gitRepositoryResult;
+    };
+    
+    return () => {
+      // Clean up by restoring original function
+      window.executeGitCommand = originalExecuteCommand;
+    };
+  }, [executeGitRepoCommand, executeGitRepositoryCommand]);
+  
+  // Handle view mode toggle
+  const handleViewModeToggle = (mode: ViewMode) => {
+    setViewMode(mode);
+  };
 
   const getStatusClass = (status: 'untracked' | 'modified' | 'staged' | 'committed') => {
     switch (status) {
@@ -51,7 +103,18 @@ export default function GitSimulator() {
           {/* Toggle between file list and graph view */}
           {repositoryView === 'committed' ? (
             <div className="git-graph-view">
-              <GitGraph commits={commits} branches={branches} />
+              <VisualizationToggle viewMode={viewMode} onToggle={handleViewModeToggle} />
+              
+              {viewMode === 'mermaid' 
+                ? <MermaidViewer diagramText={diagramText} />
+                : <GitGraphViewer 
+                    repoState={{ 
+                      branches: gitRepoBranches, 
+                      commits: gitRepoCommits
+                    }}
+                    gitgraphRef={gitgraphRef}
+                  />
+              }
             </div>
           ) : (
             <div className="git-file-list">
