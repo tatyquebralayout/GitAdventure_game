@@ -20,33 +20,36 @@ export const authMiddleware = (
   req: Request, 
   res: Response, 
   next: NextFunction
-): Response | void => {
+): void => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return res.status(401).json({ 
+    res.status(401).json({ 
       success: false, 
       message: 'Token não fornecido' 
     });
+    return;
   }
 
   // Formato esperado: Bearer token
   const parts = authHeader.split(' ');
 
   if (parts.length !== 2) {
-    return res.status(401).json({ 
+    res.status(401).json({ 
       success: false, 
       message: 'Formato de token inválido' 
     });
+    return;
   }
 
   const [scheme, token] = parts;
 
   if (!/^Bearer$/i.test(scheme)) {
-    return res.status(401).json({ 
+    res.status(401).json({ 
       success: false, 
       message: 'Formato de token inválido' 
     });
+    return;
   }
 
   try {
@@ -56,11 +59,11 @@ export const authMiddleware = (
     // Adiciona o ID do usuário ao objeto de requisição
     req.userId = decoded.id;
     
-    return next();
+    next();
   } catch (err) {
-    return res.status(401).json({ 
+    res.status(401).json({ 
       success: false, 
       message: 'Token inválido' 
     });
   }
-};
+}

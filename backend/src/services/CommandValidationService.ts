@@ -1,6 +1,7 @@
 import { AppDataSource } from '../config/database';
 import { QuestCommandStep } from '../entities/QuestCommandStep';
 import { UserProgress } from '../entities/UserProgress';
+import { Quest } from '../entities/Quest';
 
 // Request DTO para validação de comando
 export interface ValidateCommandRequestDto {
@@ -37,6 +38,18 @@ export class CommandValidationService {
   
   // Dados mockados para testes ou quando o banco de dados não estiver configurado
   private getMockedQuestSteps(): QuestCommandStep[] {
+    // Create a minimal Quest object for the mock data
+    const dummyQuest: Quest = {
+      id: 1,
+      title: 'Mock Quest',
+      description: 'A mock quest for testing',
+      difficulty: 1,
+      xpReward: 100,
+      commandSteps: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
     return [
       {
         id: 1,
@@ -48,7 +61,7 @@ export class CommandValidationService {
         isOptional: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        quest: null
+        quest: dummyQuest
       },
       {
         id: 2,
@@ -60,7 +73,7 @@ export class CommandValidationService {
         isOptional: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        quest: null
+        quest: dummyQuest
       },
       {
         id: 3,
@@ -72,7 +85,7 @@ export class CommandValidationService {
         isOptional: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        quest: null
+        quest: dummyQuest
       },
       {
         id: 4,
@@ -84,7 +97,7 @@ export class CommandValidationService {
         isOptional: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        quest: null
+        quest: dummyQuest
       },
       {
         id: 5,
@@ -96,7 +109,7 @@ export class CommandValidationService {
         isOptional: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        quest: null
+        quest: dummyQuest
       }
     ];
   }
@@ -120,12 +133,13 @@ export class CommandValidationService {
       
       // Criar novo progresso se não existir
       if (!progress) {
+        // Fix the type by specifying correct properties
         progress = userProgressRepository.create({
           userId,
           questId,
           currentStep,
           isCompleted,
-          completedAt: isCompleted ? now : null
+          completedAt: isCompleted ? now : undefined // Change null to undefined
         });
       } else {
         // Atualizar progresso existente

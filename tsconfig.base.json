@@ -4,6 +4,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "baseUrl": ".",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "paths": {
       "@frontend/*": ["frontend/src/*"],
       "@backend/*": ["backend/src/*"]

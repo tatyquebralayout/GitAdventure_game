@@ -4,29 +4,29 @@ import { QuestCommandStep } from "./QuestCommandStep";
 @Entity("quests")
 export class Quest {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  title: string;
+  title!: string;
 
   @Column()
-  description: string;
+  description!: string;
 
   @Column({ nullable: true })
   imageUrl?: string;
 
   @Column({ default: 1 })
-  difficulty: number;
+  difficulty!: number;
 
   @Column({ default: 0 })
-  xpReward: number;
+  xpReward!: number;
 
   @CreateDateColumn({ name: "created_at" })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: "updated_at" })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @OneToMany(() => QuestCommandStep, step => step.quest)
-  commandSteps: QuestCommandStep[];
+  commandSteps!: QuestCommandStep[];
 }
