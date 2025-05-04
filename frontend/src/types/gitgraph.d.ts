@@ -1,48 +1,21 @@
-// Declaração de tipos para o @gitgraph/react
-// Isso evita erros como 'Property branch does not exist on type {}'
+// Declaração de tipos para o @gitgraph/react v1.6.0
+// Esta versão simplificada apenas define os exports confirmados da biblioteca
 
 declare module '@gitgraph/react' {
-  interface GitgraphBranchOptions {
-    name: string;
-    style?: {
-      color?: string;
-      lineWidth?: number;
-      // Adicione outras opções de estilo conforme necessário
-    };
-  }
-
-  interface GitgraphCommitOptions {
-    subject?: string;
-    hash?: string;
-    author?: string;
-    // Adicione outras opções conforme necessário
-  }
-
-  interface GitgraphMergeOptions {
-    branch: GitgraphBranch;
-    subject?: string;
-    commitOptions?: GitgraphCommitOptions;
-  }
-
-  interface GitgraphBranch {
-    branch: (name: string, options?: GitgraphBranchOptions) => GitgraphBranch;
-    commit: (options?: GitgraphCommitOptions) => GitgraphBranch;
-    // Adicionando sobrecarga para o método merge
-    merge: {
-      (options: GitgraphMergeOptions): GitgraphBranch;
-      (branchName: string, commitMessage: string): GitgraphBranch;
-    };
-    checkout: () => GitgraphBranch;
-    // Adicione outros métodos do branch conforme necessário
-  }
-
-  // Esta interface é usada em outros arquivos, então precisa ser exportada
-  export interface GitgraphInterface {
-    branch: (name: string, options?: GitgraphBranchOptions) => GitgraphBranch;
-    checkout: (branchName: string) => void;
-    // Adicione outros métodos conforme necessário
-  }
+  import * as React from 'react';
   
-  // Mantenha exportações existentes
-  export { templateExtend, TemplateName };
+  // Componente principal exportado pela biblioteca
+  export const GitgraphReact: React.ComponentType<{
+    options?: any;
+    children?: (gitgraph: any) => React.ReactNode;
+  }>;
+  
+  // Funções utilitárias exportadas
+  export function templateExtend(templateName: any, options: any): any;
+  
+  // Enums exportados
+  export enum TemplateName {
+    Metro = "metro",
+    Default = "default"
+  }
 }

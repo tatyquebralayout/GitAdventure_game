@@ -1,6 +1,9 @@
 import React, { createContext, useState, ReactNode, useRef } from 'react';
 import { commandsApi } from '../api/commandsApi';
-import { GitgraphInterface } from '@gitgraph/react';
+import { templateExtend, TemplateName } from '@gitgraph/react';
+
+// Definindo tipos localmente para a API do Gitgraph
+type GitgraphApi = any;    // Tipo simplificado para a API do Gitgraph
 
 // Types
 export interface Branch {
@@ -41,8 +44,8 @@ interface GitRepoContextType {
   checkoutBranch: (branchName: string) => void;
   mergeBranch: (sourceBranch: string, targetBranch: string) => void;
   
-  // Reference to the GitGraph instance - permitindo explicitamente null
-  gitgraphRef: React.RefObject<GitgraphInterface | null>;
+  // Reference to the GitGraph instance
+  gitgraphRef: React.RefObject<GitgraphApi | null>;
 }
 
 // Exportar o contexto para ser usado pelo hook
@@ -78,7 +81,7 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
   ]);
   
   // Reference to the GitGraph instance for programmatic operations
-  const gitgraphRef = useRef<GitgraphInterface | null>(null);
+  const gitgraphRef = useRef<GitgraphApi | null>(null);
   
   // Get current branch
   const currentBranch = branches.find(b => b.isActive)?.name || 'main';

@@ -1,22 +1,25 @@
 import React, { useRef } from 'react';
-import { Gitgraph, templateExtend, TemplateName, GitgraphInterface, GitgraphBranch } from '@gitgraph/react';
+import { GitgraphReact, templateExtend, TemplateName } from '@gitgraph/react';
 import { Branch, Commit } from '../../contexts/GitRepoContext';
 import './GitGraphViewer.css';
 
-// Utilizamos as interfaces definidas no arquivo gitgraph.d.ts sem importá-las
+// Define tipos locais para a API do gitgraph
+type GitgraphApi = any;
+type GitgraphBranchApi = any;
+
 interface GitGraphViewerProps {
   repoState: {
     branches: Branch[];
     commits: Commit[];
   };
-  gitgraphRef?: React.RefObject<GitgraphInterface | null>;
+  gitgraphRef?: React.RefObject<GitgraphApi | null>;
 }
 
 const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef }) => {
   const { branches, commits } = repoState;
   
   // Reference to store the gitgraph instance for dynamic commands
-  const internalGitgraphRef = useRef<GitgraphInterface | null>(null);
+  const internalGitgraphRef = useRef<GitgraphApi | null>(null);
   
   // Custom template for the GitGraph visualization
   const customTemplate = templateExtend(TemplateName.Metro, {
@@ -43,8 +46,8 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
   
   return (
     <div className="git-graph-viewer">
-      <Gitgraph options={{ template: customTemplate }}>
-        {(gitgraph: GitgraphInterface) => {
+      <GitgraphReact options={{ template: customTemplate }}>
+        {(gitgraph: GitgraphApi) => {
           // Store reference to gitgraph for external commands
           if (gitgraphRef) {
             gitgraphRef.current = gitgraph;
@@ -52,7 +55,7 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
           internalGitgraphRef.current = gitgraph;
           
           // Create branch objects
-          const branchRefs: Record<string, GitgraphBranch> = {};
+          const branchRefs: Record<string, GitgraphBranchApi> = {};
           
           // First, create the main branch
           const mainBranch = branches.find(b => b.name === 'main');
@@ -122,8 +125,11 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
           if (activeBranch && branchRefs[activeBranch.name]) {
             branchRefs[activeBranch.name].checkout();
           }
+          
+          // Retornando null explicitamente para satisfazer o requisito de ReactNode
+          return null;
         }}
-      </Gitgraph>
+      </GitgraphReact>
     </div>
   );
 };

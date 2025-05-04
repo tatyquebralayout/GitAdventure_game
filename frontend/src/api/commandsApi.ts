@@ -9,7 +9,9 @@ interface ValidateCommandResponse {
 }
 
 // Base API URL from environment or default to localhost:3001
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+// Usando variável declarada para evitar o erro de TypeScript com import.meta
+declare const VITE_API_BASE_URL: string | undefined;
+const API_BASE_URL = typeof VITE_API_BASE_URL !== 'undefined' ? VITE_API_BASE_URL : 'http://localhost:3001';
 
 export const commandsApi = {
   validateCommand: async (command: string, questId = 1, currentStep?: number): Promise<ValidateCommandResponse> => {

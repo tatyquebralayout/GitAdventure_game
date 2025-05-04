@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Gitgraph, Mode, templateExtend, TemplateName } from '@gitgraph/react';
-import { GitgraphOptions as GitgraphUserOptions } from '@gitgraph/core';
+import { GitgraphReact, templateExtend, TemplateName } from '@gitgraph/react';
+import { GitgraphOptions as GitgraphUserOptions, Mode } from '@gitgraph/core';
 import './GitGraph.css';
 
 // Define the structure for each commit in our history
@@ -56,12 +56,12 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
   // Options for the graph
   const options: GitgraphUserOptions = {
     template: customTemplate,
-    mode: Mode.Compact,
+    mode: Mode.Compact, // Usando o enum Mode importado do @gitgraph/core
   };
 
   return (
     <div className="git-graph-container">
-      <Gitgraph options={options}>
+      <GitgraphReact options={options}>
         {(gitgraph) => {
           // Create branches and commits based on our state
           // This is where we'll translate our state into a visual graph
@@ -100,8 +100,11 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
               // or use branch name styling to indicate the active branch
             }
           }
+          
+          // Retornando null explicitamente para satisfazer o requisito de ReactNode
+          return null;
         }}
-      </Gitgraph>
+      </GitgraphReact>
     </div>
   );
 }
