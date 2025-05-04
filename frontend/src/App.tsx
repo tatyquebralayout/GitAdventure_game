@@ -10,6 +10,7 @@ import ProgressCard from './components/ProgressCard/ProgressCard';
 import GitSimulator from './components/GitSimulator/GitSimulator';
 import TerminalSimulator from './components/TerminalSimulator/TerminalSimulator';
 import { GitRepositoryProvider } from './contexts/GitRepositoryContext';
+import { GitRepoProvider } from './contexts/GitRepoContext';
 
 // Define the grid layout for the application
 export default function App() {
@@ -20,31 +21,33 @@ export default function App() {
       </div>
       
       <GitRepositoryProvider>
-        <div className="content-grid">
-          <div className="left-column">
-            <div className="dialog-area">
-              <DialogCard />
+        <GitRepoProvider>
+          <div className="content-grid">
+            <div className="left-column">
+              <div className="dialog-area">
+                <DialogCard />
+              </div>
+              
+              <div className="worldbuilding-area">
+                <WorldCard />
+              </div>
+              
+              <div className="progress-area">
+                <ProgressCard />
+              </div>
             </div>
             
-            <div className="worldbuilding-area">
-              <WorldCard />
-            </div>
-            
-            <div className="progress-area">
-              <ProgressCard />
+            <div className="right-column">
+              <div className="git-simulator-area">
+                <GitSimulator />
+              </div>
+              
+              <div className="terminal-simulator-area">
+                <TerminalSimulator />
+              </div>
             </div>
           </div>
-          
-          <div className="right-column">
-            <div className="git-simulator-area">
-              <GitSimulator />
-            </div>
-            
-            <div className="terminal-simulator-area">
-              <TerminalSimulator />
-            </div>
-          </div>
-        </div>
+        </GitRepoProvider>
       </GitRepositoryProvider>
       
       <div className="footer">
