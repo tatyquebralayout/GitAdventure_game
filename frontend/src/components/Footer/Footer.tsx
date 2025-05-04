@@ -1,5 +1,11 @@
-// Placeholder for the Footer component
+import './Footer.css';
 
 export default function Footer() {
-  return <footer>Footer Component</footer>;
+  return (
+    <footer className="footer">
+      <div className="footer-content">
+        <h3>rodapé</h3>
+      </div>
+    </footer>
+  );
 }

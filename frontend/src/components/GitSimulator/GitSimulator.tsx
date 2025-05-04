@@ -1,5 +1,9 @@
-// Placeholder for the GitSimulator component
+import './GitSimulator.css';
 
 export default function GitSimulator() {
-  return <div>GitSimulator Component</div>;
+  return (
+    <div className="git-simulator card">
+      <h3>simulador git</h3>
+    </div>
+  );
 }

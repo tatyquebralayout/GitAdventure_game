@@ -1,8 +1,3 @@
-// Entry point for the application layout
-// This file will be updated to mount the general layout.
-
-// Placeholder for the general layout setup. This file will be updated as the project evolves.
-
 import './App.css';
 
 // Import necessary components
@@ -30,8 +25,12 @@ export default function App() {
           <ProgressCard />
         </section>
         <section className="simulator-section">
-          <GitSimulator />
-          <TerminalSimulator />
+          <div className="simulator-git">
+            <GitSimulator />
+          </div>
+          <div className="simulator-terminal">
+            <TerminalSimulator />
+          </div>
         </section>
       </main>
       <Footer />
