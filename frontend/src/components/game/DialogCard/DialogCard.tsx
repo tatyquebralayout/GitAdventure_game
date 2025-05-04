@@ -1,5 +1,5 @@
 import './DialogCard.css';
-import { useGame } from '../../hooks/useGame';
+import { useGame } from '../../../hooks/useGame';
 
 export default function DialogCard() {
   const { location, hasVisited } = useGame();

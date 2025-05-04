@@ -3,17 +3,17 @@ import './App.css';
 import { lazy, Suspense } from 'react';
 
 // Import necessary components
-import Header from './components/Header/Header';
-import Footer from './components/Footer/Footer';
+import Header from './components/ui/Header/Header';
+import Footer from './components/ui/Footer/Footer';
 import { GitRepositoryProvider } from './contexts/GitRepositoryContext';
 import { GitRepoProvider } from './contexts/GitRepoContext';
 
 // Lazy load heavier components that are not immediately needed
-const DialogCard = lazy(() => import('./components/DialogCard/DialogCard'));
-const WorldCard = lazy(() => import('./components/WorldCard/WorldCard'));
-const ProgressCard = lazy(() => import('./components/ProgressCard/ProgressCard'));
-const GitSimulator = lazy(() => import('./components/GitSimulator/GitSimulator'));
-const TerminalSimulator = lazy(() => import('./components/TerminalSimulator/TerminalSimulator'));
+const DialogCard = lazy(() => import('./components/game/DialogCard/DialogCard'));
+const WorldCard = lazy(() => import('./components/game/WorldCard/WorldCard'));
+const ProgressCard = lazy(() => import('./components/game/ProgressCard/ProgressCard'));
+const GitSimulator = lazy(() => import('./components/game/GitSimulator/GitSimulator'));
+const TerminalSimulator = lazy(() => import('./components/terminal/TerminalSimulator/TerminalSimulator'));
 
 // Loading fallback component
 const LoadingPlaceholder = () => (

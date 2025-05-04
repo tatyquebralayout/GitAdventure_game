@@ -1,5 +1,5 @@
 import './WorldCard.css';
-import { useGame } from '../../hooks/useGame';
+import { useGame } from '../../../hooks/useGame';
 
 export default function WorldCard() {
   const { location, move, hasVisited } = useGame();

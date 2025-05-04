@@ -1,4 +1,4 @@
-import { useGameStore } from '../store/gameStore';
+import { useGameStore } from '../stores/gameStore';
 
 export const useGame = () => {
   return useGameStore(state => ({
