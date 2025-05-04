@@ -8,7 +8,7 @@ export const useCommand: Command = {
     /^(?:use|activate)\s+(.+)$/i,
     /^(?:use|activate)\s+(.+)\s+(?:on|with)\s+(.+)$/i,
   ],
-  execute: (args, gameState) => {
+  execute: (args, gameState): CommandResult => {
     const itemName = args[0].toLowerCase();
     const target = args[1]?.toLowerCase();
     const currentLocation = locations[gameState.currentLocation];
@@ -42,7 +42,7 @@ export const useCommand: Command = {
     if (itemName === 'map') {
       return {
         success: true,
-        message: 'Você consulta o mapa. Ele mostra todas as localizações que você já visitou e algumas áreas inexploradas.',
+        message: 'Você consulta o mapa. Ele mostra todas as localizações que você já visitou e algumas áreas inexploradas.'
       };
     }
     

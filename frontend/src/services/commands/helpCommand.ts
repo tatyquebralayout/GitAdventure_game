@@ -1,6 +1,14 @@
 import { Command, CommandResult } from '../../types/commands';
 import { GameState } from '../../stores/gameStore';
-import { commands } from './index';
+
+// Temporary empty array that will be populated by index.ts
+// This avoids circular dependency issues
+export let allCommands: Command[] = [];
+
+// Function to register commands from index.ts to avoid circular dependency
+export function registerCommands(commands: Command[]): void {
+  allCommands = commands;
+}
 
 export const helpCommand: Command = {
   name: 'help',
@@ -11,9 +19,9 @@ export const helpCommand: Command = {
   execute: (args, gameState) => {
     // If no specific command is requested, show general help
     if (!args.length || !args[0]) {
-      const availableCommands = commands
-        .filter(cmd => !cmd.availability || cmd.availability(gameState))
-        .map(cmd => cmd.name)
+      const availableCommands = allCommands
+        .filter((cmd: Command) => !cmd.availability || cmd.availability(gameState))
+        .map((cmd: Command) => cmd.name)
         .join(', ');
       
       return {
@@ -24,7 +32,7 @@ export const helpCommand: Command = {
     
     // Look for help on a specific command
     const commandName = args[0].toLowerCase();
-    const command = commands.find(cmd => 
+    const command = allCommands.find((cmd: Command) => 
       cmd.name.toLowerCase() === commandName &&
       (!cmd.availability || cmd.availability(gameState))
     );

@@ -5,20 +5,20 @@ import { lookCommand } from './lookCommand';
 import { takeCommand } from './takeCommand';
 import { useCommand } from './useCommand';
 import { inventoryCommand } from './inventoryCommand';
-import { helpCommand } from './helpCommand';
+import { helpCommand, registerCommands } from './helpCommand';
 
-// Export commands array (helpCommand will use this)
+// Export commands array 
 export const commands: Command[] = [
   moveCommand,
   lookCommand,
   takeCommand,
   useCommand,
   inventoryCommand,
-  // helpCommand will be added after its creation to avoid circular dependency
+  helpCommand
 ];
 
-// Add helpCommand after array creation to avoid circular reference
-commands.push(helpCommand);
+// Register commands with helpCommand to avoid circular dependency
+registerCommands(commands);
 
 /**
  * Process a user command input against the game state
