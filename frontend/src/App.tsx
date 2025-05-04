@@ -1,3 +1,8 @@
+// Entry point for the application layout
+// This file will be updated to mount the general layout.
+
+// Placeholder for the general layout setup. This file will be updated as the project evolves.
+
 import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
