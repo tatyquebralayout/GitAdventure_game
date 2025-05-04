@@ -1,6 +1,118 @@
 .git-simulator {
-  height: 100%;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  height: 100%;
+  background-color: #f8f8f8;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.git-header {
+  background-color: #e0e0e0;
+  padding: 8px 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+.git-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.git-tabs {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 10px;
+}
+
+.git-tab-button {
+  padding: 5px 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-right: 10px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.git-tab-button.active {
+  border-bottom: 2px solid #0366d6;
+  color: #0366d6;
+}
+
+.git-files-container {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  background-color: white;
+  margin-bottom: 10px;
+  border-radius: 3px;
+}
+
+.git-file-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.git-file {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.git-file:last-child {
+  border-bottom: none;
+}
+
+.file-name {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.file-status {
+  font-size: 0.8em;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.status-untracked .file-status {
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+.status-modified .file-status {
+  background-color: #ffe3c7;
+  color: #b35900;
+}
+
+.status-staged .file-status {
+  background-color: #cdeeff;
+  color: #0366d6;
+}
+
+.status-committed .file-status {
+  background-color: #e1f5e1;
+  color: #176517;
+}
+
+.git-commands {
+  display: flex;
+  justify-content: space-between;
+}
+
+.git-command-button {
+  background-color: #0366d6;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.git-command-button:hover {
+  background-color: #0256b9;
 }
