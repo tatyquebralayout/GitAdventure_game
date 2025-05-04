@@ -1,54 +1,108 @@
-# React + TypeScript + Vite
+# GitAdventure
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+GitAdventure is a full-stack application built with React, TypeScript, and Vite for the frontend, and Express.js for the backend. This project is designed to provide a modular and scalable architecture for web development.
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The project is organized into the following directories:
 
-## Expanding the ESLint configuration
+- **frontend/**: Contains the React-based frontend application.
+  - **src/**: Source code for the frontend.
+    - **components/**: Reusable UI components.
+    - **pages/**: Page-level components.
+    - **services/**: API service handlers.
+    - **hooks/**: Custom React hooks.
+    - **utils/**: Utility functions.
+    - **styles/**: Global and component-specific styles.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **backend/**: Contains the Express.js-based backend application.
+  - **src/**: Source code for the backend.
+    - **controllers/**: Request handlers.
+    - **routes/**: API route definitions.
+    - **services/**: Business logic.
+    - **models/**: Database models.
+    - **middlewares/**: Custom middleware functions.
+    - **utils/**: Utility functions.
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+- **public/**: Static assets served by the frontend.
+- **tests/**: Test files for both frontend and backend.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Features
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **Frontend**:
+  - Built with React and TypeScript.
+  - Modular component structure.
+  - Vite for fast development and build.
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+- **Backend**:
+  - Built with Express.js.
+  - RESTful API structure.
+  - Middleware and service-based architecture.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (>= 16.x)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd GitAdventure
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+### Running the Application
+
+#### Development Mode
+
+1. Start the backend server:
+   ```bash
+   npm run dev:backend
+   ```
+
+2. Start the frontend application:
+   ```bash
+   npm run dev
+   ```
+
+3. Open your browser and navigate to `http://localhost:3000`.
+
+#### Production Mode
+
+1. Build the application:
+   ```bash
+   npm run build
+   ```
+
+2. Serve the production build:
+   ```bash
+   npm run preview
+   ```
+
+## Linting and Type Checking
+
+- Run ESLint:
+  ```bash
+  npm run lint
+  ```
+
+- Run TypeScript type checking:
+  ```bash
+  npm run type-check
+  ```
+
+## Contributing
+
+Contributions are welcome! Please follow the [contribution guidelines](CONTRIBUTING.md).
+
+## License
+
+This project is licensed under the MIT License.
