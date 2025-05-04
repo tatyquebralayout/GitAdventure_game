@@ -1,10 +1,6 @@
 import React, { createContext, useState, ReactNode, useRef } from 'react';
 import { commandsApi } from '../api/commandsApi';
-// Importando apenas membros que são explicitamente exportados da biblioteca
-import { templateExtend, TemplateName } from '@gitgraph/react';
-// Não precisamos importar estas interfaces pois elas são disponibilizadas pelo arquivo d.ts
-// O TypeScript as reconhece globalmente quando usadas com o módulo '@gitgraph/react'
-// GitgraphInterface e GitgraphBranch são reconhecidas devido ao arquivo gitgraph.d.ts
+import { GitgraphInterface } from '@gitgraph/react';
 
 // Types
 export interface Branch {

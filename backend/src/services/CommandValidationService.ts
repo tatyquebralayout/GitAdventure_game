@@ -80,7 +80,8 @@ export class CommandValidationService {
   }
 
   public async validateCommand(data: ValidateCommandRequestDto): Promise<ValidateCommandResponseDto> {
-    const { command, questId, currentStep = 1 } = data;
+    const { command, currentStep = 1 } = data;
+    // questId não é mais desconstruído, pois não está sendo usado
     
     // Get the command steps for this quest
     const steps = await this.getQuestCommandSteps();

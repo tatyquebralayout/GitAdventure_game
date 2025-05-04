@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Gitgraph, templateExtend, TemplateName } from '@gitgraph/react';
+import { Gitgraph, templateExtend, TemplateName, GitgraphInterface, GitgraphBranch } from '@gitgraph/react';
 import { Branch, Commit } from '../../contexts/GitRepoContext';
 import './GitGraphViewer.css';
 

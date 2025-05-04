@@ -27,12 +27,17 @@ declare module '@gitgraph/react' {
   interface GitgraphBranch {
     branch: (name: string, options?: GitgraphBranchOptions) => GitgraphBranch;
     commit: (options?: GitgraphCommitOptions) => GitgraphBranch;
-    merge: (options: GitgraphMergeOptions) => GitgraphBranch;
+    // Adicionando sobrecarga para o método merge
+    merge: {
+      (options: GitgraphMergeOptions): GitgraphBranch;
+      (branchName: string, commitMessage: string): GitgraphBranch;
+    };
     checkout: () => GitgraphBranch;
     // Adicione outros métodos do branch conforme necessário
   }
 
-  interface GitgraphInterface {
+  // Esta interface é usada em outros arquivos, então precisa ser exportada
+  export interface GitgraphInterface {
     branch: (name: string, options?: GitgraphBranchOptions) => GitgraphBranch;
     checkout: (branchName: string) => void;
     // Adicione outros métodos conforme necessário
