@@ -1,63 +1,109 @@
-#root {
+/* Reset e estilos básicos */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.5;
+  background-color: #f5f5f5;
+}
+
+/* Container principal do aplicativo */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 1rem;
+}
+
+/* Estilos do cabeçalho */
+.header {
+  background-color: #e0e0e0;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
   text-align: center;
 }
 
-.app-grid {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100vh;
-  grid-gap: 10px;
-  width: 100%;
+/* Grid principal para o conteúdo */
+.content-grid {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
-main {
-  display: grid;
-  grid-template-areas:
-    "dialog dialog simulator-git"
-    "world world simulator-terminal"
-    "progress progress .";
-  grid-gap: 10px;
+/* Coluna esquerda (70% da largura) */
+.left-column {
+  flex: 7;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.dialog-section {
-  grid-area: dialog;
+/* Coluna direita (30% da largura) */
+.right-column {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.world-section {
-  grid-area: world;
+/* Áreas específicas */
+.dialog-area {
+  flex: 1;
+  min-height: 120px;
 }
 
-.progress-section {
-  grid-area: progress;
+.worldbuilding-area {
+  flex: 3;
+  min-height: 280px;
 }
 
-.simulator-section {
-  display: grid;
-  grid-template-rows: 1fr 1fr;
-  grid-gap: 10px;
+.progress-area {
+  flex: 1;
+  min-height: 80px;
 }
 
-.simulator-git {
-  grid-area: simulator-git;
+.git-simulator-area {
+  flex: 1;
+  min-height: 200px;
 }
 
-.simulator-terminal {
-  grid-area: simulator-terminal;
+.terminal-simulator-area {
+  flex: 1;
+  min-height: 200px;
 }
 
-header, footer {
-  width: 100%;
+/* Estilos do rodapé */
+.footer {
+  background-color: #e0e0e0;
   padding: 10px;
-  background-color: #f0f0f0;
-  color: #333;
+  border-radius: 4px;
+  text-align: center;
 }
 
+/* Estilo comum para cards */
 .card {
-  padding: 1em;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #f9f9f9;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  height: 100%;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+  .content-grid {
+    flex-direction: column;
+  }
+  
+  .left-column, .right-column {
+    width: 100%;
+  }
 }
