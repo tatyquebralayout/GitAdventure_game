@@ -2,7 +2,7 @@
 // This file will bootstrap the server (Express/NestJS)
 
 import express from 'express';
-import dotenv from 'dotenv';
+import dotenv from 'dotepnpm add -D @types/dotenvcdnv';
 
 dotenv.config();
 
