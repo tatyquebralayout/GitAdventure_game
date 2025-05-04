@@ -1,0 +1,74 @@
+.world-card {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  padding: 10px;
+}
+
+.world-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 5px;
+}
+
+.world-tabs {
+  display: flex;
+  gap: 10px;
+}
+
+.tab {
+  padding: 5px 10px;
+  border: 1px solid #000;
+  cursor: pointer;
+}
+
+.world-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-worldbuilding {
+  padding: 10px;
+  border: 1px solid #ccc;
+  background-color: #eee;
+}
+
+.circles-container {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.circle {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 1px solid #000;
+}
+
+.mission-text {
+  height: 60px;
+  border: 1px solid #ccc;
+  background-color: #eee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.action-btn {
+  padding: 5px 10px;
+  border: 1px solid #000;
+  background-color: #ddd;
+  cursor: pointer;
+}
