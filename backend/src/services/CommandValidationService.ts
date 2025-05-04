@@ -17,7 +17,7 @@ export interface ValidateCommandResponseDto {
 
 export class CommandValidationService {
   // This would typically come from a database
-  private async getQuestCommandSteps(_questId: number): Promise<QuestCommandStep[]> {
+  private async getQuestCommandSteps(): Promise<QuestCommandStep[]> {
     // In a real implementation, this would fetch from the database
     // For now, returning mock data
     return [
@@ -83,7 +83,7 @@ export class CommandValidationService {
     const { command, questId, currentStep = 1 } = data;
     
     // Get the command steps for this quest
-    const steps = await this.getQuestCommandSteps(questId);
+    const steps = await this.getQuestCommandSteps();
     
     // Find the current step
     const currentStepData = steps.find(step => step.stepNumber === currentStep);

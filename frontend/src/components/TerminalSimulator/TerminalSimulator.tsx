@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGitRepository } from '../../contexts/GitRepositoryContext';
-import { useGitRepo } from '../../contexts/GitRepoContext';
+import { useGitRepo } from '../../hooks/useGitRepo';
 import './TerminalSimulator.css';
 
 export default function TerminalSimulator() {

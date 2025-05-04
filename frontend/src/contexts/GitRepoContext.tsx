@@ -1,5 +1,10 @@
-import React, { createContext, useState, useContext, ReactNode, useRef } from 'react';
+import React, { createContext, useState, ReactNode, useRef } from 'react';
 import { commandsApi } from '../api/commandsApi';
+// Importando apenas membros que são explicitamente exportados da biblioteca
+import { templateExtend, TemplateName } from '@gitgraph/react';
+// Não precisamos importar estas interfaces pois elas são disponibilizadas pelo arquivo d.ts
+// O TypeScript as reconhece globalmente quando usadas com o módulo '@gitgraph/react'
+// GitgraphInterface e GitgraphBranch são reconhecidas devido ao arquivo gitgraph.d.ts
 
 // Types
 export interface Branch {
@@ -41,10 +46,11 @@ interface GitRepoContextType {
   mergeBranch: (sourceBranch: string, targetBranch: string) => void;
   
   // Reference to the GitGraph instance
-  gitgraphRef: React.MutableRefObject<unknown | null>;
+  gitgraphRef: React.RefObject<GitgraphInterface>;
 }
 
-const GitRepoContext = createContext<GitRepoContextType | undefined>(undefined);
+// Exportar o contexto para ser usado pelo hook
+export const GitRepoContext = createContext<GitRepoContextType | undefined>(undefined);
 
 interface GitRepoProviderProps {
   children: ReactNode;
@@ -76,7 +82,7 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
   ]);
   
   // Reference to the GitGraph instance for programmatic operations
-  const gitgraphRef = useRef<unknown>(null);
+  const gitgraphRef = useRef<GitgraphInterface>(null);
   
   // Get current branch
   const currentBranch = branches.find(b => b.isActive)?.name || 'main';
@@ -313,7 +319,7 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
       console.error('Error executing command:', error);
       return { 
         success: false, 
-        message: `Error executing command: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Error executing command: ${error instanceof Error ? error.message : 'Unknown error'}` 
       };
     }
   };
@@ -339,12 +345,4 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
       {children}
     </GitRepoContext.Provider>
   );
-}
-
-export function useGitRepo() {
-  const context = useContext(GitRepoContext);
-  if (!context) {
-    throw new Error('useGitRepo must be used within a GitRepoProvider');
-  }
-  return context;
 }
