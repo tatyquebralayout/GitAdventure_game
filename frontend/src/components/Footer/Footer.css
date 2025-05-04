@@ -2,7 +2,7 @@
   width: 100%;
   background-color: #222;
   color: #fff;
-  padding: 40px 0 20px;
+  padding: 20px 0 10px; /* Reduzido de 40px 0 20px */
 }
 
 .footer-container {
@@ -11,26 +11,26 @@
   justify-content: space-between;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 15px; /* Reduzido de 0 20px */
 }
 
 .footer-section {
   flex: 1;
-  min-width: 200px;
-  margin-bottom: 20px;
-  padding: 0 15px;
+  min-width: 180px; /* Reduzido de 200px */
+  margin-bottom: 15px; /* Reduzido de 20px */
+  padding: 0 10px; /* Reduzido de 0 15px */
 }
 
 .footer-section h3 {
-  font-size: 1.2rem;
-  margin-bottom: 15px;
+  font-size: 1rem; /* Reduzido de 1.2rem */
+  margin-bottom: 10px; /* Reduzido de 15px */
   color: #ff7700;
 }
 
 .footer-section p {
   color: #ccc;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 0.8rem; /* Reduzido de 0.9rem */
+  line-height: 1.4; /* Reduzido de 1.5 */
 }
 
 .links ul {
@@ -39,23 +39,25 @@
 }
 
 .links ul li {
-  margin-bottom: 8px;
+  margin-bottom: 5px; /* Reduzido de 8px */
 }
 
 .links ul li a {
   color: #ccc;
   text-decoration: none;
   transition: color 0.3s ease;
+  font-size: 0.8rem; /* Adicionado tamanho menor */
 }
 
 .links ul li a:hover {
   color: #ff7700;
 }
 
+/* Mantém os estilos para sponsors caso ainda sejam necessários */
 .sponsors-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  gap: 10px; /* Reduzido de 15px */
 }
 
 .sponsor-item {
@@ -66,27 +68,27 @@
 }
 
 .sponsor-logo {
-  width: 60px;
-  height: 60px;
+  width: 40px; /* Reduzido de 60px */
+  height: 40px; /* Reduzido de 60px */
   background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
-  margin-bottom: 5px;
+  border-radius: 3px; /* Reduzido de 5px */
+  margin-bottom: 3px; /* Reduzido de 5px */
 }
 
 .sponsor-item span {
-  font-size: 0.8rem;
+  font-size: 0.7rem; /* Reduzido de 0.8rem */
   color: #ccc;
 }
 
 .footer-bottom {
   text-align: center;
-  margin-top: 20px;
-  padding-top: 20px;
+  margin-top: 10px; /* Reduzido de 20px */
+  padding-top: 10px; /* Reduzido de 20px */
   border-top: 1px solid #444;
   width: 100%;
 }
 
 .footer-bottom p {
-  font-size: 0.8rem;
+  font-size: 0.7rem; /* Reduzido de 0.8rem */
   color: #888;
 }
