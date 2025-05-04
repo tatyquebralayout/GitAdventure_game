@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev": "vite --config ../vite.config.ts",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
