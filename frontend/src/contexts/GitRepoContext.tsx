@@ -1,4 +1,5 @@
 import { useState, ReactNode, useRef } from 'react';
+import type { GitgraphApi } from '@gitgraph/react';
 import { commandsApi } from '../api/commandsApi';
 import { GitRepoContext, GitRepoContextType, Branch, Commit } from './GitRepoContextTypes';
 
@@ -32,7 +33,7 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
   ]);
   
   // Reference to the GitGraph instance for programmatic operations
-  const gitgraphRef = useRef<any>(null);
+  const gitgraphRef = useRef<GitgraphApi | null>(null);
   
   // Get current branch
   const currentBranch = branches.find(b => b.isActive)?.name || 'main';

@@ -1,4 +1,5 @@
 import React from 'react';
+import type { GitgraphApi } from '@gitgraph/react';
 
 // Types
 export interface Branch {
@@ -40,7 +41,7 @@ export interface GitRepoContextType {
   mergeBranch: (sourceBranch: string, targetBranch: string) => void;
   
   // Reference to the GitGraph instance
-  gitgraphRef: React.RefObject<any>;
+  gitgraphRef: React.RefObject<GitgraphApi | null>;
 }
 
 // Create the context

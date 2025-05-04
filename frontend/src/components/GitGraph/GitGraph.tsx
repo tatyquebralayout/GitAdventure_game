@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Gitgraph, templateExtend, TemplateName } from '@gitgraph/react';
+import type { GitgraphOptions, GitgraphApi, GitgraphBranchApi } from '@gitgraph/react';
 import './GitGraph.css';
 
 // Define the structure for each commit in our history
@@ -53,16 +54,15 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
   });
 
   // Options for the graph
-  const options: any = { template: customTemplate };
+  const options: GitgraphOptions = { template: customTemplate };
 
   return (
     <div className="git-graph-container">
       {/* Ensure the options prop matches the expected type */}
       <Gitgraph options={options}>
-        {gitgraph => {
+        {(gitgraph: GitgraphApi) => {
           // Create branches and commits based on our state
-          // This is where we'll translate our state into a visual graph
-          const branchMap = new Map();
+          const branchMap = new Map<string, GitgraphBranchApi>();
           
           // First, create all branches
           activeBranches.forEach((branch) => {
