@@ -41,8 +41,8 @@ interface GitRepoContextType {
   checkoutBranch: (branchName: string) => void;
   mergeBranch: (sourceBranch: string, targetBranch: string) => void;
   
-  // Reference to the GitGraph instance
-  gitgraphRef: React.RefObject<GitgraphInterface>;
+  // Reference to the GitGraph instance - permitindo explicitamente null
+  gitgraphRef: React.RefObject<GitgraphInterface | null>;
 }
 
 // Exportar o contexto para ser usado pelo hook
@@ -78,7 +78,7 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
   ]);
   
   // Reference to the GitGraph instance for programmatic operations
-  const gitgraphRef = useRef<GitgraphInterface>(null);
+  const gitgraphRef = useRef<GitgraphInterface | null>(null);
   
   // Get current branch
   const currentBranch = branches.find(b => b.isActive)?.name || 'main';

@@ -9,7 +9,7 @@ interface GitGraphViewerProps {
     branches: Branch[];
     commits: Commit[];
   };
-  gitgraphRef?: React.RefObject<GitgraphInterface>;
+  gitgraphRef?: React.RefObject<GitgraphInterface | null>;
 }
 
 const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef }) => {
