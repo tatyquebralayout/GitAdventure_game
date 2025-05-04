@@ -1,11 +1,7 @@
 import React, { useRef } from 'react';
-import { GitgraphReact, templateExtend, TemplateName } from '@gitgraph/react';
+import { GitgraphReact, templateExtend, TemplateName, GitgraphApi, GitgraphBranchApi } from '@gitgraph/react';
 import { Branch, Commit } from '../../contexts/GitRepoContext';
 import './GitGraphViewer.css';
-
-// Define tipos locais para a API do gitgraph
-type GitgraphApi = any;
-type GitgraphBranchApi = any;
 
 interface GitGraphViewerProps {
   repoState: {
@@ -19,6 +15,10 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
   const { branches, commits } = repoState;
   
   // Reference to store the gitgraph instance for dynamic commands
+  const internalGitgraphRef = useRef<GitgraphApi | null>(null);
+  
+  // Custom template for the GitGraph visualization
+  const customTemplate = templateExtend(TemplateName.Metro, {
   const internalGitgraphRef = useRef<GitgraphApi | null>(null);
   
   // Custom template for the GitGraph visualization

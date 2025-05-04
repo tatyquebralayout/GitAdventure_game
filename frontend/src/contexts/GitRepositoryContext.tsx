@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { createContext, useState, useContext, ReactNode } from 'react';
 import { GitBranch, GitCommit } from '../components/GitGraph/GitGraph';
 import { commandsApi } from '../api/commandsApi';
 
@@ -298,7 +298,7 @@ export function GitRepositoryProvider({ children }: GitRepositoryProviderProps) 
       console.error('Error executing command:', error);
       return { 
         success: false, 
-        message: `Error executing command: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Error executing command: ${error instanceof Error ? error.message : 'Unknown error'}` 
       };
     }
   };

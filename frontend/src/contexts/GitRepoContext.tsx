@@ -1,6 +1,5 @@
 import React, { createContext, useState, ReactNode, useRef } from 'react';
 import { commandsApi } from '../api/commandsApi';
-import { templateExtend, TemplateName } from '@gitgraph/react';
 
 // Definindo tipos localmente para a API do Gitgraph
 type GitgraphApi = any;    // Tipo simplificado para a API do Gitgraph
