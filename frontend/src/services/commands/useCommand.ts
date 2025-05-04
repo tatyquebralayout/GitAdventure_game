@@ -34,7 +34,7 @@ export const useCommand: Command = {
         success: true,
         message: 'Você usa a lanterna para iluminar o caminho para a caverna. Agora você pode ver claramente.',
         effects: {
-          setFlag: { cave_illuminated: true }
+          setFlag: { 'cave_illuminated': true }
         }
       };
     }
@@ -51,7 +51,7 @@ export const useCommand: Command = {
         success: true,
         message: 'Você cria um novo branch Git. Isso representa um novo caminho de desenvolvimento independente.',
         effects: {
-          setFlag: { created_branch: true }
+          setFlag: { 'created_branch': true }
         }
       };
     }

@@ -3,6 +3,7 @@ import { useGitRepository } from '@frontend/contexts/GitRepositoryContext';
 import { useGitRepo } from '@frontend/hooks/useGitRepo';
 import { useGame } from '@frontend/hooks/useGame';
 import { processCommand } from '@frontend/services/commands';
+import { GameState } from '@frontend/stores/gameStore';
 import './TerminalSimulator.css';
 
 export default function TerminalSimulator() {
@@ -30,6 +31,35 @@ export default function TerminalSimulator() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCurrentCommand(e.target.value);
+  };
+
+  // Helper function to build the complete game state from useGame hook
+  const buildGameState = (): GameState => {
+    // Build gameFlags by checking known flags
+    const gameFlags: Record<string, boolean> = {
+      'cave_illuminated': gameState.hasFlag('cave_illuminated'),
+      'basic_training_complete': gameState.hasFlag('basic_training_complete'),
+      'created_branch': gameState.hasFlag('created_branch'),
+      'bridge_fixed': gameState.hasFlag('bridge_fixed'),
+      'puzzle_solved': gameState.hasFlag('puzzle_solved')
+    };
+    
+    // Get visited locations
+    const visitedLocations = ['start']; // Always include start
+    
+    // Add other locations if visited
+    ['forest', 'village', 'cave', 'mountain'].forEach(loc => {
+      if (gameState.hasVisited(loc)) {
+        visitedLocations.push(loc);
+      }
+    });
+    
+    return {
+      currentLocation: gameState.location,
+      inventory: gameState.inventory,
+      visitedLocations,
+      gameFlags
+    };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,13 +102,8 @@ export default function TerminalSimulator() {
       } else {
         // Process adventure command with our new pattern matching system
         try {
-          // Get the current state from the game store
-          const currentState = {
-            currentLocation: gameState.location,
-            inventory: gameState.inventory,
-            visitedLocations: [],  // We'll need to enhance this later
-            gameFlags: {}  // We'll need to build this from gameState.hasFlag
-          };
+          // Get the complete current state from the game store
+          const currentState = buildGameState();
           
           // Process the command
           const result = processCommand(commandText, currentState);
