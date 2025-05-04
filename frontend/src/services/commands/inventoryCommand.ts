@@ -1,5 +1,4 @@
-import { Command, CommandResult } from '../../types/commands';
-import { GameState } from '../../stores/gameStore';
+import { Command } from '../../types/commands';
 
 export const inventoryCommand: Command = {
   name: 'inventory',

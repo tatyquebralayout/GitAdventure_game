@@ -30,6 +30,23 @@ export interface ApiResponse<T> {
   saves?: T[];
 }
 
+// Define specific types instead of using 'any'
+interface ProgressData {
+  // Define the expected structure of progress data
+  // Example:
+  level?: number;
+  questsCompleted?: string[];
+  // Add other relevant fields
+}
+
+interface UpdateProgressPayload {
+  // Define the expected structure of the payload for updating progress
+  // Example:
+  questId?: string;
+  action?: string;
+  // Add other relevant fields
+}
+
 // Configuração do axios com interceptor para adicionar o token
 const api = axios.create({
   baseURL: API_URL,
@@ -119,6 +136,30 @@ export const progressApi = {
         success: false, 
         message: 'Erro ao conectar ao servidor' 
       };
+    }
+  },
+
+  // Obter progresso do jogo
+  async getProgress(token: string): Promise<ProgressData> {
+    try {
+      const response = await api.get('/progress', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data; // Assuming response.data matches ProgressData
+    } catch (error) {
+      throw new Error('Erro ao obter progresso do jogo');
+    }
+  },
+
+  // Atualizar progresso do jogo
+  async updateProgress(payload: UpdateProgressPayload, token: string): Promise<ProgressData> {
+    try {
+      const response = await api.post('/progress', payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data; // Assuming response.data matches ProgressData
+    } catch (error) {
+      throw new Error('Erro ao atualizar progresso do jogo');
     }
   }
 };

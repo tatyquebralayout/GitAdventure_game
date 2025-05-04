@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { describe, expect, test, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useGame } from './useGame';
 import { useGameStore } from '../stores/gameStore';

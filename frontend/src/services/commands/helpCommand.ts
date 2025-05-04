@@ -1,5 +1,4 @@
-import { Command, CommandResult } from '../../types/commands';
-import { GameState } from '../../stores/gameStore';
+import { Command } from '../../types/commands';
 
 // Temporary empty array that will be populated by index.ts
 // This avoids circular dependency issues

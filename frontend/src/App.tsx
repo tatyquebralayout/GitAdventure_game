@@ -24,6 +24,7 @@ const LoadingPlaceholder = () => (
 
 // Define the grid layout for the application
 export default function App() {
+  // Restore original layout
   return (
     <div className="app-container">
       <div className="header">
@@ -75,4 +76,14 @@ export default function App() {
       </div>
     </div>
   );
+
+  // Remove simple test content
+  /*
+  return (
+    <div>
+      <h1>Teste</h1>
+      <p>Se você vê isso, o problema está no layout original do App.</p>
+    </div>
+  );
+  */
 }

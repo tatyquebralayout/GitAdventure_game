@@ -1,6 +1,6 @@
 import { Command, CommandResult } from '../../types/commands';
-import { GameState } from '../../stores/gameStore';
 import { locations } from '../../constants/locations';
+import { GameState } from '../../stores/gameStore';
 
 export const useCommand: Command = {
   name: 'use',
@@ -8,7 +8,7 @@ export const useCommand: Command = {
     /^(?:use|activate)\s+(.+)$/i,
     /^(?:use|activate)\s+(.+)\s+(?:on|with)\s+(.+)$/i,
   ],
-  execute: (args, gameState): CommandResult => {
+  execute: (args, gameState: GameState): CommandResult => {
     const itemName = args[0].toLowerCase();
     const target = args[1]?.toLowerCase();
     const currentLocation = locations[gameState.currentLocation];

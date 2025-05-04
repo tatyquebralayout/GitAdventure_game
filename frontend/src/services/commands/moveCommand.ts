@@ -1,5 +1,4 @@
-import { Command, CommandResult } from '../../types/commands';
-import { GameState } from '../../stores/gameStore';
+import { Command } from '../../types/commands';
 import { locations } from '../../constants/locations';
 
 export const moveCommand: Command = {
