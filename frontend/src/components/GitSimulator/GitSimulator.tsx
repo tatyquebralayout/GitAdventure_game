@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import './GitSimulator.css';
 import { useGitRepository } from '../../contexts/GitRepositoryContext';
 import { useGitRepo } from '../../contexts/GitRepoContext';
-import MermaidViewer from './MermaidViewer';
+import VisualizationToggle, { ViewMode } from './VisualizationToggle';
+
+// Lazy load visualization components to reduce initial bundle size
+const MermaidViewer = lazy(() => import('./MermaidViewer'));
+const GitGraphViewer = lazy(() => import('./GitGraphViewer'));
 
 declare global {
   interface Window {
     executeGitCommand: (command: string) => Promise<any>;
   }
 }
-import GitGraphViewer from './GitGraphViewer';
-import VisualizationToggle, { ViewMode } from './VisualizationToggle';
 
 export default function GitSimulator() {
   const [repositoryView, setRepositoryView] = useState<'working' | 'staged' | 'committed'>('working');
@@ -71,6 +73,13 @@ export default function GitSimulator() {
     }
   };
 
+  // Loading fallback component
+  const LoadingFallback = () => (
+    <div className="git-loading-fallback">
+      Carregando visualização...
+    </div>
+  );
+
   return (
     <div className="git-simulator card">
       <div className="git-header">
@@ -105,16 +114,18 @@ export default function GitSimulator() {
             <div className="git-graph-view">
               <VisualizationToggle viewMode={viewMode} onToggle={handleViewModeToggle} />
               
-              {viewMode === 'mermaid' 
-                ? <MermaidViewer diagramText={diagramText} />
-                : <GitGraphViewer 
-                    repoState={{ 
-                      branches: gitRepoBranches, 
-                      commits: gitRepoCommits
-                    }}
-                    gitgraphRef={gitgraphRef}
-                  />
-              }
+              <Suspense fallback={<LoadingFallback />}>
+                {viewMode === 'mermaid' 
+                  ? <MermaidViewer diagramText={diagramText} />
+                  : <GitGraphViewer 
+                      repoState={{ 
+                        branches: gitRepoBranches, 
+                        commits: gitRepoCommits
+                      }}
+                      gitgraphRef={gitgraphRef}
+                    />
+                }
+              </Suspense>
             </div>
           ) : (
             <div className="git-file-list">
