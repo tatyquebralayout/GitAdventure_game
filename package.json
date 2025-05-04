@@ -8,10 +8,14 @@
   ],
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter frontend dev",
-    "build": "pnpm --filter frontend build",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev": "pnpm run dev:backend & pnpm run dev:frontend",
+    "build:frontend": "pnpm --filter frontend build",
+    "build:backend": "pnpm --filter backend build",
+    "build": "pnpm run build:frontend && pnpm run build:backend",
     "lint": "eslint .",
-    "preview": "vite preview",
+    "preview": "pnpm --filter frontend run preview",
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
@@ -25,7 +29,8 @@
     "globals": "^16.0.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.26.1",
-    "vite": "^6.3.4"
+    "vite": "^6.3.4",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "dependencies": {
     "@gitgraph/react": "^1.6.0",

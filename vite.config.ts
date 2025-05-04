@@ -1,20 +1,21 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tsconfigPaths from 'vite-tsconfig-paths'
 
 // https://vite.dev/config/
 export default defineConfig({
-  root: 'frontend',
-  publicDir: '../public',
+  publicDir: 'frontend/public',
   css: {
     postcss: 'frontend/postcss.config.js'
   },
   plugins: [
+    tsconfigPaths(),
     react()
   ],
   esbuild: false,            // desabilita esbuild se for usar SWC 100%
   build: {
     rollupOptions: {
-      input: 'index.html',
+      input: 'frontend/index.html',
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],

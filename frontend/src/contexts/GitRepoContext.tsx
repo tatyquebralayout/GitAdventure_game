@@ -1,6 +1,6 @@
 import { useState, ReactNode, useRef } from 'react';
 import type { GitgraphApi } from '@gitgraph/react';
-import { commandsApi } from '../api/commandsApi';
+import { commandsApi } from '@frontend/api/commandsApi';
 import { GitRepoContext, GitRepoContextType, Branch, Commit } from './GitRepoContextTypes';
 
 interface GitRepoProviderProps {

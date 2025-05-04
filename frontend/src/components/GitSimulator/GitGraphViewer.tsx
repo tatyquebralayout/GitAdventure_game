@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import type { GitgraphApi, GitgraphBranchApi, GitgraphOptions } from '@gitgraph/react';
 import { Gitgraph, templateExtend, TemplateName } from '@gitgraph/react';
-import { Branch, Commit } from '../../contexts/GitRepoContextTypes';
+import { Branch, Commit } from '@frontend/contexts/GitRepoContextTypes';
 import './GitGraphViewer.css';
 
 // --- Helper Functions --- //

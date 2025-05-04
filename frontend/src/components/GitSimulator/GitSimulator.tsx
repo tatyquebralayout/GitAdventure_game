@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import './GitSimulator.css';
-import { useGitRepository } from '../../contexts/GitRepositoryContext';
-import { useGitRepo } from '../../hooks/useGitRepo';
+import { useGitRepository } from '@frontend/contexts/GitRepositoryContext';
+import { useGitRepo } from '@frontend/hooks/useGitRepo';
 import VisualizationToggle, { ViewMode } from './VisualizationToggle';
 
 // Lazy load visualization components to reduce initial bundle size

@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, ReactNode } from 'react';
-import { GitBranch, GitCommit } from '../components/GitGraph/GitGraph';
-import { commandsApi } from '../api/commandsApi';
+import { GitBranch, GitCommit } from '@frontend/components/GitGraph/GitGraph';
+import { commandsApi } from '@frontend/api/commandsApi';
 
 interface GitFile {
   name: string;
