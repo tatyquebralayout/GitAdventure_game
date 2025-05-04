@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { commandController } from '../controllers/CommandController';
+import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// POST /api/commands - validate a command
-router.post('/', commandController.validateCommand);
+// Adicionar middleware de autenticação para proteger a rota
+router.post('/validate', authMiddleware, commandController.validateCommand);
 
 export default router;

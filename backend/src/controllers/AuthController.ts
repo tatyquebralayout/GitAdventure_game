@@ -1,0 +1,169 @@
+import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { AppDataSource } from '../config/database';
+import { User } from '../entities/User';
+
+export class AuthController {
+  public async register(req: Request, res: Response): Promise<Response> {
+    try {
+      const { username, email, password } = req.body;
+      
+      // Validar campos obrigatórios
+      if (!username || !email || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Todos os campos são obrigatórios' 
+        });
+      }
+
+      const userRepository = AppDataSource.getRepository(User);
+      
+      // Verificar se usuário já existe
+      const userExists = await userRepository.findOne({ 
+        where: [{ username }, { email }] 
+      });
+      
+      if (userExists) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Usuário ou e-mail já existe' 
+        });
+      }
+      
+      // Criar hash da senha
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      
+      // Criar novo usuário
+      const user = userRepository.create({
+        username,
+        email,
+        password: hashedPassword,
+      });
+      
+      await userRepository.save(user);
+      
+      // Gerar token JWT
+      const token = jwt.sign(
+        { id: user.id },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '24h' }
+      );
+      
+      // Retornar resposta sem incluir a senha
+      const { password: _, ...userWithoutPassword } = user;
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Usuário cadastrado com sucesso',
+        token,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Erro ao registrar usuário:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Erro ao registrar usuário' 
+      });
+    }
+  }
+  
+  public async login(req: Request, res: Response): Promise<Response> {
+    try {
+      const { username, password } = req.body;
+      
+      // Validar campos obrigatórios
+      if (!username || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Nome de usuário e senha são obrigatórios' 
+        });
+      }
+      
+      const userRepository = AppDataSource.getRepository(User);
+      
+      // Buscar usuário pelo nome de usuário
+      const user = await userRepository.findOne({ where: { username } });
+      
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Credenciais inválidas' 
+        });
+      }
+      
+      // Verificar senha
+      const validPassword = await bcrypt.compare(password, user.password);
+      
+      if (!validPassword) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Credenciais inválidas' 
+        });
+      }
+      
+      // Gerar token JWT
+      const token = jwt.sign(
+        { id: user.id },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '24h' }
+      );
+      
+      // Retornar resposta sem incluir a senha
+      const { password: _, ...userWithoutPassword } = user;
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Login realizado com sucesso',
+        token,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Erro ao realizar login:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Erro ao realizar login' 
+      });
+    }
+  }
+  
+  public async getProfile(req: Request, res: Response): Promise<Response> {
+    try {
+      const userId = req.userId;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Não autorizado'
+        });
+      }
+      
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository.findOne({ where: { id: userId } });
+      
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Usuário não encontrado'
+        });
+      }
+      
+      // Retornar dados do usuário sem a senha
+      const { password: _, ...userWithoutPassword } = user;
+      
+      return res.status(200).json({
+        success: true,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Erro ao buscar perfil:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Erro ao buscar perfil'
+      });
+    }
+  }
+}
+
+export const authController = new AuthController();

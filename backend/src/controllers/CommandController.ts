@@ -5,8 +5,9 @@ export class CommandController {
   public async validateCommand(req: Request, res: Response): Promise<void> {
     try {
       const { command, questId, currentStep } = req.body as ValidateCommandRequestDto;
+      const userId = req.userId; // Obter userId do middleware de autenticação
       
-      // Validate required fields
+      // Validar campos obrigatórios
       if (!command || !questId) {
         res.status(400).json({ 
           success: false, 
@@ -18,7 +19,8 @@ export class CommandController {
       const result = await commandValidationService.validateCommand({
         command,
         questId,
-        currentStep
+        currentStep,
+        userId // Passar o userId para o serviço
       });
 
       res.status(200).json({
