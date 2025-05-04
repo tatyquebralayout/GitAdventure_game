@@ -17,25 +17,28 @@ body {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
+  max-width: 1200px; /* Largura máxima mais adequada */
+  margin: 0 auto; /* Centralização automática */
+  padding: 16px; /* Padding consistente */
 }
 
 /* Estilos do cabeçalho */
 .header {
-  background-color: #e0e0e0;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 4px;
+  background-color: #f8f9fa;
+  padding: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #dee2e6;
   text-align: center;
+  width: 100%;
 }
 
 /* Grid principal para o conteúdo */
 .content-grid {
   display: flex;
   flex: 1;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 20px;
+  margin-bottom: 20px;
+  width: 100%;
 }
 
 /* Coluna esquerda (70% da largura) */
@@ -43,7 +46,7 @@ body {
   flex: 7;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
 }
 
 /* Coluna direita (30% da largura) */
@@ -51,41 +54,42 @@ body {
   flex: 3;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
 }
 
 /* Áreas específicas */
 .dialog-area {
-  flex: 1;
   min-height: 120px;
 }
 
 .worldbuilding-area {
-  flex: 3;
-  min-height: 280px;
+  min-height: 240px;
 }
 
 .progress-area {
-  flex: 1;
-  min-height: 80px;
+  min-height: 60px;
 }
 
 .git-simulator-area {
-  flex: 1;
   min-height: 200px;
 }
 
 .terminal-simulator-area {
   flex: 1;
-  min-height: 200px;
+  min-height: 240px;
+  background-color: #222;
+  color: #0f0;
+  border-radius: 4px;
 }
 
 /* Estilos do rodapé */
 .footer {
-  background-color: #e0e0e0;
-  padding: 10px;
-  border-radius: 4px;
+  background-color: #f8f9fa;
+  padding: 16px;
+  border-top: 1px solid #dee2e6;
   text-align: center;
+  width: 100%;
+  margin-top: auto;
 }
 
 /* Estilo comum para cards */
@@ -93,17 +97,25 @@ body {
   background-color: white;
   border: 1px solid #ddd;
   border-radius: 4px;
-  padding: 15px;
+  padding: 16px;
   height: 100%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 /* Responsividade para telas menores */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .content-grid {
     flex-direction: column;
+    gap: 16px;
   }
   
   .left-column, .right-column {
     width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-container {
+    padding: 8px;
   }
 }
