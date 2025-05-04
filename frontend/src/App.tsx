@@ -1,16 +1,26 @@
 // Entry point for the application layout
 import './App.css';
+import { lazy, Suspense } from 'react';
 
 // Import necessary components
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
-import DialogCard from './components/DialogCard/DialogCard';
-import WorldCard from './components/WorldCard/WorldCard';
-import ProgressCard from './components/ProgressCard/ProgressCard';
-import GitSimulator from './components/GitSimulator/GitSimulator';
-import TerminalSimulator from './components/TerminalSimulator/TerminalSimulator';
 import { GitRepositoryProvider } from './contexts/GitRepositoryContext';
 import { GitRepoProvider } from './contexts/GitRepoContext';
+
+// Lazy load heavier components that are not immediately needed
+const DialogCard = lazy(() => import('./components/DialogCard/DialogCard'));
+const WorldCard = lazy(() => import('./components/WorldCard/WorldCard'));
+const ProgressCard = lazy(() => import('./components/ProgressCard/ProgressCard'));
+const GitSimulator = lazy(() => import('./components/GitSimulator/GitSimulator'));
+const TerminalSimulator = lazy(() => import('./components/TerminalSimulator/TerminalSimulator'));
+
+// Loading fallback component
+const LoadingPlaceholder = () => (
+  <div className="loading-placeholder">
+    Carregando...
+  </div>
+);
 
 // Define the grid layout for the application
 export default function App() {
@@ -25,25 +35,35 @@ export default function App() {
           <div className="content-grid">
             <div className="left-column">
               <div className="dialog-area">
-                <DialogCard />
+                <Suspense fallback={<LoadingPlaceholder />}>
+                  <DialogCard />
+                </Suspense>
               </div>
               
               <div className="worldbuilding-area">
-                <WorldCard />
+                <Suspense fallback={<LoadingPlaceholder />}>
+                  <WorldCard />
+                </Suspense>
               </div>
               
               <div className="progress-area">
-                <ProgressCard />
+                <Suspense fallback={<LoadingPlaceholder />}>
+                  <ProgressCard />
+                </Suspense>
               </div>
             </div>
             
             <div className="right-column">
               <div className="git-simulator-area">
-                <GitSimulator />
+                <Suspense fallback={<LoadingPlaceholder />}>
+                  <GitSimulator />
+                </Suspense>
               </div>
               
               <div className="terminal-simulator-area">
-                <TerminalSimulator />
+                <Suspense fallback={<LoadingPlaceholder />}>
+                  <TerminalSimulator />
+                </Suspense>
               </div>
             </div>
           </div>
