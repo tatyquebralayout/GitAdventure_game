@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useGitRepository } from '@frontend/contexts/GitRepositoryContext';
 import { useGitRepo } from '@frontend/hooks/useGitRepo';
 import { useGame } from '@frontend/hooks/useGame';
+import { useCommandHistory } from '@frontend/hooks/useCommandHistory';
 import { processCommand } from '@frontend/services/commands';
+import { autocompleteCommand } from '@frontend/services/commands/autocomplete';
 import { GameState } from '@frontend/stores/gameStore';
 import './TerminalSimulator.css';
 
@@ -22,6 +24,9 @@ export default function TerminalSimulator() {
   // Use game context for adventure commands
   const gameState = useGame();
   
+  // Use command history hook
+  const { addToHistory, navigateHistory } = useCommandHistory();
+  
   // Auto-scroll terminal output to bottom when new content is added
   useEffect(() => {
     if (outputRef.current) {
@@ -31,6 +36,30 @@ export default function TerminalSimulator() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCurrentCommand(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const previousCommand = navigateHistory('up');
+      if (previousCommand !== null) {
+        setCurrentCommand(previousCommand);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextCommand = navigateHistory('down');
+      if (nextCommand !== null) {
+        setCurrentCommand(nextCommand);
+      }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      if (currentCommand.trim()) {
+        const completed = autocompleteCommand(currentCommand.trim());
+        if (completed) {
+          setCurrentCommand(completed);
+        }
+      }
+    }
   };
 
   // Helper function to build the complete game state from useGame hook
@@ -71,6 +100,9 @@ export default function TerminalSimulator() {
       setCommandHistory(prev => [...prev, { text: `$ ${commandText}`, isOutput: false }]);
       setCurrentCommand("");
       setIsProcessing(true);
+      
+      // Add to command history for navigation
+      addToHistory(commandText);
       
       // Check if it's a Git command
       if (commandText.startsWith('git ')) {
@@ -173,6 +205,7 @@ export default function TerminalSimulator() {
             type="text"
             value={currentCommand}
             onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
             className="terminal-input"
             placeholder={isProcessing ? "Processing..." : "Digite um comando..."}
             autoFocus
