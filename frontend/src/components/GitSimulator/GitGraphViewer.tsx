@@ -1,7 +1,114 @@
 import React, { useRef } from 'react';
-import { GitgraphReact, templateExtend, TemplateName, GitgraphApi, GitgraphBranchApi } from '@gitgraph/react';
-import { Branch, Commit } from '../../contexts/GitRepoContext';
+// Correctly import Gitgraph as a named export
+import { Gitgraph, templateExtend, TemplateName, GitgraphApi, GitgraphBranchApi } from '@gitgraph/react';
+import { Branch, Commit } from '../../contexts/GitRepoContextTypes';
 import './GitGraphViewer.css';
+
+// --- Helper Functions --- //
+
+const createBranches = (
+  gitgraph: GitgraphApi,
+  branches: Branch[],
+  commits: Commit[],
+  branchRefs: Record<string, GitgraphBranchApi>
+) => {
+  const mainBranch = branches.find(b => b.name === 'main');
+  if (mainBranch) {
+    branchRefs['main'] = gitgraph.branch('main');
+  }
+
+  branches.forEach(branch => {
+    if (branch.name === 'main') return;
+
+    const firstCommitOfBranch = commits.find(c => c.branch === branch.name);
+    let parentBranchName = 'main';
+
+    if (firstCommitOfBranch && firstCommitOfBranch.parentCommitIds.length > 0) {
+      const parentCommit = commits.find(c => 
+        firstCommitOfBranch.parentCommitIds.includes(c.id) && c.branch !== branch.name
+      );
+      if (parentCommit) {
+        parentBranchName = parentCommit.branch;
+      } else {
+        const parentOnSameBranch = commits.find(c => firstCommitOfBranch.parentCommitIds.includes(c.id));
+        if (parentOnSameBranch) {
+          const branchingCommit = commits.find(c => c.id === parentOnSameBranch.id);
+          if (branchingCommit) parentBranchName = branchingCommit.branch;
+        }
+      }
+    }
+
+    const parentBranchRef = branchRefs[parentBranchName];
+    if (parentBranchRef) {
+      branchRefs[branch.name] = parentBranchRef.branch(branch.name);
+    } else {
+      branchRefs[branch.name] = gitgraph.branch(branch.name);
+    }
+  });
+};
+
+const addCommits = (
+  commits: Commit[],
+  branchRefs: Record<string, GitgraphBranchApi>
+) => {
+  commits
+    .filter(commit => commit.parentCommitIds.length <= 1)
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .forEach(commit => {
+      const branch = branchRefs[commit.branch];
+      if (branch) {
+        branch.commit({
+          subject: commit.message,
+          hash: commit.id,
+        });
+      }
+    });
+};
+
+const addMerges = (
+  commits: Commit[],
+  branchRefs: Record<string, GitgraphBranchApi>
+) => {
+  commits
+    .filter(commit => commit.parentCommitIds.length > 1)
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .forEach(mergeCommit => {
+      const targetBranch = branchRefs[mergeCommit.branch];
+      if (!targetBranch) return;
+
+      const sourceCommit = commits.find(c => c.id === mergeCommit.parentCommitIds[1]);
+      const sourceBranchName = sourceCommit?.branch;
+      const sourceBranch = sourceBranchName ? branchRefs[sourceBranchName] : undefined;
+
+      if (sourceBranch && sourceBranchName !== mergeCommit.branch) {
+        targetBranch.merge({
+          branch: sourceBranch,
+          subject: mergeCommit.message,
+          commitOptions: {
+            hash: mergeCommit.id,
+          },
+        });
+      } else {
+        console.warn(`Could not determine source branch for merge commit ${mergeCommit.id}`);
+        targetBranch.commit({
+          subject: mergeCommit.message + " (merge)",
+          hash: mergeCommit.id,
+        });
+      }
+    });
+};
+
+const checkoutActiveBranch = (
+  branches: Branch[],
+  branchRefs: Record<string, GitgraphBranchApi>
+) => {
+  const activeBranch = branches.find(b => b.isActive);
+  if (activeBranch && branchRefs[activeBranch.name]) {
+    console.log(`Active branch set to: ${activeBranch.name}`);
+  }
+};
+
+// --- Component --- //
 
 interface GitGraphViewerProps {
   repoState: {
@@ -13,15 +120,8 @@ interface GitGraphViewerProps {
 
 const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef }) => {
   const { branches, commits } = repoState;
-  
-  // Reference to store the gitgraph instance for dynamic commands
   const internalGitgraphRef = useRef<GitgraphApi | null>(null);
-  
-  // Custom template for the GitGraph visualization
-  const customTemplate = templateExtend(TemplateName.Metro, {
-  const internalGitgraphRef = useRef<GitgraphApi | null>(null);
-  
-  // Custom template for the GitGraph visualization
+
   const customTemplate = templateExtend(TemplateName.Metro, {
     colors: ['#0366d6', '#28a745', '#f9826c', '#6f42c1', '#e36209'],
     branch: {
@@ -29,7 +129,7 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
       spacing: 20,
       label: {
         font: "normal 12px Arial",
-        bgColor: "#f1f8ff", // Light blue background
+        bgColor: "#f1f8ff",
       },
     },
     commit: {
@@ -43,93 +143,29 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
       },
     },
   });
-  
+
+  if (!branches || !commits) {
+    return <div className="git-graph-viewer git-graph-error">Missing branches or commits data.</div>;
+  }
+
   return (
     <div className="git-graph-viewer">
-      <GitgraphReact options={{ template: customTemplate }}>
+      <Gitgraph options={{ template: customTemplate }}>
         {(gitgraph: GitgraphApi) => {
-          // Store reference to gitgraph for external commands
           if (gitgraphRef) {
             gitgraphRef.current = gitgraph;
           }
           internalGitgraphRef.current = gitgraph;
-          
-          // Create branch objects
+
           const branchRefs: Record<string, GitgraphBranchApi> = {};
-          
-          // First, create the main branch
-          const mainBranch = branches.find(b => b.name === 'main');
-          if (mainBranch) {
-            branchRefs['main'] = gitgraph.branch('main');
-          }
-          
-          // For each branch, create it at the right position in commit history
-          branches.forEach(branch => {
-            if (branch.name === 'main') return; // Skip main branch as it's already created
-            
-            // Find the first commit of this branch
-            const branchCommit = commits.find(c => c.branch === branch.name);
-            if (branchCommit) {
-              // Find the parent branch and position
-              const parentCommit = commits.find(c => branchCommit.parentCommitIds.includes(c.id));
-              const parentBranch = parentCommit ? parentCommit.branch : 'main';
-              
-              // Create branch from parent
-              if (branchRefs[parentBranch]) {
-                branchRefs[branch.name] = branchRefs[parentBranch].branch(branch.name);
-              } else {
-                branchRefs[branch.name] = gitgraph.branch(branch.name);
-              }
-            } else {
-              branchRefs[branch.name] = gitgraph.branch(branch.name);
-            }
-          });
-          
-          // For each commit, add it to the appropriate branch
-          commits.sort((a, b) => a.timestamp - b.timestamp).forEach(commit => {
-            // Skip commits that are merge commits - they'll be handled separately
-            if (commit.parentCommitIds.length <= 1) {
-              const branch = branchRefs[commit.branch];
-              if (branch) {
-                branch.commit({
-                  subject: commit.message,
-                  hash: commit.id,
-                });
-              }
-            }
-          });
-          
-          // Handle merge commits
-          commits
-            .filter(commit => commit.parentCommitIds.length > 1)
-            .sort((a, b) => a.timestamp - b.timestamp)
-            .forEach(mergeCommit => {
-              // Find source branch for merge
-              const sourceBranchName = commits.find(
-                c => mergeCommit.parentCommitIds.includes(c.id) && c.branch !== mergeCommit.branch
-              )?.branch;
-              
-              if (sourceBranchName && branchRefs[mergeCommit.branch]) {
-                branchRefs[mergeCommit.branch].merge({
-                  branch: branchRefs[sourceBranchName],
-                  subject: mergeCommit.message,
-                  commitOptions: {
-                    hash: mergeCommit.id,
-                  },
-                });
-              }
-            });
-          
-          // Set the current branch as checked out
-          const activeBranch = branches.find(b => b.isActive);
-          if (activeBranch && branchRefs[activeBranch.name]) {
-            branchRefs[activeBranch.name].checkout();
-          }
-          
-          // Retornando null explicitamente para satisfazer o requisito de ReactNode
+          createBranches(gitgraph, branches, commits, branchRefs);
+          addCommits(commits, branchRefs);
+          addMerges(commits, branchRefs);
+          checkoutActiveBranch(branches, branchRefs);
+
           return null;
         }}
-      </GitgraphReact>
+      </Gitgraph>
     </div>
   );
 };

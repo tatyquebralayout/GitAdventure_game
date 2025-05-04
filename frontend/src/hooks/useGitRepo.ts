@@ -1,5 +1,6 @@
 import { useContext } from 'react';
-import { GitRepoContext } from '../contexts/GitRepoContext';
+// Correct the import path for GitRepoContext
+import { GitRepoContext } from '../contexts/GitRepoContextTypes';
 
 // Hook para acessar o GitRepoContext
 export function useGitRepo() {

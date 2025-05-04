@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { GitgraphReact, templateExtend, TemplateName } from '@gitgraph/react';
-import { GitgraphOptions as GitgraphUserOptions, Mode } from '@gitgraph/core';
+// Import GitgraphOptions specifically from @gitgraph/react
+import { GitgraphReact, templateExtend, TemplateName, GitgraphOptions } from '@gitgraph/react'; 
+// Keep Mode import if needed, but options type should come from @gitgraph/react
+import { Mode } from '@gitgraph/core';
 import './GitGraph.css';
 
 // Define the structure for each commit in our history
@@ -53,14 +55,17 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
     },
   });
 
-  // Options for the graph
-  const options: GitgraphUserOptions = {
+  // Options for the graph - Use GitgraphOptions from @gitgraph/react
+  const options: GitgraphOptions = {
     template: customTemplate,
-    mode: Mode.Compact, // Usando o enum Mode importado do @gitgraph/core
+    // Mode might not be directly applicable in GitgraphOptions from @gitgraph/react
+    // Check documentation if Mode.Compact is needed here or handled differently
+    // mode: Mode.Compact, // Commenting out for now if it causes issues
   };
 
   return (
     <div className="git-graph-container">
+      {/* Ensure the options prop matches the expected type */}
       <GitgraphReact options={options}>
         {(gitgraph) => {
           // Create branches and commits based on our state

@@ -1,54 +1,7 @@
-import React, { createContext, useState, ReactNode, useRef } from 'react';
+import { useState, ReactNode, useRef } from 'react';
 import { commandsApi } from '../api/commandsApi';
-
-// Definindo tipos localmente para a API do Gitgraph
-type GitgraphApi = any;    // Tipo simplificado para a API do Gitgraph
-
-// Types
-export interface Branch {
-  name: string;
-  isActive: boolean;
-  color?: string;
-}
-
-export interface Commit {
-  id: string;
-  message: string;
-  branch: string;
-  timestamp: number;
-  parentCommitIds: string[];
-}
-
-export interface GitAction {
-  type: 'commit' | 'branch' | 'checkout' | 'merge' | 'init';
-  payload: Record<string, unknown>;
-}
-
-// Context interface
-interface GitRepoContextType {
-  // Mermaid representation
-  mermaidLines: string[];
-  addMermaidLine: (line: string) => void;
-  clearMermaidLines: () => void;
-  
-  // GitGraph state
-  branches: Branch[];
-  commits: Commit[];
-  currentBranch: string;
-  
-  // Git actions
-  executeCommand: (cmd: string) => Promise<{ success: boolean; message: string }>;
-  createCommit: (message: string, branch?: string) => void;
-  createBranch: (branchName: string) => void;
-  checkoutBranch: (branchName: string) => void;
-  mergeBranch: (sourceBranch: string, targetBranch: string) => void;
-  
-  // Reference to the GitGraph instance
-  gitgraphRef: React.RefObject<GitgraphApi | null>;
-}
-
-// Exportar o contexto para ser usado pelo hook
-export const GitRepoContext = createContext<GitRepoContextType | undefined>(undefined);
+import { GitgraphApi } from '@gitgraph/react';
+import { GitRepoContext, GitRepoContextType, Branch, Commit } from './GitRepoContextTypes';
 
 interface GitRepoProviderProps {
   children: ReactNode;
@@ -174,7 +127,12 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
     
     // Update GitGraph if ref is available
     if (gitgraphRef.current) {
-      gitgraphRef.current.checkout(branchName);
+      // Ensure checkout method exists and call it
+      if (typeof (gitgraphRef.current as any)?.checkout === 'function') {
+        (gitgraphRef.current as any).checkout(branchName);
+      } else {
+        console.warn('gitgraphRef.current.checkout is not available');
+      }
     }
   };
 
@@ -216,7 +174,10 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
     // Update GitGraph if ref is available
     if (gitgraphRef.current) {
       const targetBranchRef = gitgraphRef.current.branch(targetBranch);
-      targetBranchRef.merge(sourceBranch, `Merge branch '${sourceBranch}' into ${targetBranch}`);
+      // Get the source branch reference
+      const sourceBranchRef = gitgraphRef.current.branch(sourceBranch); 
+      // Correct merge call signature - provide MergeOptions object with the branch reference
+      targetBranchRef.merge({ branch: sourceBranchRef, commitOptions: { subject: `Merge branch '${sourceBranch}' into ${targetBranch}` } });
     }
   };
 
