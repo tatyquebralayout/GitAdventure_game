@@ -10,7 +10,7 @@ const GitGraphViewer = lazy(() => import('./GitGraphViewer'));
 
 declare global {
   interface Window {
-    executeGitCommand: (command: string) => Promise<any>;
+    executeGitCommand: (command: string) => Promise<unknown>;
   }
 }
 
@@ -21,7 +21,6 @@ export default function GitSimulator() {
   // Use both Git repository contexts
   const { 
     commits, 
-    branches, 
     files, 
     currentBranch, 
     executeCommand: executeGitRepositoryCommand 
@@ -45,7 +44,7 @@ export default function GitSimulator() {
     
     window.executeGitCommand = async (command: string) => {
       // Execute in both contexts to keep them in sync
-      const gitRepoResult = await executeGitRepoCommand(command);
+      await executeGitRepoCommand(command);
       const gitRepositoryResult = await executeGitRepositoryCommand(command);
       
       // Return result from the original context for backward compatibility

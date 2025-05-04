@@ -18,7 +18,7 @@ export interface Commit {
 
 export interface GitAction {
   type: 'commit' | 'branch' | 'checkout' | 'merge' | 'init';
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
 }
 
 // Context interface
@@ -41,7 +41,7 @@ interface GitRepoContextType {
   mergeBranch: (sourceBranch: string, targetBranch: string) => void;
   
   // Reference to the GitGraph instance
-  gitgraphRef: React.MutableRefObject<any | null>;
+  gitgraphRef: React.MutableRefObject<unknown | null>;
 }
 
 const GitRepoContext = createContext<GitRepoContextType | undefined>(undefined);
@@ -49,6 +49,19 @@ const GitRepoContext = createContext<GitRepoContextType | undefined>(undefined);
 interface GitRepoProviderProps {
   children: ReactNode;
 }
+
+// Separando as funções utilitárias para evitar o aviso do Fast Refresh
+const generateRandomColor = (usedColors: (string | undefined)[]) => {
+  const colors = ['#0366d6', '#28a745', '#f9826c', '#6f42c1', '#e36209', '#00b5ad', '#6c757d', '#fd7e14'];
+  const availableColors = colors.filter(color => !usedColors.includes(color));
+  
+  if (availableColors.length > 0) {
+    return availableColors[0];
+  }
+  
+  // If all colors are used, generate a random one
+  return `#${Math.floor(Math.random()*16777215).toString(16)}`;
+};
 
 export function GitRepoProvider({ children }: GitRepoProviderProps) {
   // Mermaid representation state
@@ -63,7 +76,7 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
   ]);
   
   // Reference to the GitGraph instance for programmatic operations
-  const gitgraphRef = useRef<any>(null);
+  const gitgraphRef = useRef<unknown>(null);
   
   // Get current branch
   const currentBranch = branches.find(b => b.isActive)?.name || 'main';
@@ -75,6 +88,12 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
 
   const clearMermaidLines = () => {
     setMermaidLines(['gitGraph', '  commit id: "initial"']);
+  };
+
+  // Generate random color for branches
+  const getRandomColor = () => {
+    const usedColors = branches.map(b => b.color);
+    return generateRandomColor(usedColors);
   };
 
   // GitGraph operations
@@ -195,20 +214,6 @@ export function GitRepoProvider({ children }: GitRepoProviderProps) {
       const targetBranchRef = gitgraphRef.current.branch(targetBranch);
       targetBranchRef.merge(sourceBranch, `Merge branch '${sourceBranch}' into ${targetBranch}`);
     }
-  };
-
-  // Generate random color for branches
-  const getRandomColor = () => {
-    const colors = ['#0366d6', '#28a745', '#f9826c', '#6f42c1', '#e36209', '#00b5ad', '#6c757d', '#fd7e14'];
-    const usedColors = branches.map(b => b.color);
-    const availableColors = colors.filter(color => !usedColors.includes(color));
-    
-    if (availableColors.length > 0) {
-      return availableColors[0];
-    }
-    
-    // If all colors are used, generate a random one
-    return `#${Math.floor(Math.random()*16777215).toString(16)}`;
   };
 
   // Execute Git command

@@ -1,11 +1,5 @@
 // API service for command validation
 
-interface ValidateCommandRequest {
-  command: string;
-  questId: number;
-  currentStep?: number;
-}
-
 interface ValidateCommandResponse {
   success: boolean;
   valid: boolean;

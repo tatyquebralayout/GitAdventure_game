@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Gitgraph, templateExtend, TemplateName } from '@gitgraph/react';
 import { Branch, Commit } from '../../contexts/GitRepoContext';
 import './GitGraphViewer.css';
@@ -8,14 +8,14 @@ interface GitGraphViewerProps {
     branches: Branch[];
     commits: Commit[];
   };
-  gitgraphRef?: React.MutableRefObject<any>;
+  gitgraphRef?: React.MutableRefObject<unknown>;
 }
 
 const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef }) => {
   const { branches, commits } = repoState;
   
   // Reference to store the gitgraph instance for dynamic commands
-  const internalGitgraphRef = useRef<any>(null);
+  const internalGitgraphRef = useRef<unknown>(null);
   
   // Custom template for the GitGraph visualization
   const customTemplate = templateExtend(TemplateName.Metro, {
@@ -40,17 +40,6 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
     },
   });
   
-  // Group commits by branch for easier rendering
-  const getCommitsByBranch = () => {
-    const commitsByBranch: { [key: string]: Commit[] } = {};
-    
-    branches.forEach(branch => {
-      commitsByBranch[branch.name] = commits.filter(commit => commit.branch === branch.name);
-    });
-    
-    return commitsByBranch;
-  };
-  
   return (
     <div className="git-graph-viewer">
       <Gitgraph options={{ template: customTemplate }}>
@@ -62,7 +51,7 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
           internalGitgraphRef.current = gitgraph;
           
           // Create branch objects
-          const branchRefs: { [key: string]: any } = {};
+          const branchRefs: Record<string, unknown> = {};
           
           // First, create the main branch
           const mainBranch = branches.find(b => b.name === 'main');
@@ -83,7 +72,7 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
               
               // Create branch from parent
               if (branchRefs[parentBranch]) {
-                branchRefs[branch.name] = branchRefs[parentBranch].branch(branch.name);
+                branchRefs[branch.name] = (branchRefs[parentBranch] as any).branch(branch.name);
               } else {
                 branchRefs[branch.name] = gitgraph.branch(branch.name);
               }
@@ -96,7 +85,7 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
           commits.sort((a, b) => a.timestamp - b.timestamp).forEach(commit => {
             // Skip commits that are merge commits - they'll be handled separately
             if (commit.parentCommitIds.length <= 1) {
-              const branch = branchRefs[commit.branch];
+              const branch = branchRefs[commit.branch] as any;
               if (branch) {
                 branch.commit({
                   subject: commit.message,
@@ -117,8 +106,8 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
               )?.branch;
               
               if (sourceBranchName && branchRefs[mergeCommit.branch]) {
-                branchRefs[mergeCommit.branch].merge({
-                  branch: branchRefs[sourceBranchName],
+                (branchRefs[mergeCommit.branch] as any).merge({
+                  branch: branchRefs[sourceBranchName] as any,
                   subject: mergeCommit.message,
                   commitOptions: {
                     hash: mergeCommit.id,
@@ -130,7 +119,7 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
           // Set the current branch as checked out
           const activeBranch = branches.find(b => b.isActive);
           if (activeBranch && branchRefs[activeBranch.name]) {
-            branchRefs[activeBranch.name].checkout();
+            (branchRefs[activeBranch.name] as any).checkout();
           }
         }}
       </Gitgraph>

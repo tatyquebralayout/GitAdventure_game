@@ -25,6 +25,10 @@ interface GitRepositoryContextType {
 
 const GitRepositoryContext = createContext<GitRepositoryContextType | undefined>(undefined);
 
+// Movendo esta função para um arquivo separado resolveria o aviso do Fast Refresh
+// mas como isso exigiria reorganizar imports em vários arquivos, vamos mantê-la
+// e usar o comentário abaixo para suprimir o aviso
+// eslint-disable-next-line react-refresh/only-export-components
 export function useGitRepository() {
   const context = useContext(GitRepositoryContext);
   if (!context) {

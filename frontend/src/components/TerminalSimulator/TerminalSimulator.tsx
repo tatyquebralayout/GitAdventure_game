@@ -31,7 +31,7 @@ export default function TerminalSimulator() {
       
       try {
         // Execute in both contexts to keep them in sync
-        const gitRepoResult = await gitRepoContext.executeCommand(commandText);
+        await gitRepoContext.executeCommand(commandText);
         const result = await gitRepo.executeCommand(commandText);
         
         // Add result to command history (using the original context for backward compatibility)

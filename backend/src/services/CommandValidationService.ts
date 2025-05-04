@@ -17,7 +17,7 @@ export interface ValidateCommandResponseDto {
 
 export class CommandValidationService {
   // This would typically come from a database
-  private async getQuestCommandSteps(questId: number): Promise<QuestCommandStep[]> {
+  private async getQuestCommandSteps(_questId: number): Promise<QuestCommandStep[]> {
     // In a real implementation, this would fetch from the database
     // For now, returning mock data
     return [
