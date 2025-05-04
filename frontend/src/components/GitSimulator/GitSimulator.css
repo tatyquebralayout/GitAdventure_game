@@ -116,3 +116,50 @@
 .git-command-button:hover {
   background-color: #0256b9;
 }
+
+/* Added styles for Git Graph integration */
+.git-graph-view {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* New styles for Git info section */
+.git-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background-color: #f1f8ff;
+  border: 1px solid #dde5f1;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+}
+
+.git-branch-info, .git-commit-count {
+  display: flex;
+  align-items: center;
+}
+
+.branch-label, .commit-label {
+  font-weight: 500;
+  margin-right: 6px;
+  color: #555;
+}
+
+.branch-name {
+  color: #0366d6;
+  font-family: 'Courier New', monospace;
+  padding: 2px 8px;
+  background-color: #e6f1ff;
+  border-radius: 12px;
+}
+
+.commit-number {
+  font-weight: bold;
+  color: #24292e;
+}

@@ -1,21 +1,56 @@
 import { useState } from 'react';
+import { useGitRepository } from '../../contexts/GitRepositoryContext';
 import './TerminalSimulator.css';
 
 export default function TerminalSimulator() {
-  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [commandHistory, setCommandHistory] = useState<Array<{ text: string; isOutput: boolean }>>([
+    { text: "Welcome to Git Adventure Terminal", isOutput: true },
+    { text: "Type 'git status' to get started", isOutput: true }
+  ]);
   const [currentCommand, setCurrentCommand] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Use the Git repository context
+  const gitRepo = useGitRepository();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCurrentCommand(e.target.value);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (currentCommand.trim()) {
-      setCommandHistory([...commandHistory, `$ ${currentCommand}`]);
-      // Aqui você poderia adicionar lógica para processar comandos
-      // e adicionar respostas ao histórico
+      // Add the command to history
+      const commandText = currentCommand.trim();
+      setCommandHistory([...commandHistory, { text: `$ ${commandText}`, isOutput: false }]);
       setCurrentCommand("");
+      setIsProcessing(true);
+      
+      try {
+        // Execute the command using our context
+        const result = await gitRepo.executeCommand(commandText);
+        
+        // Add result to command history
+        setCommandHistory(prev => [
+          ...prev, 
+          { 
+            text: result.message,
+            isOutput: true
+          }
+        ]);
+      } catch (error) {
+        // Handle any errors
+        setCommandHistory(prev => [
+          ...prev, 
+          { 
+            text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+            isOutput: true
+          }
+        ]);
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -26,17 +61,14 @@ export default function TerminalSimulator() {
       </div>
       <div className="terminal-window">
         <div className="terminal-output">
-          {commandHistory.length > 0 ? (
-            commandHistory.map((cmd, index) => (
-              <div key={index} className="terminal-line">
-                {cmd}
-              </div>
-            ))
-          ) : (
-            <div className="terminal-welcome">
-              Digite um comando para começar...
+          {commandHistory.map((entry, index) => (
+            <div 
+              key={index} 
+              className={`terminal-line ${entry.isOutput ? 'terminal-output-line' : 'terminal-command-line'}`}
+            >
+              {entry.text}
             </div>
-          )}
+          ))}
         </div>
         <form onSubmit={handleSubmit} className="terminal-input-line">
           <span className="terminal-prompt">$</span>
@@ -45,8 +77,9 @@ export default function TerminalSimulator() {
             value={currentCommand}
             onChange={handleInputChange}
             className="terminal-input"
-            placeholder="Digite um comando..."
+            placeholder={isProcessing ? "Processing..." : "Digite um comando..."}
             autoFocus
+            disabled={isProcessing}
           />
         </form>
       </div>

@@ -1,27 +1,15 @@
 import { useState } from 'react';
 import './GitSimulator.css';
-
-interface GitFile {
-  name: string;
-  status: 'untracked' | 'modified' | 'staged' | 'committed';
-}
+import GitGraph from '../GitGraph/GitGraph';
+import { useGitRepository } from '../../contexts/GitRepositoryContext';
 
 export default function GitSimulator() {
-  const [files, setFiles] = useState<GitFile[]>([
-    { name: 'index.html', status: 'untracked' },
-    { name: 'style.css', status: 'modified' },
-    { name: 'app.js', status: 'staged' }
-  ]);
-
   const [repositoryView, setRepositoryView] = useState<'working' | 'staged' | 'committed'>('working');
   
-  const handleFileStatusChange = (fileName: string, newStatus: GitFile['status']) => {
-    setFiles(files.map(file => 
-      file.name === fileName ? { ...file, status: newStatus } : file
-    ));
-  };
+  // Use the Git repository context
+  const { commits, branches, files, currentBranch } = useGitRepository();
 
-  const getStatusClass = (status: GitFile['status']) => {
+  const getStatusClass = (status: 'untracked' | 'modified' | 'staged' | 'committed') => {
     switch (status) {
       case 'untracked': return 'status-untracked';
       case 'modified': return 'status-modified';
@@ -60,45 +48,37 @@ export default function GitSimulator() {
         </div>
         
         <div className="git-files-container">
-          <div className="git-file-list">
-            {files.filter(file => {
-              if (repositoryView === 'working') return file.status === 'untracked' || file.status === 'modified';
-              if (repositoryView === 'staged') return file.status === 'staged';
-              if (repositoryView === 'committed') return file.status === 'committed';
-              return true;
-            }).map((file, index) => (
-              <div key={index} className={`git-file ${getStatusClass(file.status)}`}>
-                <span className="file-name">{file.name}</span>
-                <span className="file-status">{file.status}</span>
-              </div>
-            ))}
-          </div>
+          {/* Toggle between file list and graph view */}
+          {repositoryView === 'committed' ? (
+            <div className="git-graph-view">
+              <GitGraph commits={commits} branches={branches} />
+            </div>
+          ) : (
+            <div className="git-file-list">
+              {files.filter(file => {
+                if (repositoryView === 'working') return file.status === 'untracked' || file.status === 'modified';
+                if (repositoryView === 'staged') return file.status === 'staged';
+                if (repositoryView === 'committed') return file.status === 'committed';
+                return true;
+              }).map((file, index) => (
+                <div key={index} className={`git-file ${getStatusClass(file.status)}`}>
+                  <span className="file-name">{file.name}</span>
+                  <span className="file-status">{file.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
-        <div className="git-commands">
-          <button className="git-command-button" onClick={() => {
-            // Simulating git add command
-            const selectedFile = files.find(f => f.status === 'untracked' || f.status === 'modified');
-            if (selectedFile) {
-              handleFileStatusChange(selectedFile.name, 'staged');
-            }
-          }}>
-            git add
-          </button>
-          
-          <button className="git-command-button" onClick={() => {
-            // Simulating git commit command
-            const stagedFiles = files.filter(f => f.status === 'staged');
-            stagedFiles.forEach(file => {
-              handleFileStatusChange(file.name, 'committed');
-            });
-          }}>
-            git commit
-          </button>
-          
-          <button className="git-command-button">
-            git push
-          </button>
+        <div className="git-info">
+          <div className="git-branch-info">
+            <span className="branch-label">Current Branch:</span>
+            <span className="branch-name">{currentBranch}</span>
+          </div>
+          <div className="git-commit-count">
+            <span className="commit-label">Commits:</span>
+            <span className="commit-number">{commits.length}</span>
+          </div>
         </div>
       </div>
     </div>
