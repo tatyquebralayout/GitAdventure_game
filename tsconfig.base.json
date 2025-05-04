@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@frontend/*": ["frontend/src/*"],
+      "@backend/*": ["backend/src/*"]
+    }
+  }
+}
