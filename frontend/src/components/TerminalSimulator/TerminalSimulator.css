@@ -5,35 +5,50 @@
   background-color: #1e1e1e;
   color: #f0f0f0;
   font-family: 'Courier New', monospace;
-  border-radius: 5px;
+  border-radius: 8px; /* Aumentado de 5px */
   overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Adicionando sombra para destaque visual */
 }
 
 .terminal-header {
   background-color: #333;
-  padding: 5px 10px;
+  padding: 8px 16px; /* Aumentado de 5px 10px */
   border-bottom: 1px solid #555;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .terminal-window {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 10px;
+  padding: 16px; /* Aumentado de 10px */
   overflow: hidden;
 }
 
 .terminal-output {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 10px;
+  margin-bottom: 16px; /* Aumentado de 10px */
+  padding: 4px;
   text-align: left;
+  line-height: 1.6; /* Melhorando o espaçamento entre linhas */
 }
 
 .terminal-line {
-  padding: 2px 0;
+  padding: 3px 0; /* Aumentado de 2px 0 */
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+.terminal-output-line {
+  color: #cccccc;
+}
+
+.terminal-command-line {
+  color: #58a6ff; /* Destaque em azul para comandos */
+  font-weight: 500;
 }
 
 .terminal-welcome {
@@ -44,11 +59,15 @@
 .terminal-input-line {
   display: flex;
   align-items: center;
+  background-color: #252525; /* Destacando a linha de input */
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .terminal-prompt {
-  margin-right: 8px;
+  margin-right: 10px; /* Aumentado de 8px */
   color: #0f0;
+  font-weight: bold;
 }
 
 .terminal-input {
@@ -58,5 +77,15 @@
   outline: none;
   color: #fff;
   font-family: 'Courier New', monospace;
-  font-size: 1em;
+  font-size: 1.05em; /* Ligeiramente maior que antes */
+  padding: 4px 0;
+}
+
+/* Adicionando estilos para mensagens de erro e sucesso */
+.terminal-error {
+  color: #f85149;
+}
+
+.terminal-success {
+  color: #3fb950;
 }
