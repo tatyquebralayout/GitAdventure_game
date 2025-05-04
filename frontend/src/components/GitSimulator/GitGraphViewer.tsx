@@ -1,16 +1,15 @@
 import React, { useRef } from 'react';
-// Import GitgraphReact as the component, along with other named exports
-import { GitgraphReact, templateExtend, TemplateName, GitgraphApi, GitgraphBranchApi } from '@gitgraph/react';
+import { Gitgraph, templateExtend, TemplateName } from '@gitgraph/react';
 import { Branch, Commit } from '../../contexts/GitRepoContextTypes';
 import './GitGraphViewer.css';
 
 // --- Helper Functions --- //
 
 const createBranches = (
-  gitgraph: GitgraphApi,
+  gitgraph: any,
   branches: Branch[],
   commits: Commit[],
-  branchRefs: Record<string, GitgraphBranchApi>
+  branchRefs: Record<string, any>
 ) => {
   const mainBranch = branches.find(b => b.name === 'main');
   if (mainBranch) {
@@ -49,7 +48,7 @@ const createBranches = (
 
 const addCommits = (
   commits: Commit[],
-  branchRefs: Record<string, GitgraphBranchApi>
+  branchRefs: Record<string, any>
 ) => {
   commits
     .filter(commit => commit.parentCommitIds.length <= 1)
@@ -67,7 +66,7 @@ const addCommits = (
 
 const addMerges = (
   commits: Commit[],
-  branchRefs: Record<string, GitgraphBranchApi>
+  branchRefs: Record<string, any>
 ) => {
   commits
     .filter(commit => commit.parentCommitIds.length > 1)
@@ -100,7 +99,7 @@ const addMerges = (
 
 const checkoutActiveBranch = (
   branches: Branch[],
-  branchRefs: Record<string, GitgraphBranchApi>
+  branchRefs: Record<string, any>
 ) => {
   const activeBranch = branches.find(b => b.isActive);
   if (activeBranch && branchRefs[activeBranch.name]) {
@@ -115,12 +114,12 @@ interface GitGraphViewerProps {
     branches: Branch[];
     commits: Commit[];
   };
-  gitgraphRef?: React.RefObject<GitgraphApi | null>;
+  gitgraphRef?: React.RefObject<any>;
 }
 
 const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef }) => {
   const { branches, commits } = repoState;
-  const internalGitgraphRef = useRef<GitgraphApi | null>(null);
+  const internalGitgraphRef = useRef<any>(null);
 
   const customTemplate = templateExtend(TemplateName.Metro, {
     colors: ['#0366d6', '#28a745', '#f9826c', '#6f42c1', '#e36209'],
@@ -150,15 +149,14 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
 
   return (
     <div className="git-graph-viewer">
-      {/* Use the GitgraphReact component as defined in the custom types */}
-      <GitgraphReact options={{ template: customTemplate }}>
-        {(gitgraph: GitgraphApi) => {
+      <Gitgraph options={{ template: customTemplate }}>
+        {gitgraph => {
           if (gitgraphRef) {
             gitgraphRef.current = gitgraph;
           }
           internalGitgraphRef.current = gitgraph;
 
-          const branchRefs: Record<string, GitgraphBranchApi> = {};
+          const branchRefs: Record<string, any> = {};
           createBranches(gitgraph, branches, commits, branchRefs);
           addCommits(commits, branchRefs);
           addMerges(commits, branchRefs);
@@ -166,7 +164,7 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
 
           return null;
         }}
-      </GitgraphReact>
+      </Gitgraph>
     </div>
   );
 };
