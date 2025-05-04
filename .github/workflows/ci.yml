@@ -21,6 +21,8 @@ jobs:
         with:
           node-version: 18
           cache: 'pnpm'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
 
       - name: Install dependencies
         run: pnpm install
@@ -36,6 +38,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
 
       - name: Run lint
         run: pnpm lint
@@ -51,6 +55,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
 
       - name: Build project
         run: pnpm build
