@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-// Import GitgraphOptions specifically from @gitgraph/react
-import { GitgraphReact, templateExtend, TemplateName, GitgraphOptions } from '@gitgraph/react'; 
-// Keep Mode import if needed, but options type should come from @gitgraph/react
-import { Mode } from '@gitgraph/core';
+// Import GitgraphReact and GitgraphOptions from @gitgraph/react
+import { GitgraphReact, templateExtend, TemplateName, GitgraphOptions } from '@gitgraph/react';
+// Removed unused Mode import from @gitgraph/core
 import './GitGraph.css';
 
 // Define the structure for each commit in our history
