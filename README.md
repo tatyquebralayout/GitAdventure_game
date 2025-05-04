@@ -10,8 +10,9 @@ GitAdventure combines an interactive terminal, visual Git repository representat
 
 This project is built as a monorepo using pnpm workspaces with:
 
-- **Frontend**: React 19, TypeScript, Vite, and Tailwind CSS
-- **Backend**: Express.js with TypeScript
+
+- **Frontend**: React 19, TypeScript, Vite, Zustand, and Tailwind CSS
+- **Backend**: Express.js with TypeScript, TypeORM, and PostgreSQL
 - **Visualization**: GitGraph.js and Mermaid for Git repository visualization
 
 ## Project Structure
@@ -85,6 +86,7 @@ GitAdventure/
 
 - Node.js (>= 16.x)
 - pnpm (>= 8.x)
+- PostgreSQL Database Server
 
 ### Installation
 
@@ -98,6 +100,10 @@ GitAdventure/
    ```bash
    pnpm install
    ```
+
+3. Configure the backend database connection:
+   - Create a `.env` file in the `backend/` directory.
+   - Add the necessary environment variables for your PostgreSQL database connection (see `backend/src/config/database.ts` for details, e.g., `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`).
 
 ### Running the Application
 
@@ -128,9 +134,9 @@ The frontend is built with React 19, TypeScript, and Vite. Key features include:
 
 The backend is built with Express.js and TypeScript. It provides:
 
-- **RESTful API**: For command validation and quest progression
-- **Service-based architecture**: Separation of concerns with controllers, services, and routes
-- **Mock data**: Simulated quest steps and command validation (can be extended to use a database)
+- **RESTful API**: For command validation, quest progression, authentication, etc.
+- **Service-based architecture**: Separation of concerns with controllers, services, and routes.
+- **Database Integration**: Uses TypeORM to interact with a PostgreSQL database.
 
 ## Building for Production
 

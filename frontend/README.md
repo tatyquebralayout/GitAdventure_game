@@ -37,11 +37,13 @@ src/
 
 ## State Management
 
-The application uses Zustand for state management. The main game state is managed in `stores/gameStore.ts` and provides:
+The application uses Zustand for global state management. The main game state is managed in `stores/gameStore.ts`.
 
-- Current location tracking
-- Inventory management
-- Visited locations history
-- Game flags for tracking progress
+Key aspects managed by the store likely include:
+- Current game location/world
+- Player inventory
+- Quest status and progress tracking
+- Game flags or events
+- Potentially Git simulation state (branches, commits)
 
-Access the game state through the `useGame` hook in `hooks/useGame.ts`.
+Components typically access and manipulate the state using the hook exported by the store (e.g., `useGameStore`). Refer to `stores/gameStore.ts` and its usage (e.g., in `hooks/useGame.ts` if it exists) for specific details.

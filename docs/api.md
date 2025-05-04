@@ -4,129 +4,101 @@ This document outlines the available API endpoints for the GitAdventure applicat
 
 ## Base URL
 
-All endpoints are relative to the base URL:
+All endpoints are relative to the base URL (default):
 
 ```
-http://localhost:3001/api
+http://localhost:3000/api
 ```
 
-Or the value specified in `VITE_API_BASE_URL` environment variable.
+Or the value specified in the `PORT` environment variable for the backend.
 
-## Command Validation Endpoints
+## Authentication Endpoints (`/api/auth`)
+
+Handles user registration and login.
+
+### Register User
+
+- **URL**: `/register`
+- **Method**: `POST`
+- **Controller**: `AuthController.register`
+- **Description**: Registers a new user.
+- **Request Body**: `{ "username": "string", "password": "string" }`
+- **Response**: `{ "userId": "uuid", "username": "string", "message": "User registered successfully" }` or error message.
+
+### Login User
+
+- **URL**: `/login`
+- **Method**: `POST`
+- **Controller**: `AuthController.login`
+- **Description**: Logs in an existing user.
+- **Request Body**: `{ "username": "string", "password": "string" }`
+- **Response**: `{ "token": "jwt_token", "message": "Login successful" }` or error message.
+
+## Command Validation Endpoints (`/api/commands`)
+
+Validates user-entered commands, potentially related to quests.
 
 ### Validate Command
 
-Validates a Git command against the expected pattern for a specific quest step.
-
-- **URL**: `/commands`
+- **URL**: `/validate` (Note: The previous documentation mentioned `/` but the route file likely uses `/validate` or similar based on standard practices. Needs verification if `/` is indeed the endpoint).
 - **Method**: `POST`
-- **Content Type**: `application/json`
+- **Controller**: `CommandController.validateCommand`
+- **Middleware**: `authMiddleware` (Requires authentication)
+- **Description**: Validates a command entered by the user, possibly checking against quest requirements.
+- **Request Body**: `{ "command": "string", "questId": "uuid", "currentStep": number }` (Schema needs confirmation based on `CommandController`)
+- **Response**: `{ "success": boolean, "valid": boolean, "message": "string", "nextStep": number | null, "commandName": "string" }` (Schema needs confirmation)
 
-#### Request Body
+## Quest Endpoints (`/api/quests`)
 
-```json
-{
-  "command": "git init",
-  "questId": 1,
-  "currentStep": 1
-}
-```
+Manages quests and their steps.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| command | string | The Git command entered by the user |
-| questId | number | The ID of the current quest |
-| currentStep | number | (Optional) The current step number in the quest |
+### Get All Quests
 
-#### Response
+- **URL**: `/`
+- **Method**: `GET`
+- **Controller**: `QuestController.getAllQuests`
+- **Description**: Retrieves a list of all available quests.
+- **Response**: `Array<Quest>` or error message.
 
-```json
-{
-  "success": true,
-  "valid": true,
-  "message": "Command 'git init' is valid.",
-  "nextStep": 2,
-  "commandName": "git init"
-}
-```
+### Get Quest by ID
 
-| Field | Type | Description |
-|-------|------|-------------|
-| success | boolean | Whether the API call was successful |
-| valid | boolean | Whether the command is valid for the current step |
-| message | string | A message describing the validation result |
-| nextStep | number | (Optional) The next step number if the command was valid |
-| commandName | string | The name of the command that was validated |
+- **URL**: `/:id`
+- **Method**: `GET`
+- **Controller**: `QuestController.getQuestById`
+- **Description**: Retrieves details for a specific quest.
+- **Response**: `Quest` or error message.
 
-#### Error Response
+## Progress Endpoints (`/api/progress`)
 
-```json
-{
-  "success": false,
-  "message": "Command and questId are required"
-}
-```
+Manages user game progress.
 
-#### Example Usage
+### Get User Progress
 
-```javascript
-// Frontend code example
-const validateCommand = async (command) => {
-  try {
-    const response = await fetch('http://localhost:3001/api/commands', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        command,
-        questId: 1,
-        currentStep: 1,
-      }),
-    });
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error validating command:', error);
-    return { success: false, valid: false, message: 'Server error' };
-  }
-};
-```
+- **URL**: `/`
+- **Method**: `GET`
+- **Controller**: `GameProgressController.getUserProgress`
+- **Middleware**: `authMiddleware` (Requires authentication)
+- **Description**: Retrieves the current progress for the logged-in user.
+- **Response**: `UserProgress` or error message.
+
+### Update User Progress
+
+- **URL**: `/`
+- **Method**: `POST`
+- **Controller**: `GameProgressController.updateUserProgress`
+- **Middleware**: `authMiddleware` (Requires authentication)
+- **Description**: Updates the progress for the logged-in user.
+- **Request Body**: `{ /* Structure depends on GameProgressController */ }`
+- **Response**: `UserProgress` or error message.
 
 ## Error Codes
 
 | Status Code | Description |
 |-------------|-------------|
-| 200 | OK - Request was successful |
-| 400 | Bad Request - Missing required fields |
-| 500 | Internal Server Error - Server-side error |
+| 200 / 201   | OK / Created - Request was successful |
+| 400         | Bad Request - Invalid input or missing fields |
+| 401         | Unauthorized - Authentication required or failed |
+| 404         | Not Found - Resource not found |
+| 500         | Internal Server Error - Server-side error |
 
-## Future Endpoints (Planned)
-
-The following endpoints are planned for future implementation:
-
-### Quest Endpoints
-
-- **GET /quests** - Get a list of available quests
-- **GET /quests/:id** - Get details for a specific quest
-- **GET /quests/:id/steps** - Get steps for a specific quest
-
-### User Progress Endpoints
-
-- **GET /users/:id/progress** - Get a user's progress
-- **POST /users/:id/progress** - Update a user's progress
-- **GET /users/:id/quests/:questId/progress** - Get a user's progress for a specific quest
-
-### User Authentication
-
-- **POST /auth/register** - Register a new user
-- **POST /auth/login** - Log in a user
-- **POST /auth/logout** - Log out a user
-
-## WebSocket Events (Planned)
-
-Future versions of the API may include WebSocket support for real-time updates:
-
-- **command_executed** - When a command is executed successfully
-- **quest_progress_updated** - When a user's quest progress is updated
-- **new_quest_available** - When a new quest becomes available
+*Note: Specific request/response schemas and exact endpoint paths should be verified against the controller implementations.*

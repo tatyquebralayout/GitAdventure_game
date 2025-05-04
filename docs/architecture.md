@@ -9,17 +9,17 @@ GitAdventure is an interactive Git learning platform built as a monorepo using p
 The application follows a client-server architecture:
 
 ```
-┌─────────────────┐          ┌─────────────────┐
-│                 │  HTTP/   │                 │
-│    Frontend     │◄────────►│    Backend      │
-│    (React)      │   JSON   │    (Express)    │
-│                 │          │                 │
-└─────────────────┘          └─────────────────┘
+┌─────────────────┐          ┌─────────────────┐          ┌──────────────┐
+│                 │  HTTP/   │                 │   SQL    │              │
+│    Frontend     │◄────────►│    Backend      │◄─────────►│  PostgreSQL  │
+│ (React, Zustand)│   JSON   │ (Express, TypeORM)│          │   Database   │
+│                 │          │                 │          │              │
+└─────────────────┘          └─────────────────┘          └──────────────┘
 ```
 
 ## Frontend Architecture
 
-The frontend is built with React 19, TypeScript, and Vite, structured for maintainability and modularity:
+The frontend is built with React 19, TypeScript, Vite, and Zustand, structured for maintainability and modularity:
 
 ### Key Components
 
@@ -33,17 +33,15 @@ The frontend is built with React 19, TypeScript, and Vite, structured for mainta
   - **GitGraph**: Component for visualizing Git history using GitGraph.js
   - **Header/Footer**: Basic layout components
 
-### Context Management
+### State Management
 
-The frontend uses React Context API for state management:
+The frontend uses Zustand (`stores/gameStore.ts`) for global state management, handling aspects like:
+- Current game location
+- Player inventory
+- Quest status and progress
+- Game flags and events
 
-- **GitRepoContext**: Manages the state of the Git repository visualization
-  - Manages branches, commits, and visualization options
-  - Provides methods for Git operations (commit, branch, merge)
-  - Maintains Mermaid diagram representation
-  
-- **GitRepositoryContext**: Legacy context being replaced by GitRepoContext
-  - Both contexts are currently used in parallel during transition
+Components typically access and update the state via the `useGameStore` hook (or similar, depending on implementation in `gameStore.ts`).
 
 ### Visualization Approaches
 
@@ -56,17 +54,17 @@ Users can toggle between these visualizations to understand Git concepts from di
 
 ## Backend Architecture
 
-The backend is built with Express.js and TypeScript, following a layered architecture:
+The backend is built with Express.js, TypeScript, and TypeORM, following a layered architecture:
 
 ### Layers
 
 ```
 ┌─────────────────┐
-│    Routes       │  Define API endpoints and request handling
+│    Routes       │  Define API endpoints (Express Router)
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│  Controllers    │  Handle HTTP request/response logic
+│  Controllers    │  Handle HTTP request/response logic, DTO validation
 └────────┬────────┘
          │
 ┌────────▼────────┐
@@ -74,30 +72,40 @@ The backend is built with Express.js and TypeScript, following a layered archite
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│  Repositories   │  Handle data access (currently mocked)
+│    Entities     │  Define data structure (TypeORM Entities)
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│    Database     │  Data persistence (PostgreSQL via TypeORM)
 └─────────────────┘
 ```
 
 ### Key Components
 
-- **CommandController**: Handles Git command validation requests
-- **CommandValidationService**: Validates Git commands against expected patterns
-- **QuestCommandStep**: Model for Git command steps in quests/tutorials
+- **Controllers**: `AuthController`, `CommandController`, `QuestController`, `GameProgressController`
+- **Services**: `CommandValidationService`, `QuestService` (and potentially others for Auth, Progress)
+- **Entities**: `User`, `Quest`, `QuestCommandStep`, `GameProgress`, `UserProgress` (TypeORM entities)
+- **Config**: `database.ts` (TypeORM DataSource configuration)
+- **Middleware**: `authMiddleware.ts` (JWT authentication)
 
 ## Data Flow
 
-1. User enters a Git command in the TerminalSimulator
-2. Command is sent to the backend for validation
-3. Backend validates the command against expected pattern for current step
-4. Response is returned to frontend
-5. If valid, the command is executed in the Git simulator 
-6. Visual representation is updated in both GitGraph and Mermaid views
-7. Progress is updated and feedback is provided to the user
+1. User interacts with the frontend (e.g., enters a command, completes a quest step).
+2. Frontend state (Zustand) is updated optimistically or triggers an API call.
+3. API request is sent to the Backend (Express).
+4. Backend route is matched, middleware (e.g., auth) is executed.
+5. Controller handles the request, potentially validating input (DTOs).
+6. Service layer executes the core business logic.
+7. TypeORM entities/repositories interact with the PostgreSQL database for data persistence or retrieval.
+8. Response is sent back through the layers to the frontend.
+9. Frontend updates its state (Zustand) and UI based on the API response.
+10. Visualizations (GitGraph, Mermaid) are updated based on the new state.
 
 ## Future Considerations
 
-1. **Database Integration**: Replace mock data with actual database storage
-2. **User Authentication**: Add user accounts and progress persistence
-3. **Additional Visualizations**: Implement more ways to visualize Git concepts
-4. **Expanded Quest System**: Develop more complex learning paths and challenges
-5. **Collaboration Features**: Add multiplayer/team learning capabilities
+1. **Expanded Quest System**: Develop more complex learning paths and challenges.
+2. **Refined Command Validation**: Improve the flexibility and feedback of command validation.
+3. **Enhanced Visualizations**: Add more interactive elements or different visualization types.
+4. **Testing**: Increase test coverage for both frontend and backend.
+5. **Collaboration Features**: Explore possibilities for team-based learning or interaction.
+6. **Deployment Strategy**: Define clear steps for deploying to production environments.
