@@ -1,107 +1,153 @@
 # GitAdventure
 
-GitAdventure is a full-stack application built with React, TypeScript, and Vite for the frontend, and Express.js for the backend. This project is designed to provide a modular and scalable architecture for web development.
+GitAdventure is an interactive application designed to teach Git concepts through a gamified learning experience. Users can learn Git commands and concepts by completing missions in an engaging visual interface with real-time feedback and visualization.
+
+## Project Overview
+
+GitAdventure combines an interactive terminal, visual Git repository representation, and a quest system to make learning Git intuitive and fun. The application provides immediate feedback on Git commands and visually shows what's happening behind the scenes.
+
+## Architecture
+
+This project is built as a monorepo using pnpm workspaces with:
+
+- **Frontend**: React 19, TypeScript, Vite, and Tailwind CSS
+- **Backend**: Express.js with TypeScript
+- **Visualization**: GitGraph.js and Mermaid for Git repository visualization
 
 ## Project Structure
 
-The project is organized into the following directories:
+```
+GitAdventure/
+├── frontend/               # React frontend application
+│   ├── src/
+│   │   ├── api/            # API service handlers
+│   │   ├── assets/         # Static assets
+│   │   ├── components/     # Reusable UI components
+│   │   │   ├── DialogCard/       # Dialog component
+│   │   │   ├── Footer/           # Footer component
+│   │   │   ├── GitGraph/         # Git graph visualization
+│   │   │   ├── GitSimulator/     # Git simulator components
+│   │   │   ├── Header/           # Header component
+│   │   │   ├── ProgressCard/     # Progress tracking component
+│   │   │   ├── TerminalSimulator/ # Terminal simulator
+│   │   │   └── WorldCard/        # Mission/world selection
+│   │   ├── contexts/       # React contexts for state management
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── pages/          # Page-level components
+│   │   ├── services/       # Client-side services
+│   │   ├── store/          # State management
+│   │   ├── styles/         # Global styles
+│   │   ├── types/          # TypeScript type definitions
+│   │   └── utils/          # Utility functions
+│   │
+│   ├── package.json        # Frontend dependencies
+│   └── tsconfig.json       # TypeScript configuration
+│
+├── backend/                # Express.js backend
+│   ├── src/
+│   │   ├── controllers/    # Request handlers
+│   │   ├── dtos/           # Data transfer objects
+│   │   ├── middlewares/    # Custom middleware functions
+│   │   ├── models/         # Data models
+│   │   ├── repositories/   # Data access layer
+│   │   ├── routes/         # API route definitions
+│   │   ├── services/       # Business logic
+│   │   └── utils/          # Utility functions
+│   │
+│   ├── package.json        # Backend dependencies
+│   └── tsconfig.json       # TypeScript configuration
+│
+├── docs/                   # Documentation
+│   ├── api.md              # API documentation
+│   └── architecture.md     # Architecture documentation
+│
+├── public/                 # Static public files
+├── tests/                  # Test files
+├── eslint.config.js        # ESLint configuration
+├── package.json            # Root package.json
+├── pnpm-workspace.yaml     # pnpm workspace configuration
+├── tsconfig.base.json      # Base TypeScript configuration
+└── vite.config.ts          # Vite configuration
+```
 
-- **frontend/**: Contains the React-based frontend application.
-  - **src/**: Source code for the frontend.
-    - **components/**: Reusable UI components.
-    - **pages/**: Page-level components.
-    - **services/**: API service handlers.
-    - **hooks/**: Custom React hooks.
-    - **utils/**: Utility functions.
-    - **styles/**: Global and component-specific styles.
+## Key Features
 
-- **backend/**: Contains the Express.js-based backend application.
-  - **src/**: Source code for the backend.
-    - **controllers/**: Request handlers.
-    - **routes/**: API route definitions.
-    - **services/**: Business logic.
-    - **models/**: Database models.
-    - **middlewares/**: Custom middleware functions.
-    - **utils/**: Utility functions.
-
-- **public/**: Static assets served by the frontend.
-- **tests/**: Test files for both frontend and backend.
-
-## Features
-
-- **Frontend**:
-  - Built with React and TypeScript.
-  - Modular component structure.
-  - Vite for fast development and build.
-
-- **Backend**:
-  - Built with Express.js.
-  - RESTful API structure.
-  - Middleware and service-based architecture.
+- **Interactive Terminal**: A simulated terminal interface for executing Git commands
+- **Git Repository Visualization**: Visual representation of Git repositories using both GitGraph and Mermaid diagrams
+- **Mission-based Learning**: Structured missions to learn Git concepts step by step
+- **Progress Tracking**: Track your Git learning progress
+- **Command Validation**: Backend validation of Git commands against expected patterns for each learning step
+- **Multiple Visualization Options**: Toggle between different Git visualization approaches
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js (>= 16.x)
-- npm or yarn
+- pnpm (>= 8.x)
 
 ### Installation
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/yourusername/GitAdventure.git
    cd GitAdventure
    ```
 
-2. Install dependencies:
+2. Install dependencies using pnpm:
    ```bash
-   npm install
+   pnpm install
    ```
 
 ### Running the Application
 
-#### Development Mode
-
 1. Start the backend server:
    ```bash
-   npm run dev:backend
+   pnpm --filter backend dev
    ```
 
-2. Start the frontend application:
+2. In a separate terminal, start the frontend:
    ```bash
-   npm run dev
+   pnpm --filter frontend dev
    ```
 
-3. Open your browser and navigate to `http://localhost:3000`.
+3. Open your browser and navigate to `http://localhost:5173` (or the URL shown in your terminal).
 
-#### Production Mode
+## Development
 
-1. Build the application:
+### Frontend Development
+
+The frontend is built with React 19, TypeScript, and Vite. Key features include:
+
+- **Component-based architecture**: Modular UI components
+- **Context API**: For state management (GitRepoContext and GitRepositoryContext)
+- **Tailwind CSS**: For styling
+- **Multiple visualization libraries**: @gitgraph/react and Mermaid for Git graph visualization
+
+### Backend Development
+
+The backend is built with Express.js and TypeScript. It provides:
+
+- **RESTful API**: For command validation and quest progression
+- **Service-based architecture**: Separation of concerns with controllers, services, and routes
+- **Mock data**: Simulated quest steps and command validation (can be extended to use a database)
+
+## Building for Production
+
+1. Build the entire application:
    ```bash
-   npm run build
+   pnpm build
    ```
 
-2. Serve the production build:
+2. Or build specific packages:
    ```bash
-   npm run preview
+   pnpm --filter frontend build
+   pnpm --filter backend build
    ```
-
-## Linting and Type Checking
-
-- Run ESLint:
-  ```bash
-  npm run lint
-  ```
-
-- Run TypeScript type checking:
-  ```bash
-  npm run type-check
-  ```
 
 ## Contributing
 
-Contributions are welcome! Please follow the [contribution guidelines](CONTRIBUTING.md).
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
