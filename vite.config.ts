@@ -5,8 +5,6 @@ import { resolve } from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  root: resolve(__dirname, 'frontend'),
-  publicDir: 'public',
   plugins: [
     tsconfigPaths(),
     react()
@@ -16,7 +14,6 @@ export default defineConfig({
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
     rollupOptions: {
-      input: resolve(__dirname, 'frontend/public/index.html'),
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
@@ -29,6 +26,6 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000
   },
   css: {
-    postcss: 'postcss.config.js'
+    postcss: resolve(__dirname, 'frontend/postcss.config.js')
   },
 })
