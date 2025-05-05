@@ -3,7 +3,6 @@ import './GitSimulator.css';
 import { useGitRepository } from '../../../hooks/useGitRepository';
 import VisualizationToggle, { ViewMode } from './VisualizationToggle';
 import DevTip from '../../ui/DevHelper/DevTip';
-// Import necessary types from the canonical source
 import { GitCommit, GitBranch, GitStatus } from '../../../types/git';
 
 // Lazy load visualization components to reduce initial bundle size
@@ -23,6 +22,7 @@ export default function GitSimulator() {
     { name: 'README.md', status: 'untracked' },
     { name: 'index.js', status: 'untracked' }
   ]);
+  const [error, setError] = useState<string | null>(null); // Add error state
   
   // Use the context hook which now provides state conforming to GitRepositoryState
   const { 
@@ -78,14 +78,19 @@ export default function GitSimulator() {
   }, [commits, status]);
   
   // Função para atualizar a visualização Git
-  const updateGitVisualization = useCallback(() => {
-    // Atualizar arquivos
-    updateFileList();
-    
-    // Recarregar visualização de commits se disponível
-    executeGitCommand('git status').catch(error => 
-      console.error('Erro ao atualizar visualização Git:', error)
-    );
+  const updateGitVisualization = useCallback(async () => { // Make async
+    setError(null); // Clear previous errors
+    try {
+      // Atualizar arquivos
+      updateFileList();
+      
+      // Recarregar visualização de commits se disponível
+      await executeGitCommand('git status'); // Await the command
+    } catch (err) {
+      console.error('Erro ao atualizar visualização Git:', err);
+      // Set user-friendly error message
+      setError('Falha ao atualizar o status do repositório Git. Verifique sua conexão ou tente novamente.'); 
+    }
   }, [updateFileList, executeGitCommand]);
   
   // Atualizar o estado dos arquivos quando o status do repositório mudar
@@ -161,6 +166,13 @@ export default function GitSimulator() {
         <div className="git-header">
           <h3>simulador git</h3>
         </div>
+        
+        {/* Display error message if present */}
+        {error && (
+          <div className="git-error-message">
+            <p>{error}</p>
+          </div>
+        )}
         
         <div className="git-content">
           <div className="git-tabs">
