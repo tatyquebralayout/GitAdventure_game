@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useGitRepository } from '../../../hooks/useGitRepository';
-import { useGitRepo } from '../../../hooks/useGitRepo';
 import { useGame } from '../../../hooks/useGame';
 import { useCommandHistory } from '../../../hooks/useCommandHistory';
 import { processCommand } from '../../../services/commands';
 import { processGitCommand } from '../../../services/commands/gitCommands';
 import { processShellCommand } from '../../../services/commands/shellCommands';
 import { autocompleteCommand } from '../../../services/commands/autocomplete';
-import { CommandEffect } from '../../../services/commands';
+// Correct import path for CommandEffect
+import { CommandEffect } from '../../../types/commands'; 
 import { GameState } from '../../../stores/gameStore';
 import DevTip from '../../ui/DevHelper/DevTip';
 import './TerminalSimulator.css';
@@ -23,7 +23,6 @@ export default function TerminalSimulator() {
   
   // Use Git repository contexts for Git commands
   const gitRepo = useGitRepository();
-  const gitRepoContext = useGitRepo();
   
   // Use game context for adventure commands
   const gameState = useGame();
@@ -113,12 +112,7 @@ export default function TerminalSimulator() {
         if (commandText.startsWith('git ')) {
           // Processa comando Git
           try {
-            // Execute Git command in both contexts to keep them in sync
-            if (gitRepoContext) {
-              await gitRepoContext.executeCommand(commandText);
-            }
-            
-            // Execute no GitRepository context
+            // Execute Git command using the single context
             const result = await gitRepo.executeCommand(commandText);
             
             // Processa também usando nosso próprio handler para efeitos no jogo
@@ -130,11 +124,11 @@ export default function TerminalSimulator() {
               applyEffectsToGameState(gitResult.effects);
             }
             
-            // Add result to command history (usando o resultado do hook do repositório)
+            // Add result to command history (using the result from the repository hook)
             setCommandHistory(prev => [
               ...prev, 
               { 
-                text: result.message || gitResult.message,
+                text: result.message || gitResult.message, // Use message from the hook result
                 isOutput: true
               }
             ]);
@@ -159,10 +153,8 @@ export default function TerminalSimulator() {
                 commandText.startsWith('mkdir ') || 
                 commandText.startsWith('touch ') || 
                 commandText.startsWith('rm ')) {
-              // Atualizar visualização Git se necessário
-              if (gitRepoContext) {
-                await gitRepoContext.executeCommand('git status');
-              }
+              // Atualizar visualização Git se necessário using the single context
+              await gitRepo.executeCommand('git status');
             }
           }
           
@@ -243,10 +235,16 @@ export default function TerminalSimulator() {
     
     if (effects.setFlag) {
       for (const [flag, value] of Object.entries(effects.setFlag)) {
-        gameState.setFlag(flag, value);
+        // Ensure value is boolean before passing to setFlag
+        if (typeof value === 'boolean') {
+          gameState.setFlag(flag, value);
+        } else {
+          // Handle cases where value might not be boolean (e.g., log error)
+          console.warn(`Invalid type for flag '${flag}': expected boolean, got ${typeof value}`);
+        }
         
-        // Atualizar visualização do Git quando relevante
-        if (gitRepoContext && (
+        // Atualizar visualização do Git quando relevante using the single context
+        if (
             flag === 'created_commit' || 
             flag === 'created_branch' || 
             flag === 'merged_branch' || 
@@ -260,9 +258,9 @@ export default function TerminalSimulator() {
             flag === 'reset_soft' ||
             flag === 'reset_changes' ||
             flag === 'reverted_commit'
-          )) {
+          ) {
           // Recarregar estado do git para atualizar a visualização
-          gitRepoContext.executeCommand('git status');
+          gitRepo.executeCommand('git status');
         }
       }
     }

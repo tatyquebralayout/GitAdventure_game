@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/ui/Header/Header';
 import Footer from './components/ui/Footer/Footer';
 import { GitRepositoryProvider } from './contexts/GitRepositoryProvider';
-import { GitRepoProvider } from './contexts/GitRepoContext';
 
 // Lazy load pages
 const WorldsPage = lazy(() => import('./pages/WorldsPage'));
@@ -32,28 +31,29 @@ export default function App() {
         </div>
         
         <GitRepositoryProvider>
-          <GitRepoProvider>
-            <Suspense fallback={<LoadingPlaceholder />}>
-              <Routes>
-                {/* Página inicial redireciona para mundos */}
-                <Route path="/" element={<Navigate to="/worlds" replace />} />
-                
-                {/* Páginas principais */}
-                <Route path="/worlds" element={<WorldsPage />} />
-                <Route path="/quests/:questId" element={<QuestPage />} />
-                <Route path="/progress" element={<PlayerProgressPage />} />
-                
-                {/* Nova página de jogo integrada */}
-                <Route path="/game" element={<GamePage />} />
-                
-                {/* Layout de simulador completo para quests ativas */}
-                <Route path="/simulator/:worldId/:questId" element={<GamePage />} />
-                
-                {/* Rota para teste */}
-                <Route path="/test" element={<div className="p-8 text-center">Página de teste funcionando!</div>} />
-                
-                {/* Rota de fallback para páginas não encontradas */}
-                <Route path="*" element={
+          <Suspense fallback={<LoadingPlaceholder />}>
+            <Routes>
+              {/* Página inicial redireciona para mundos */}
+              <Route path="/" element={<Navigate to="/worlds" replace />} />
+              
+              {/* Páginas principais */}
+              <Route path="/worlds" element={<WorldsPage />} />
+              <Route path="/quests/:questId" element={<QuestPage />} />
+              <Route path="/progress" element={<PlayerProgressPage />} />
+              
+              {/* Nova página de jogo integrada */}
+              <Route path="/game" element={<GamePage />} />
+              
+              {/* Layout de simulador completo para quests ativas */}
+              <Route path="/simulator/:worldId/:questId" element={<GamePage />} />
+              
+              {/* Rota para teste */}
+              <Route path="/test" element={<div className="p-8 text-center">Página de teste funcionando!</div>} />
+              
+              {/* Rota de fallback para páginas não encontradas */}
+              <Route 
+                path="*" 
+                element={
                   <div className="flex justify-center items-center min-h-screen">
                     <div className="text-center">
                       <h1 className="text-4xl font-bold mb-4">Página não encontrada</h1>
@@ -66,10 +66,10 @@ export default function App() {
                       </a>
                     </div>
                   </div>
-                } />
-              </Routes>
-            </Suspense>
-          </GitRepoProvider>
+                }
+              />
+            </Routes>
+          </Suspense>
         </GitRepositoryProvider>
         
         <div className="footer">

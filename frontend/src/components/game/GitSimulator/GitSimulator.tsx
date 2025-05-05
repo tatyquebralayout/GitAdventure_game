@@ -16,13 +16,6 @@ interface GitFile {
   status: 'untracked' | 'modified' | 'staged' | 'committed';
 }
 
-// Adicionar tipos ao window global para executeGitCommand
-declare global {
-  interface Window {
-    executeGitCommand: (command: string) => Promise<unknown>;
-  }
-}
-
 export default function GitSimulator() {
   const [repositoryView, setRepositoryView] = useState<'working' | 'staged' | 'committed'>('working');
   const [viewMode, setViewMode] = useState<ViewMode>('gitgraph');
@@ -120,16 +113,6 @@ export default function GitSimulator() {
     // Limpar intervalo quando o componente for desmontado
     return () => clearInterval(intervalId);
   }, [updateGitVisualization]);
-  
-  // Keep contexts in sync
-  useEffect(() => {
-    const originalExecuteCommand = window.executeGitCommand;
-    window.executeGitCommand = executeGitCommand;
-
-    return () => {
-      window.executeGitCommand = originalExecuteCommand; // Limpar ao desmontar
-    };
-  }, [executeGitCommand]);
   
   // Handle view mode toggle
   const handleViewModeToggle = (mode: ViewMode) => {
