@@ -12,162 +12,182 @@ const GitGraphViewer = lazy(() => import('./GitGraphViewer'));
 // Definição dos tipos para arquivos
 interface GitFile {
   name: string;
-  status: 'untracked' | 'modified' | 'staged' | 'committed';
+  status: 'untracked' | 'modified' | 'staged'; // Removed 'committed' as it's implicit in history
 }
+
+// Function to generate Mermaid diagram text
+const generateMermaidDiagram = (commits: GitCommit[], branches: GitBranch[]): string => {
+  let diagram = 'graph TD\n'; // Top-down graph
+
+  if (!commits || commits.length === 0) {
+    return diagram + '    empty[Repositório Vazio]\n';
+  }
+
+  // Map commit ID to a shorter ID for Mermaid
+  const commitIdMap = new Map<string, string>();
+  // Use commit.id instead of commit.sha
+  commits.forEach((commit, index) => commitIdMap.set(commit.id, `C${index}`));
+
+  // Add commits as nodes
+  commits.forEach(commit => {
+    // Use commit.id instead of commit.sha
+    const shortId = commitIdMap.get(commit.id);
+    const messageSummary = commit.message.split('\n')[0].substring(0, 30) + (commit.message.length > 30 ? '...' : '');
+    // Use commit.id instead of commit.sha
+    diagram += `    ${shortId}("${commit.id.substring(0, 7)}: ${messageSummary}")\n`;
+  });
+
+  // Add parent links
+  commits.forEach(commit => {
+    // Use commit.id instead of commit.sha
+    const childId = commitIdMap.get(commit.id);
+    commit.parents.forEach(parentId => { // Parent IDs are already strings (hashes)
+      const parentMermaidId = commitIdMap.get(parentId);
+      if (parentMermaidId) {
+        diagram += `    ${parentMermaidId} --> ${childId}\n`;
+      }
+    });
+  });
+
+  // Find the latest commit for each branch to point the branch label to it
+  const latestCommitPerBranch = new Map<string, string>();
+  commits.forEach(commit => {
+    // Assuming commit.branch holds the branch name it belongs to
+    // This might need adjustment based on how branch association is truly determined
+    // For now, we take the last seen commit on a branch as the "latest"
+    latestCommitPerBranch.set(commit.branch, commit.id);
+  });
+
+  // Add branches pointing to the latest commit on that branch
+  branches.forEach(branch => {
+    const latestCommitId = latestCommitPerBranch.get(branch.name);
+    // Use commit.id (latestCommitId) instead of branch.commitSha
+    const commitMermaidId = latestCommitId ? commitIdMap.get(latestCommitId) : undefined;
+    if (commitMermaidId) {
+      diagram += `    ${branch.name}[${branch.name}] --> ${commitMermaidId}\n`;
+      diagram += `    style ${branch.name} fill:#f9f,stroke:#333,stroke-width:2px\n`;
+    }
+  });
+
+  return diagram;
+};
+
 
 export default function GitSimulator() {
   const [repositoryView, setRepositoryView] = useState<'working' | 'staged' | 'committed'>('working');
   const [viewMode, setViewMode] = useState<ViewMode>('gitgraph');
-  const [files, setFiles] = useState<GitFile[]>([
-    { name: 'README.md', status: 'untracked' },
-    { name: 'index.js', status: 'untracked' }
-  ]);
-  const [error, setError] = useState<string | null>(null); // Add error state
-  
-  // Use the context hook which now provides state conforming to GitRepositoryState
+  // Initialize files as empty, will be populated by status
+  const [files, setFiles] = useState<GitFile[]>([]); 
+  const [error, setError] = useState<string | null>(null); 
+  const [mermaidDiagram, setMermaidDiagram] = useState<string>(''); // State for Mermaid diagram
+
   const { 
-    commits, 
+    commits = [], // Default to empty array
     currentBranch,
-    branches, // Add branches if needed for visualization
+    branches = [], // Default to empty array
     status,
-    executeCommand: executeGitCommand
   } = useGitRepository();
   
-  // Referência para o gitgraphRef
   const gitgraphRef = useRef<HTMLDivElement>(null);
   
-  // Função para atualizar a lista de arquivos
+  // Função para atualizar a lista de arquivos baseada no status do contexto
   const updateFileList = useCallback(() => {
     const updatedFiles: GitFile[] = [];
-    
-    // Use the status object from context (already conforms to GitStatus)
+    setError(null); // Clear errors on update
+
     if (status) {
-      status.untracked.forEach(filename => {
-        updatedFiles.push({ name: filename, status: 'untracked' });
-      });
-      
-      // Obter arquivos modificados
-      status.modified.forEach(filename => {
-        updatedFiles.push({ name: filename, status: 'modified' });
-      });
-      
-      // Obter arquivos no staged
-      status.staged.forEach(filename => {
-        updatedFiles.push({ name: filename, status: 'staged' });
-      });
-    }
-    
-    // Use commits from context (already conforms to GitCommit[])
-    if (commits && commits.length > 0) {
-      const mostRecentCommit = commits[0];
-      if (mostRecentCommit && mostRecentCommit.message) {
-        // Extrair nomes de arquivos da mensagem de commit (simulação simplificada)
-        const commitMessage = mostRecentCommit.message.toLowerCase();
-        
-        // Simulação simples para detectar arquivos commitados
-        ['app.js', 'style.css', 'index.html', 'README.md'].forEach(filename => {
-          if (commitMessage.includes(filename.toLowerCase()) && 
-              !updatedFiles.some(file => file.name === filename)) {
-            updatedFiles.push({ name: filename, status: 'committed' });
+      try {
+        status.untracked.forEach(filename => {
+          updatedFiles.push({ name: filename, status: 'untracked' });
+        });
+        status.modified.forEach(filename => {
+          // Avoid duplicates if a file is both modified and staged (though unlikely with standard git)
+          if (!updatedFiles.some(f => f.name === filename)) {
+            updatedFiles.push({ name: filename, status: 'modified' });
           }
         });
+        status.staged.forEach(filename => {
+           // Update existing entry or add new
+           const existingIndex = updatedFiles.findIndex(f => f.name === filename);
+           if (existingIndex > -1) {
+             // If already present (e.g., was modified), update status to staged
+             updatedFiles[existingIndex].status = 'staged';
+           } else {
+             updatedFiles.push({ name: filename, status: 'staged' });
+           }
+        });
+        setFiles(updatedFiles);
+      } catch (err) {
+        console.error('Erro ao processar status do Git:', err);
+        setError('Falha ao processar o status dos arquivos.');
+        setFiles([]); // Clear files on error
       }
+    } else {
+      // Handle case where status is null/undefined
+      setFiles([]);
     }
-    
-    setFiles(updatedFiles);
-  }, [commits, status]);
-  
-  // Função para atualizar a visualização Git
-  const updateGitVisualization = useCallback(async () => { // Make async
-    setError(null); // Clear previous errors
-    try {
-      // Atualizar arquivos
-      updateFileList();
-      
-      // Recarregar visualização de commits se disponível
-      await executeGitCommand('git status'); // Await the command
-    } catch (err) {
-      console.error('Erro ao atualizar visualização Git:', err);
-      // Set user-friendly error message
-      setError('Falha ao atualizar o status do repositório Git. Verifique sua conexão ou tente novamente.'); 
-    }
-  }, [updateFileList, executeGitCommand]);
-  
-  // Atualizar o estado dos arquivos quando o status do repositório mudar
-  useEffect(() => {
-    if (commits) {
-      updateFileList();
-    }
-  }, [commits, status, updateFileList]);
-  
-  // Atualizar quando o contexto do repositório git mudar
+  }, [status]); // Depend only on status
+
+  // Atualizar a lista de arquivos quando o status do repositório mudar
   useEffect(() => {
     updateFileList();
-  }, [status, updateFileList]);
-  
-  // Atualizar periodicamente para manter visualizações sincronizadas
+  }, [status, updateFileList]); // Update file list when status changes
+
+  // Generate Mermaid diagram when commits or branches change
   useEffect(() => {
-    // Atualizar na inicialização
-    updateGitVisualization();
-    
-    // Configurar intervalo para atualização periódica
-    const intervalId = setInterval(() => {
-      updateGitVisualization();
-    }, 5000); // Atualizar a cada 5 segundos
-    
-    // Limpar intervalo quando o componente for desmontado
-    return () => clearInterval(intervalId);
-  }, [updateGitVisualization]);
-  
+    try {
+      // Pass commits and branches correctly
+      const diagram = generateMermaidDiagram(commits, branches);
+      setMermaidDiagram(diagram);
+    } catch (err) {
+      console.error('Erro ao gerar diagrama Mermaid:', err);
+      setError('Falha ao gerar a visualização do histórico.');
+      setMermaidDiagram('graph TD\n    error["Erro ao gerar gráfico"]\n'); // Show error in diagram
+    }
+    // Depend on commits and branches
+  }, [commits, branches]);
+
   // Handle view mode toggle
   const handleViewModeToggle = (mode: ViewMode) => {
     setViewMode(mode);
   };
 
-  const getStatusClass = (status: 'untracked' | 'modified' | 'staged' | 'committed') => {
+  // Adjusted status class function (removed 'committed')
+  const getStatusClass = (status: 'untracked' | 'modified' | 'staged') => {
     switch (status) {
       case 'untracked': return 'status-untracked';
       case 'modified': return 'status-modified';
       case 'staged': return 'status-staged';
-      case 'committed': return 'status-committed';
       default: return '';
     }
   };
 
-  // Loading fallback component
   const LoadingFallback = () => (
     <div className="git-loading-fallback">
       Carregando visualização...
     </div>
   );
 
-  // Converter GitCommit para o formato esperado por GitGraphViewer if necessary
-  // If GitGraphViewer is updated to use GitCommit directly, this might be simpler
+  // Conversion functions remain simple if GitGraphViewer uses canonical types
   const convertCommitsForViewer = (): GitCommit[] => {
-    // Assuming GitGraphViewer now uses the canonical GitCommit type
     return commits; 
-    // If GitGraphViewer still expects a different format, adapt here:
-    // return commits.map(commit => ({ ...commit, /* any necessary transformations */ }));
   };
 
-  // Prepare branches for the viewer if needed
   const convertBranchesForViewer = (): GitBranch[] => {
-    // Assuming GitGraphViewer uses the canonical GitBranch type
-    return branches || [];
+    return branches;
   };
 
   return (
     <DevTip
       componentName="GitSimulator"
       description="Simulador visual de repositório Git, mostrando graficamente branches, commits e status de arquivos."
-      integrationTip="Deve ser integrado com commandApi para executar comandos Git reais e persistir o estado no backend."
+      integrationTip="Integrado com useGitRepository para obter estado do Git. Comandos são executados através do contexto."
     >
       <div className="git-simulator card">
         <div className="git-header">
           <h3>simulador git</h3>
         </div>
         
-        {/* Display error message if present */}
         {error && (
           <div className="git-error-message">
             <p>{error}</p>
@@ -192,22 +212,20 @@ export default function GitSimulator() {
               className={`git-tab-button ${repositoryView === 'committed' ? 'active' : ''}`}
               onClick={() => setRepositoryView('committed')}
             >
-              Local Repository
+              Local Repository (History)
             </button>
           </div>
           
           <div className="git-files-container">
-            {/* Toggle between file list and graph view */}
             {repositoryView === 'committed' ? (
               <div className="git-graph-view">
                 <VisualizationToggle viewMode={viewMode} onToggle={handleViewModeToggle} />
                 
                 <Suspense fallback={<LoadingFallback />}>
                   {viewMode === 'mermaid' 
-                    ? <MermaidViewer diagramText="" /> // Mermaid might need specific formatting
+                    ? <MermaidViewer diagramText={mermaidDiagram} /> 
                     : <GitGraphViewer 
                         repoState={{ 
-                          // Pass branches and commits conforming to types/git.ts
                           branches: convertBranchesForViewer(),
                           commits: convertCommitsForViewer(),
                         }}
@@ -221,14 +239,22 @@ export default function GitSimulator() {
                 {files.filter(file => {
                   if (repositoryView === 'working') return file.status === 'untracked' || file.status === 'modified';
                   if (repositoryView === 'staged') return file.status === 'staged';
-                  if (repositoryView === 'committed') return file.status === 'committed';
-                  return true;
+                  return false; 
                 }).map((file, index) => (
                   <div key={index} className={`git-file ${getStatusClass(file.status)}`}>
                     <span className="file-name">{file.name}</span>
                     <span className="file-status">{file.status}</span>
                   </div>
                 ))}
+                {(repositoryView === 'working' || repositoryView === 'staged') && files.filter(file => {
+                    if (repositoryView === 'working') return file.status === 'untracked' || file.status === 'modified';
+                    if (repositoryView === 'staged') return file.status === 'staged';
+                    return false;
+                  }).length === 0 && (
+                  <div className="git-file-list-empty">
+                    {repositoryView === 'working' ? 'Nenhuma alteração no diretório de trabalho.' : 'Nenhuma alteração na área de staging.'}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -236,11 +262,11 @@ export default function GitSimulator() {
           <div className="git-info">
             <div className="git-branch-info">
               <span className="branch-label">Current Branch:</span>
-              <span className="branch-name">{currentBranch}</span>
+              <span className="branch-name">{currentBranch || 'N/A'}</span>
             </div>
             <div className="git-commit-count">
               <span className="commit-label">Commits:</span>
-              <span className="commit-number">{commits ? commits.length : 0}</span>
+              <span className="commit-number">{commits.length}</span>
             </div>
           </div>
         </div>
