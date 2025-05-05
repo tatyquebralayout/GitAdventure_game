@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import './GitGraphViewer.css';
-import { GitCommit, GitBranch } from '../../../types/git'; // Importar tipos unificados
+import { GitCommit, GitBranch } from '../../../types/git'; // Import canonical Git types
 
 // Tipagem para a biblioteca Gitgraph.js
 declare global {
@@ -26,14 +26,10 @@ interface GitgraphBranch {
   merge: (options: {branch: GitgraphBranch; commitOptions?: Record<string, unknown>}) => GitgraphBranch;
 }
 
-// Interfaces para os tipos do repositório Git
-// Remover definições locais, agora importadas de '../../../types/git'
-// export interface GitCommit { ... }
-// export interface GitBranch { ... }
-
+// Update GitRepoState to use canonical types
 interface GitRepoState {
-  branches: GitBranch[]; // Usar tipo importado
-  commits: GitCommit[]; // Usar tipo importado
+  branches: GitBranch[]; // Use imported canonical type
+  commits: GitCommit[]; // Use imported canonical type
 }
 
 interface GitGraphViewerProps {
@@ -118,7 +114,7 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
         const gitgraphBranches: Record<string, GitgraphBranch> = {};
         
         // Criar todos os branches primeiro
-        repoState.branches.forEach(branch => {
+        repoState.branches.forEach((branch: GitBranch) => {
           gitgraphBranches[branch.name] = gitgraph.branch(branch.name);
         });
 
@@ -129,24 +125,24 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
 
         // Ordenar commits por data para exibir na ordem correta
         const sortedCommits = [...repoState.commits].sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          (a: GitCommit, b: GitCommit) => new Date(a.date).getTime() - new Date(b.date).getTime()
         );
         
         // Renderizar commits
-        sortedCommits.forEach(commit => {
+        sortedCommits.forEach((commit: GitCommit) => {
           // Obter ou criar o branch correto para o commit
           const branch = gitgraphBranches[commit.branch] || gitgraphBranches['main'];
           
           // Verificar se é um merge commit (mais de um parent)
           if (commit.parents.length > 1) {
             // Identificar o branch de origem do merge
-            const sourceParent = commit.parents[1]; // Segundo parent geralmente é a origem do merge
-            const sourceBranch = repoState.commits.find(c => c.id === sourceParent)?.branch;
-            
-            if (sourceBranch && gitgraphBranches[sourceBranch]) {
+            const sourceCommit = repoState.commits.find(c => c.id === commit.parents[1]);
+            const sourceBranchName = sourceCommit?.branch;
+
+            if (sourceBranchName && gitgraphBranches[sourceBranchName]) {
               // Realizar o merge
               branch.merge({
-                branch: gitgraphBranches[sourceBranch],
+                branch: gitgraphBranches[sourceBranchName],
                 commitOptions: {
                   subject: commit.message,
                   author: commit.author,

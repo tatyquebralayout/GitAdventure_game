@@ -4,30 +4,20 @@ import type { GitgraphOptions, GitgraphApi, GitgraphBranchApi } from '@gitgraph/
 import './GitGraph.css';
 import { GitCommit, GitBranch } from '../../../types/git';
 
-// Define the structure for each commit in our history
-// Remover definição local, agora importada de '../../../types/git'
-// export interface GitCommit { ... }
-
-// Define the structure for branch information
-// Remover definição local, agora importada de '../../../types/git'
-// export interface GitBranch { ... }
-
 interface GitGraphProps {
-  commits: GitCommit[]; // Usar tipo importado
-  branches: GitBranch[]; // Usar tipo importado
+  commits: GitCommit[];
+  branches: GitBranch[];
 }
 
 export default function GitGraph({ commits, branches }: GitGraphProps) {
-  const [activeCommits, setActiveCommits] = useState<GitCommit[]>(commits); // Usar tipo importado
-  const [activeBranches, setActiveBranches] = useState<GitBranch[]>(branches); // Usar tipo importado
+  const [activeCommits, setActiveCommits] = useState<GitCommit[]>(commits);
+  const [activeBranches, setActiveBranches] = useState<GitBranch[]>(branches);
 
-  // Update state when props change
   useEffect(() => {
     setActiveCommits(commits);
     setActiveBranches(branches);
   }, [commits, branches]);
 
-  // Customize the template
   const customTemplate = templateExtend(TemplateName.Metro, {
     colors: ['#0366d6', '#28a745', '#f9826c', '#6f42c1', '#e36209'],
     branch: {
@@ -35,7 +25,7 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
       spacing: 20,
       label: {
         font: "normal 12px Arial",
-        bgColor: "#f1f8ff", // Light blue background
+        bgColor: "#f1f8ff",
       },
     },
     commit: {
@@ -49,34 +39,27 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
     },
   });
 
-  // Options for the graph
   const options: GitgraphOptions = { template: customTemplate };
 
   return (
     <div className="git-graph-container">
-      {/* Ensure the options prop matches the expected type */}
       <Gitgraph options={options}>
         {(gitgraph: GitgraphApi) => {
-          // Create branches and commits based on our state
           const branchMap = new Map<string, GitgraphBranchApi>();
           
-          // First, create all branches
-          activeBranches.forEach((branch) => {
+          activeBranches.forEach((branch: GitBranch) => {
             branchMap.set(branch.name, gitgraph.branch(branch.name));
           });
           
-          // Then, process all commits in order
-          activeCommits.forEach((commit) => {
-            // Get the branch for this commit
+          activeCommits.forEach((commit: GitCommit) => {
             const branch = branchMap.get(commit.branch);
             
             if (branch) {
               branch.commit({
                 subject: commit.message,
-                hash: commit.id, // Ajustado para usar a propriedade 'id' do tipo unificado
+                hash: commit.id,
                 style: {
-                  // Highlight the active branch's commits
-                  dot: activeBranches.find(b => b.name === commit.branch && b.isActive)
+                  dot: activeBranches.find((b: GitBranch) => b.name === commit.branch && b.isActive)
                     ? { color: "#ff9500" } 
                     : undefined,
                 },
@@ -84,7 +67,6 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
             }
           });
 
-          // Set HEAD to the active branch
           const activeBranch = activeBranches.find(b => b.isActive);
           if (activeBranch) {
             const branch = branchMap.get(activeBranch.name);
@@ -94,7 +76,6 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
             }
           }
           
-          // Retornando null explicitamente para satisfazer o requisito de ReactNode
           return null;
         }}
       </Gitgraph>

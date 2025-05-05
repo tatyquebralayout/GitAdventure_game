@@ -1,35 +1,24 @@
 import { createContext } from 'react';
-import { GitCommit, GitBranch, GitStatus } from '../types/git'; // Importar tipos unificados
+import { GitCommit, GitBranch, GitStatus, GitRepositoryState } from '../types/git'; // Importar tipos unificados
 
-interface GitRepository {
+// Use GitRepositoryState for the context type structure, adding executeCommand
+export interface GitRepositoryContextType extends GitRepositoryState {
   executeCommand: (command: string) => Promise<{ success: boolean; message: string }>;
-  currentBranch: string;
-  branches: GitBranch[]; // Usar tipo unificado
-  commits: GitCommit[]; // Usar tipo unificado
-  status: GitStatus; // Usar tipo unificado
 }
 
-export interface GitRepositoryContextType {
-  executeCommand: (command: string) => Promise<{ success: boolean; message: string }>;
-  currentBranch: string;
-  branches: GitBranch[]; // Usar tipo unificado
-  commits: GitCommit[]; // Usar tipo unificado
-  status: GitStatus; // Usar tipo unificado
-}
-
-// Estado inicial do repositório
-export const initialRepositoryState: GitRepository = {
-  executeCommand: async () => ({ success: false, message: 'Git repository not initialized' }), 
+// Estado inicial do repositório, conforming to GitRepositoryContextType
+export const initialRepositoryState: GitRepositoryContextType = {
+  executeCommand: async () => ({ success: false, message: 'Git repository not initialized' }),
   currentBranch: 'main',
-//  branches: ['main'], // Ajustar para o novo tipo GitBranch[]
-  branches: [{ name: 'main', commits: [], isActive: true }], // Ajustado
-  commits: [],
+  branches: [{ name: 'main', isActive: true, isRemote: false }], // Use GitBranch type correctly
+  commits: [], // Use GitCommit type
   status: {
     staged: [],
     modified: [],
     untracked: []
-  }
+  },
+  remotes: [] // Initialize remotes array
 };
 
 // Criar o contexto
-export const GitRepositoryContext = createContext<GitRepositoryContextType>(initialRepositoryState); 
+export const GitRepositoryContext = createContext<GitRepositoryContextType>(initialRepositoryState);

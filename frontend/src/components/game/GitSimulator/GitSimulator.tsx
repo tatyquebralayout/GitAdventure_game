@@ -3,7 +3,8 @@ import './GitSimulator.css';
 import { useGitRepository } from '../../../hooks/useGitRepository';
 import VisualizationToggle, { ViewMode } from './VisualizationToggle';
 import DevTip from '../../ui/DevHelper/DevTip';
-import { GitCommit } from '../../../types/git';
+// Import necessary types from the canonical source
+import { GitCommit, GitBranch, GitStatus } from '../../../types/git';
 
 // Lazy load visualization components to reduce initial bundle size
 const MermaidViewer = lazy(() => import('./MermaidViewer'));
@@ -30,10 +31,11 @@ export default function GitSimulator() {
     { name: 'index.js', status: 'untracked' }
   ]);
   
-  // Use both Git repository contexts
+  // Use the context hook which now provides state conforming to GitRepositoryState
   const { 
     commits, 
     currentBranch,
+    branches, // Add branches if needed for visualization
     status,
     executeCommand: executeGitCommand
   } = useGitRepository();
@@ -45,7 +47,7 @@ export default function GitSimulator() {
   const updateFileList = useCallback(() => {
     const updatedFiles: GitFile[] = [];
     
-    // Obter status do repositório principal
+    // Use the status object from context (already conforms to GitStatus)
     if (status) {
       status.untracked.forEach(filename => {
         updatedFiles.push({ name: filename, status: 'untracked' });
@@ -62,7 +64,7 @@ export default function GitSimulator() {
       });
     }
     
-    // Para arquivos commitados, usar commits mais recentes
+    // Use commits from context (already conforms to GitCommit[])
     if (commits && commits.length > 0) {
       const mostRecentCommit = commits[0];
       if (mostRecentCommit && mostRecentCommit.message) {
@@ -151,16 +153,19 @@ export default function GitSimulator() {
     </div>
   );
 
-  // Converter GitCommit para GraphViewerCommit
-  const convertCommits = (): GitCommit[] => {
-    return commits.map(commit => ({
-      id: commit.id || '',
-      message: commit.message || '',
-      author: commit.author || '',
-      branch: 'main',
-      parents: [],
-      date: new Date(commit.date || new Date())
-    }));
+  // Converter GitCommit para o formato esperado por GitGraphViewer if necessary
+  // If GitGraphViewer is updated to use GitCommit directly, this might be simpler
+  const convertCommitsForViewer = (): GitCommit[] => {
+    // Assuming GitGraphViewer now uses the canonical GitCommit type
+    return commits; 
+    // If GitGraphViewer still expects a different format, adapt here:
+    // return commits.map(commit => ({ ...commit, /* any necessary transformations */ }));
+  };
+
+  // Prepare branches for the viewer if needed
+  const convertBranchesForViewer = (): GitBranch[] => {
+    // Assuming GitGraphViewer uses the canonical GitBranch type
+    return branches || [];
   };
 
   return (
@@ -204,11 +209,12 @@ export default function GitSimulator() {
                 
                 <Suspense fallback={<LoadingFallback />}>
                   {viewMode === 'mermaid' 
-                    ? <MermaidViewer diagramText="" />
+                    ? <MermaidViewer diagramText="" /> // Mermaid might need specific formatting
                     : <GitGraphViewer 
                         repoState={{ 
-                          branches: [],
-                          commits: convertCommits(),
+                          // Pass branches and commits conforming to types/git.ts
+                          branches: convertBranchesForViewer(),
+                          commits: convertCommitsForViewer(),
                         }}
                         gitgraphRef={gitgraphRef}
                       />

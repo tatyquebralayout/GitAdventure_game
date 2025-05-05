@@ -1,23 +1,32 @@
+// Define the structure for each commit in our history
 export interface GitCommit {
-  id: string; // Hash ou SHA do commit
+  id: string; // Use 'id' consistently for hash
   message: string;
   author: string;
-  branch: string; // Nome do branch ao qual este commit pertence, no contexto da visualização
-  parents: string[]; // IDs dos commits pais
   date: Date;
+  parents: string[]; // Array of parent commit IDs
+  branch: string; // Branch this commit belongs to
 }
 
+// Define the structure for branch information
 export interface GitBranch {
   name: string;
-  commits: string[]; // Opcional: IDs dos commits neste branch. Pode ser removido se não for estritamente necessário.
-  isActive: boolean; // Indica se é o branch atual (HEAD)
-  // Podemos adicionar outras propriedades aqui se necessário, como color, etc.
+  isActive: boolean; // Indicates if this is the current branch
+  isRemote: boolean;
 }
 
+// Define the structure for Git status
 export interface GitStatus {
   staged: string[];
   modified: string[];
   untracked: string[];
 }
 
-// Pode ser necessário adicionar outras interfaces conforme unificamos os tipos do projeto. 
+// Define the overall Git repository state
+export interface GitRepositoryState {
+  currentBranch: string;
+  branches: GitBranch[];
+  commits: GitCommit[];
+  status: GitStatus;
+  remotes: { name: string; url: string }[];
+}

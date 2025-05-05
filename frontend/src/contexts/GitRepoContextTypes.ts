@@ -1,48 +1,12 @@
-import React from 'react';
-import type { GitgraphApi } from '@gitgraph/react';
+// This file might be redundant now. Consider removing it if GitRepoContextType.tsx covers all needs.
+// If kept, ensure it imports from types/git.ts
 
-// Types
-export interface Branch {
-  name: string;
-  isActive: boolean;
-  color?: string;
-}
+// Example if kept:
+// import { GitCommit, GitBranch, GitStatus } from '../types/git';
 
-export interface Commit {
-  id: string;
-  message: string;
-  branch: string;
-  timestamp: number;
-  parentCommitIds: string[];
-}
+// export interface Commit extends GitCommit {}
+// export interface Branch extends GitBranch {}
+// export interface Status extends GitStatus {}
 
-export interface GitAction {
-  type: 'commit' | 'branch' | 'checkout' | 'merge' | 'init';
-  payload: Record<string, unknown>;
-}
-
-// Context interface
-export interface GitRepoContextType {
-  // Mermaid representation
-  mermaidLines: string[];
-  addMermaidLine: (line: string) => void;
-  clearMermaidLines: () => void;
-  
-  // GitGraph state
-  branches: Branch[];
-  commits: Commit[];
-  currentBranch: string;
-  
-  // Git actions
-  executeCommand: (cmd: string) => Promise<{ success: boolean; message: string }>;
-  createCommit: (message: string, branch?: string) => void;
-  createBranch: (branchName: string) => void;
-  checkoutBranch: (branchName: string) => void;
-  mergeBranch: (sourceBranch: string, targetBranch: string) => void;
-  
-  // Reference to the GitGraph instance
-  gitgraphRef: React.RefObject<GitgraphApi | null>;
-}
-
-// Create the context
-export const GitRepoContext = React.createContext<GitRepoContextType | undefined>(undefined);
+// It's better to remove this file and consolidate all context-related types
+// directly in GitRepoContextType.tsx or GitRepositoryContext.tsx
