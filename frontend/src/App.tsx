@@ -3,10 +3,12 @@ import './App.css';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// Import necessary components
-import Header from './components/ui/Header/Header';
-import Footer from './components/ui/Footer/Footer';
+// Import context providers directly as they are needed early
 import { GitRepositoryProvider } from './contexts/GitRepositoryProvider';
+
+// Lazy load layout components
+const Header = lazy(() => import('./components/ui/Header/Header'));
+const Footer = lazy(() => import('./components/ui/Footer/Footer'));
 
 // Lazy load pages
 const WorldsPage = lazy(() => import('./pages/WorldsPage'));
@@ -25,13 +27,15 @@ const LoadingPlaceholder = () => (
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="app-container">
-        <div className="header">
-          <Header />
-        </div>
-        
-        <GitRepositoryProvider>
-          <Suspense fallback={<LoadingPlaceholder />}>
+      {/* Wrap everything that might suspend in Suspense */}
+      <Suspense fallback={<LoadingPlaceholder />}>
+        <div className="app-container">
+          <div className="header">
+            <Header />
+          </div>
+          
+          {/* Context provider should wrap the routes that use it */}
+          <GitRepositoryProvider>
             <Routes>
               {/* Página inicial redireciona para mundos */}
               <Route path="/" element={<Navigate to="/worlds" replace />} />
@@ -69,13 +73,13 @@ export default function App() {
                 }
               />
             </Routes>
-          </Suspense>
-        </GitRepositoryProvider>
-        
-        <div className="footer">
-          <Footer />
+          </GitRepositoryProvider>
+          
+          <div className="footer">
+            <Footer />
+          </div>
         </div>
-      </div>
+      </Suspense>
     </BrowserRouter>
   );
 }
