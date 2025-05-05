@@ -73,31 +73,24 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
-export const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+export const refreshToken = async (req: Request, res: Response): Promise<void> => {
   try {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      return res.status(400).json({
-        success: false,
-        message: 'Refresh token é obrigatório'
-      });
+      res.status(400).json({ success: false, message: 'Refresh token é necessário' });
+      return;
     }
 
-    // Renovar token
     const result = await authService.refreshToken(refreshToken);
 
-    res.status(200).json({
+    res.json({
       success: true,
-      message: 'Token renovado com sucesso',
       ...result
     });
   } catch (error) {
-    console.error('Erro ao renovar token:', error);
-    res.status(401).json({
-      success: false,
-      message: 'Erro ao renovar token'
-    });
+    const message = error instanceof Error ? error.message : 'Erro ao renovar token';
+    res.status(401).json({ success: false, message });
   }
 };
 

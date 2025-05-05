@@ -6,23 +6,23 @@ import { UserToken } from '../entities/UserToken';
 // Define a type for the decoded user payload
 interface UserPayload {
   id: string;
+  isAdmin?: boolean;
   // Adicione outras propriedades conforme necessário
 }
 
-// Estenda a interface Request para incluir as propriedades de usuário
-declare global {
-  namespace Express {
-    interface Request {
-      user?: UserPayload;
-      userId?: string;
-    }
+// Estender a interface Request do Express
+// Usar module augmentation em vez de namespace global
+declare module 'express' {
+  interface Request {
+    user?: UserPayload;
+    userId?: string;
   }
 }
 
 /**
  * Middleware de proteção para rotas que exigem autenticação
  */
-export const protect = async (req: Request, res: Response, next: NextFunction) => {
+export const protect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     let token;
 
@@ -35,7 +35,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
       // Verificar o token
       const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
-      const decoded = jwt.verify(token, JWT_SECRET) as UserPayload;
+      const decoded = jwt.verify(token, JWT_SECRET as jwt.Secret) as UserPayload;
 
       // Verificar se o token está no banco de dados
       const tokenRepository = AppDataSource.getRepository(UserToken);
@@ -65,8 +65,8 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 /**
  * Middleware para verificar se o usuário é administrador
  */
-export const admin = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user && (req.user as any).isAdmin) {
+export const admin = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.user && req.user.isAdmin) {
     next();
   } else {
     res.status(403).json({ message: 'Acesso negado. Requer privilégios de administrador.' });

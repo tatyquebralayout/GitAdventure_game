@@ -6,7 +6,7 @@ import { Quest } from '../entities/Quest';
 // Request DTO para validação de comando
 export interface ValidateCommandRequestDto {
   command: string;
-  questId: number;
+  questId: string;
   currentStep?: number;
   userId?: string;
 }
@@ -22,10 +22,10 @@ export interface ValidateCommandResponseDto {
 
 export class CommandValidationService {
   // Buscar os passos do comando de uma quest específica
-  private async getQuestCommandSteps(questId: number): Promise<QuestCommandStep[]> {
+  private async getQuestCommandSteps(questId: string): Promise<QuestCommandStep[]> {
     try {
-      const questCommandStepRepository = AppDataSource.getRepository(QuestCommandStep);
-      return await questCommandStepRepository.find({
+      const repository = AppDataSource.getRepository(QuestCommandStep);
+      return await repository.find({
         where: { questId },
         order: { stepNumber: 'ASC' }
       });
@@ -40,20 +40,24 @@ export class CommandValidationService {
   private getMockedQuestSteps(): QuestCommandStep[] {
     // Create a minimal Quest object for the mock data
     const dummyQuest: Quest = {
-      id: 1,
-      title: 'Mock Quest',
-      description: 'A mock quest for testing',
-      difficulty: 1,
-      xpReward: 100,
+      id: '1',
+      name: 'Git Basics',
+      description: 'Learn the basics of Git',
+      type: 'tutorial',
+      parentQuestId: null,
+      childQuests: [],
+      questModules: [],
+      narratives: [],
+      worldQuests: [],
       commandSteps: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
+      playerQuests: [],
+      parentQuest: null
     };
 
     return [
       {
-        id: 1,
-        questId: 1,
+        id: '1',
+        questId: '1',
         stepNumber: 1,
         commandName: 'git init',
         commandRegex: '^git init$',
@@ -61,11 +65,14 @@ export class CommandValidationService {
         isOptional: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        quest: dummyQuest
+        quest: dummyQuest,
+        expectedPattern: 'git init',
+        successMessage: 'Repositório Git inicializado com sucesso!',
+        playerSteps: []
       },
       {
-        id: 2,
-        questId: 1,
+        id: '2',
+        questId: '1',
         stepNumber: 2,
         commandName: 'git add',
         commandRegex: '^git add (\\.|[\\w\\.\\-_]+)$',
@@ -73,11 +80,14 @@ export class CommandValidationService {
         isOptional: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        quest: dummyQuest
+        quest: dummyQuest,
+        expectedPattern: 'git add .',
+        successMessage: 'Arquivos adicionados com sucesso!',
+        playerSteps: []
       },
       {
-        id: 3,
-        questId: 1,
+        id: '3',
+        questId: '1',
         stepNumber: 3,
         commandName: 'git commit',
         commandRegex: '^git commit -m "(.*)"$',
@@ -85,11 +95,14 @@ export class CommandValidationService {
         isOptional: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        quest: dummyQuest
+        quest: dummyQuest,
+        expectedPattern: 'git commit -m "mensagem"',
+        successMessage: 'Alterações commitadas com sucesso!',
+        playerSteps: []
       },
       {
-        id: 4,
-        questId: 1,
+        id: '4',
+        questId: '1',
         stepNumber: 4,
         commandName: 'git branch',
         commandRegex: '^git branch ([\\w\\-_]+)$',
@@ -97,11 +110,14 @@ export class CommandValidationService {
         isOptional: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        quest: dummyQuest
+        quest: dummyQuest,
+        expectedPattern: 'git branch feature',
+        successMessage: 'Branch criado com sucesso!',
+        playerSteps: []
       },
       {
-        id: 5,
-        questId: 1,
+        id: '5',
+        questId: '1',
         stepNumber: 5,
         commandName: 'git checkout',
         commandRegex: '^git checkout ([\\w\\-_]+)$',
@@ -109,13 +125,16 @@ export class CommandValidationService {
         isOptional: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        quest: dummyQuest
+        quest: dummyQuest,
+        expectedPattern: 'git checkout feature',
+        successMessage: 'Mudou para o branch com sucesso!',
+        playerSteps: []
       }
     ];
   }
 
   // Atualizar o progresso do usuário após uma validação de comando
-  private async updateUserProgress(userId: string, questId: number, currentStep: number, isCompleted: boolean): Promise<void> {
+  private async updateUserProgress(userId: string, questId: string, currentStep: number, isCompleted: boolean): Promise<void> {
     if (!userId) return;
 
     try {
@@ -133,13 +152,12 @@ export class CommandValidationService {
       
       // Criar novo progresso se não existir
       if (!progress) {
-        // Fix the type by specifying correct properties
         progress = userProgressRepository.create({
           userId,
           questId,
           currentStep,
           isCompleted,
-          completedAt: isCompleted ? now : undefined // Change null to undefined
+          completedAt: isCompleted ? now : undefined
         });
       } else {
         // Atualizar progresso existente

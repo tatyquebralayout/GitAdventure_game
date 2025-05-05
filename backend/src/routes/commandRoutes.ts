@@ -1,10 +1,10 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { commandController } from '../controllers/CommandController';
 import { protect } from '../middlewares/authMiddleware';
 
-const router = Router();
+const commandRoutes = Router();
 
-// Adicionar middleware de autenticação para proteger a rota
-router.post('/validate', protect, (req: Request, res: Response) => commandController.validateCommand(req, res));
+// Rota para validar comando - protegida por autenticação
+commandRoutes.post('/commands/validate', protect, commandController.validateCommand);
 
-export default router;
+export { commandRoutes };
