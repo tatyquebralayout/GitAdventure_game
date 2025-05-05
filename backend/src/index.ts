@@ -9,6 +9,7 @@ import { authRoutes } from './routes/authRoutes';
 import { worldRoutes } from './routes/worldRoutes';
 import { questRoutes } from './routes/questRoutes';
 import progressRoutes from './routes/progressRoutes';
+import { errorMiddleware } from './middlewares/errorMiddleware';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -35,6 +36,9 @@ app.get('/', (req, res) => {
     message: 'GitAdventure API está funcionando!' 
   });
 });
+
+// Middleware de erro global (deve ser o último middleware)
+app.use(errorMiddleware);
 
 // Inicializar conexão com o banco de dados e iniciar o servidor
 AppDataSource.initialize()
@@ -67,6 +71,9 @@ AppDataSource.initialize()
         message: 'GitAdventure API está funcionando em modo de fallback!' 
       });
     });
+
+    // Middleware de erro global (deve ser o último middleware)
+    app.use(errorMiddleware);
     
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
