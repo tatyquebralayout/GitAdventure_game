@@ -1,168 +1,206 @@
-import React, { useRef } from 'react';
-import type { GitgraphApi, GitgraphBranchApi, GitgraphOptions } from '@gitgraph/react';
-import { Gitgraph, templateExtend, TemplateName } from '@gitgraph/react';
-import { Branch, Commit } from '@frontend/contexts/GitRepoContextTypes';
+import { useEffect, useRef } from 'react';
 import './GitGraphViewer.css';
 
-// --- Helper Functions --- //
-
-const createBranches = (
-  gitgraph: GitgraphApi,
-  branches: Branch[],
-  commits: Commit[],
-  branchRefs: Record<string, GitgraphBranchApi>
-) => {
-  const mainBranch = branches.find(b => b.name === 'main');
-  if (mainBranch) {
-    branchRefs['main'] = gitgraph.branch('main');
-  }
-
-  branches.forEach(branch => {
-    if (branch.name === 'main') return;
-
-    const firstCommitOfBranch = commits.find(c => c.branch === branch.name);
-    let parentBranchName = 'main';
-
-    if (firstCommitOfBranch && firstCommitOfBranch.parentCommitIds.length > 0) {
-      const parentCommit = commits.find(c => 
-        firstCommitOfBranch.parentCommitIds.includes(c.id) && c.branch !== branch.name
-      );
-      if (parentCommit) {
-        parentBranchName = parentCommit.branch;
-      } else {
-        const parentOnSameBranch = commits.find(c => firstCommitOfBranch.parentCommitIds.includes(c.id));
-        if (parentOnSameBranch) {
-          const branchingCommit = commits.find(c => c.id === parentOnSameBranch.id);
-          if (branchingCommit) parentBranchName = branchingCommit.branch;
-        }
-      }
+// Tipagem para a biblioteca Gitgraph.js
+declare global {
+  interface Window {
+    GitgraphJS: {
+      createGitgraph: (element: HTMLElement, options?: GitgraphOptions) => GitgraphInstance;
     }
-
-    const parentBranchRef = branchRefs[parentBranchName];
-    if (parentBranchRef) {
-      branchRefs[branch.name] = parentBranchRef.branch(branch.name);
-    } else {
-      branchRefs[branch.name] = gitgraph.branch(branch.name);
-    }
-  });
-};
-
-const addCommits = (
-  commits: Commit[],
-  branchRefs: Record<string, GitgraphBranchApi>
-) => {
-  commits
-    .filter(commit => commit.parentCommitIds.length <= 1)
-    .sort((a, b) => a.timestamp - b.timestamp)
-    .forEach(commit => {
-      const branch = branchRefs[commit.branch];
-      if (branch) {
-        branch.commit({
-          subject: commit.message,
-          hash: commit.id,
-        });
-      }
-    });
-};
-
-const addMerges = (
-  commits: Commit[],
-  branchRefs: Record<string, GitgraphBranchApi>
-) => {
-  commits
-    .filter(commit => commit.parentCommitIds.length > 1)
-    .sort((a, b) => a.timestamp - b.timestamp)
-    .forEach(mergeCommit => {
-      const targetBranch = branchRefs[mergeCommit.branch];
-      if (!targetBranch) return;
-
-      const sourceCommit = commits.find(c => c.id === mergeCommit.parentCommitIds[1]);
-      const sourceBranchName = sourceCommit?.branch;
-      const sourceBranch = sourceBranchName ? branchRefs[sourceBranchName] : undefined;
-
-      if (sourceBranch && sourceBranchName !== mergeCommit.branch) {
-        targetBranch.merge({
-          branch: sourceBranch,
-          subject: mergeCommit.message,
-          commitOptions: {
-            hash: mergeCommit.id,
-          },
-        });
-      } else {
-        console.warn(`Could not determine source branch for merge commit ${mergeCommit.id}`);
-        targetBranch.commit({
-          subject: mergeCommit.message + " (merge)",
-          hash: mergeCommit.id,
-        });
-      }
-    });
-};
-
-const checkoutActiveBranch = (
-  branches: Branch[],
-  branchRefs: Record<string, GitgraphBranchApi>
-) => {
-  const activeBranch = branches.find(b => b.isActive);
-  if (activeBranch && branchRefs[activeBranch.name]) {
-    console.log(`Active branch set to: ${activeBranch.name}`);
   }
-};
+}
 
-// --- Component --- //
+// Adicione estas interfaces acima da declaração global
+interface GitgraphOptions {
+  author?: string;
+  template?: Record<string, unknown>;
+}
+
+interface GitgraphInstance {
+  branch: (name: string) => GitgraphBranch;
+}
+
+interface GitgraphBranch {
+  commit: (options: string | Record<string, unknown>) => GitgraphBranch;
+  merge: (options: {branch: GitgraphBranch; commitOptions?: Record<string, unknown>}) => GitgraphBranch;
+}
+
+// Interfaces para os tipos do repositório Git
+export interface GitCommit {
+  id: string;
+  message: string;
+  author: string;
+  branch: string;
+  parents: string[];
+  date: Date;
+}
+
+export interface GitBranch {
+  name: string;
+  commits: string[]; // IDs dos commits
+}
+
+interface GitRepoState {
+  branches: GitBranch[];
+  commits: GitCommit[];
+}
 
 interface GitGraphViewerProps {
-  repoState: { branches: Branch[]; commits: Commit[] };
-  gitgraphRef?: React.RefObject<GitgraphApi | null>;
+  repoState: GitRepoState;
+  gitgraphRef?: React.RefObject<HTMLDivElement>;
 }
 
 const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef }) => {
-  const { branches, commits } = repoState;
-  const internalGitgraphRef = useRef<GitgraphApi | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const localGitgraphRef = useRef<HTMLDivElement>(null);
 
-  const customTemplate = templateExtend(TemplateName.Metro, {
-    colors: ['#0366d6', '#28a745', '#f9826c', '#6f42c1', '#e36209'],
-    branch: {
-      lineWidth: 2,
-      spacing: 20,
-      label: {
-        font: "normal 12px Arial",
-        bgColor: "#f1f8ff",
-      },
-    },
-    commit: {
-      spacing: 50,
-      dot: {
-        size: 8,
-      },
-      message: {
-        font: "normal 12px Arial",
-        display: true,
-      },
-    },
-  });
+  useEffect(() => {
+    // Carrega o script GitgraphJS dinamicamente
+    const loadGitgraphJS = async () => {
+      if (!window.GitgraphJS) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@gitgraph/js';
+        script.async = true;
+        script.onload = () => {
+          renderGitGraph();
+        };
+        document.body.appendChild(script);
+      } else {
+        renderGitGraph();
+      }
+    };
 
-  if (!branches || !commits) {
-    return <div className="git-graph-viewer git-graph-error">Missing branches or commits data.</div>;
-  }
+    // Renderiza o gráfico Git usando a biblioteca Gitgraph.js
+    const renderGitGraph = () => {
+      if (!window.GitgraphJS) {
+        console.error('Gitgraph.js não está carregado');
+        return;
+      }
+
+      // Usar a referência fornecida ou a referência local
+      const element = (gitgraphRef?.current || localGitgraphRef.current);
+      
+      if (!element) {
+        console.error('Elemento para renderizar Gitgraph não encontrado');
+        return;
+      }
+
+      // Limpar conteúdo antes de renderizar
+      element.innerHTML = '';
+
+      try {
+        // Criar gráfico Git com opções personalizadas
+        const gitgraph = window.GitgraphJS.createGitgraph(element, {
+          author: 'Jogador <player@gitadventure.com>',
+          template: {
+            colors: ['#6963FF', '#47E8D4', '#6BDB52', '#E84BA5', '#FFA657'],
+            branch: {
+              lineWidth: 3,
+              spacing: 40,
+              label: {
+                font: 'normal 12pt Arial',
+                color: '#333'
+              }
+            },
+            commit: {
+              spacing: 50,
+              dot: {
+                size: 8,
+                strokeWidth: 2
+              },
+              message: {
+                font: 'normal 11pt Arial',
+                color: '#444'
+              }
+            }
+          }
+        });
+
+        // Se não houver commits, mostrar um commit inicial exemplo
+        if (repoState.commits.length === 0) {
+          const mainBranch = gitgraph.branch('main');
+          mainBranch.commit('Commit inicial será mostrado aqui');
+          return;
+        }
+
+        // Mapear branches para objetos Gitgraph
+        const gitgraphBranches: Record<string, GitgraphBranch> = {};
+        
+        // Criar todos os branches primeiro
+        repoState.branches.forEach(branch => {
+          gitgraphBranches[branch.name] = gitgraph.branch(branch.name);
+        });
+
+        // Cria o branch main se não existir
+        if (!gitgraphBranches['main']) {
+          gitgraphBranches['main'] = gitgraph.branch('main');
+        }
+
+        // Ordenar commits por data para exibir na ordem correta
+        const sortedCommits = [...repoState.commits].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+        
+        // Renderizar commits
+        sortedCommits.forEach(commit => {
+          // Obter ou criar o branch correto para o commit
+          const branch = gitgraphBranches[commit.branch] || gitgraphBranches['main'];
+          
+          // Verificar se é um merge commit (mais de um parent)
+          if (commit.parents.length > 1) {
+            // Identificar o branch de origem do merge
+            const sourceParent = commit.parents[1]; // Segundo parent geralmente é a origem do merge
+            const sourceBranch = repoState.commits.find(c => c.id === sourceParent)?.branch;
+            
+            if (sourceBranch && gitgraphBranches[sourceBranch]) {
+              // Realizar o merge
+              branch.merge({
+                branch: gitgraphBranches[sourceBranch],
+                commitOptions: {
+                  subject: commit.message,
+                  author: commit.author,
+                  hash: commit.id.substring(0, 7)
+                }
+              });
+            } else {
+              // Fallback para commit normal se não encontrar o branch de origem
+              branch.commit({
+                subject: `${commit.message} (merge)`,
+                author: commit.author,
+                hash: commit.id.substring(0, 7)
+              });
+            }
+          } else {
+            // Commit normal
+            branch.commit({
+              subject: commit.message,
+              author: commit.author,
+              hash: commit.id.substring(0, 7)
+            });
+          }
+        });
+      } catch (error) {
+        console.error('Erro ao renderizar GitGraph:', error);
+        if (element) {
+          element.innerHTML = `<div class="gitgraph-error">Erro ao renderizar o gráfico: ${error}</div>`;
+        }
+      }
+    };
+
+    loadGitgraphJS();
+  }, [repoState, gitgraphRef]);
 
   return (
-    <div className="git-graph-viewer">
-      <Gitgraph options={{ template: customTemplate } as GitgraphOptions}>
-        {(gitgraph: GitgraphApi) => {
-          if (gitgraphRef) {
-            gitgraphRef.current = gitgraph;
-          }
-          internalGitgraphRef.current = gitgraph;
-
-          const branchRefs: Record<string, GitgraphBranchApi> = {};
-          createBranches(gitgraph, branches, commits, branchRefs);
-          addCommits(commits, branchRefs);
-          addMerges(commits, branchRefs);
-          checkoutActiveBranch(branches, branchRefs);
-
-          return null;
-        }}
-      </Gitgraph>
+    <div className="gitgraph-viewer" ref={containerRef}>
+      <div 
+        ref={localGitgraphRef} 
+        className="gitgraph-container"
+      />
+      {repoState.commits.length === 0 && (
+        <div className="gitgraph-empty-message">
+          Nenhum commit para mostrar. Use comandos Git para criar commits.
+        </div>
+      )}
     </div>
   );
 };

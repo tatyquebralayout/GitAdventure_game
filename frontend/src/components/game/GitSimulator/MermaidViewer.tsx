@@ -1,42 +1,110 @@
-import React, { useEffect, useState } from 'react';
-import { MermaidDiagram } from '@lightenna/react-mermaid-diagram';
-import mermaid from 'mermaid';
+import { useEffect, useRef } from 'react';
 import './MermaidViewer.css';
+
+// Tipo para o objeto mermaid global
+declare global {
+  interface Window {
+    mermaid: {
+      initialize: (config: MermaidConfig) => void;
+      render: (id: string, text: string, callback: (svgCode: string) => void) => void;
+    }
+  }
+}
+
+interface MermaidConfig {
+  startOnLoad?: boolean;
+  theme?: string;
+  gitGraph?: {
+    rotateCommitLabel?: boolean;
+    showBranches?: boolean;
+  };
+  [key: string]: unknown;
+}
 
 interface MermaidViewerProps {
   diagramText: string;
 }
 
 const MermaidViewer: React.FC<MermaidViewerProps> = ({ diagramText }) => {
-  const [isValid, setIsValid] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mermaidId = `mermaid-${Math.random().toString(36).substring(2, 15)}`;
 
   useEffect(() => {
-    // Basic validation: check if diagramText is not empty
-    if (diagramText && diagramText.trim() !== '') {
-      try {
-        // More robust validation could involve mermaid.parse(), but it's asynchronous
-        // and might be overkill. For now, just check if it's non-empty.
-        mermaid.initialize({ startOnLoad: false });
-        setIsValid(true);
-      } catch (error) {
-        console.error("Failed to initialize Mermaid or validate diagram:", error);
-        setIsValid(false);
+    // Carrega o script Mermaid dinamicamente
+    const loadMermaid = async () => {
+      if (!window.mermaid) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10.0.0/dist/mermaid.min.js';
+        script.async = true;
+        script.onload = () => {
+          initializeMermaid();
+        };
+        document.body.appendChild(script);
+      } else {
+        initializeMermaid();
       }
-    } else {
-      setIsValid(false);
-    }
-  }, [diagramText]); // Re-run validation if diagramText changes
+    };
 
-  if (!isValid) {
-    // Optionally render a placeholder or error message
-    return <div className="mermaid-viewer mermaid-invalid">Invalid or empty diagram text.</div>;
-  }
+    // Inicializa o mermaid e renderiza o diagrama
+    const initializeMermaid = () => {
+      if (window.mermaid) {
+        try {
+          window.mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            gitGraph: {
+              rotateCommitLabel: true,
+              showBranches: true
+            }
+          });
+
+          // Renderizar apenas se o texto do diagrama existe
+          if (diagramText && containerRef.current) {
+            const container = containerRef.current;
+            
+            // Limpar container antes de renderizar novo diagrama
+            container.innerHTML = '';
+            
+            // Criar elemento para o Mermaid
+            const element = document.createElement('div');
+            element.id = mermaidId;
+            element.className = 'mermaid';
+            element.textContent = diagramText;
+            container.appendChild(element);
+            
+            // Renderizar o diagrama
+            window.mermaid.render(
+              `svg-${mermaidId}`,
+              diagramText,
+              (svgCode) => {
+                if (container) {
+                  container.innerHTML = svgCode;
+                }
+              }
+            );
+          }
+        } catch (error) {
+          console.error('Erro ao renderizar diagrama Mermaid:', error);
+          if (containerRef.current) {
+            containerRef.current.innerHTML = `<div class="mermaid-error">Erro ao renderizar diagrama: ${error}</div>`;
+          }
+        }
+      }
+    };
+
+    loadMermaid();
+  }, [diagramText, mermaidId]);
 
   return (
     <div className="mermaid-viewer">
-      {/* Consider adding an Error Boundary component around MermaidDiagram
-          for more robust error handling during rendering */}
-      <MermaidDiagram>{diagramText}</MermaidDiagram>
+      <div ref={containerRef} className="mermaid-container">
+        {!diagramText && (
+          <div className="mermaid-empty">
+            Nenhum diagrama para exibir.
+            Use comandos Git para criar um histórico de commits.
+          </div>
+        )}
+      </div>
     </div>
   );
 };

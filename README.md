@@ -1,160 +1,154 @@
 # GitAdventure
 
-GitAdventure is an interactive application designed to teach Git concepts through a gamified learning experience. Users can learn Git commands and concepts by completing missions in an engaging visual interface with real-time feedback and visualization.
+GitAdventure é uma aplicação interativa projetada para ensinar conceitos de Git através de uma experiência de aprendizado gamificada. Os usuários podem aprender comandos e conceitos do Git completando missões em uma interface visual envolvente com feedback em tempo real e visualização.
 
-## Project Overview
+## Visão Geral do Projeto
 
-GitAdventure combines an interactive terminal, visual Git repository representation, and a quest system to make learning Git intuitive and fun. The application provides immediate feedback on Git commands and visually shows what's happening behind the scenes.
+GitAdventure combina um terminal interativo, representação visual do repositório Git e um sistema de missões para tornar o aprendizado do Git intuitivo e divertido. A aplicação fornece feedback imediato sobre comandos Git e mostra visualmente o que está acontecendo nos bastidores.
 
-## Architecture
+## Arquitetura
 
-This project is built as a monorepo using pnpm workspaces with:
+Este projeto é construído como um monorepo usando pnpm workspaces com:
 
+- **Frontend**: React 18, TypeScript, Vite, Zustand e Tailwind CSS
+- **Backend**: Express.js com TypeScript, TypeORM e PostgreSQL
+- **Visualização**: GitGraph.js e Mermaid para visualização de repositórios Git
 
-- **Frontend**: React 19, TypeScript, Vite, Zustand, and Tailwind CSS
-- **Backend**: Express.js with TypeScript, TypeORM, and PostgreSQL
-- **Visualization**: GitGraph.js and Mermaid for Git repository visualization
-
-## Project Structure
+## Estrutura do Projeto
 
 ```
 GitAdventure/
-├── frontend/               # React frontend application
+├── frontend/               # Aplicação frontend React
 │   ├── src/
-│   │   ├── api/            # API service handlers
-│   │   ├── assets/         # Static assets
-│   │   ├── components/     # Reusable UI components
-│   │   │   ├── DialogCard/       # Dialog component
-│   │   │   ├── Footer/           # Footer component
-│   │   │   ├── GitGraph/         # Git graph visualization
-│   │   │   ├── GitSimulator/     # Git simulator components
-│   │   │   ├── Header/           # Header component
-│   │   │   ├── ProgressCard/     # Progress tracking component
-│   │   │   ├── TerminalSimulator/ # Terminal simulator
-│   │   │   └── WorldCard/        # Mission/world selection
-│   │   ├── contexts/       # React contexts for state management
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── pages/          # Page-level components
-│   │   ├── services/       # Client-side services
-│   │   ├── store/          # State management
-│   │   ├── styles/         # Global styles
-│   │   ├── types/          # TypeScript type definitions
-│   │   └── utils/          # Utility functions
+│   │   ├── api/            # Handlers de serviço API
+│   │   ├── assets/         # Ativos estáticos
+│   │   ├── components/     # Componentes UI reutilizáveis
+│   │   │   ├── game/             # Componentes de jogo
+│   │   │   ├── terminal/         # Componentes de terminal
+│   │   │   └── ui/               # Componentes UI básicos
+│   │   ├── contexts/       # Contextos React para gerenciamento de estado
+│   │   ├── hooks/          # Hooks React personalizados
+│   │   ├── pages/          # Componentes de nível de página
+│   │   ├── services/       # Serviços do lado do cliente
+│   │   ├── stores/         # Gerenciamento de estado
+│   │   ├── styles/         # Estilos globais
+│   │   ├── types/          # Definições de tipo TypeScript
+│   │   └── utils/          # Funções utilitárias
 │   │
-│   ├── package.json        # Frontend dependencies
-│   └── tsconfig.json       # TypeScript configuration
+│   ├── package.json        # Dependências do frontend
+│   └── tsconfig.json       # Configuração TypeScript
 │
-├── backend/                # Express.js backend
+├── backend/                # Backend Express.js
 │   ├── src/
-│   │   ├── controllers/    # Request handlers
-│   │   ├── dtos/           # Data transfer objects
-│   │   ├── middlewares/    # Custom middleware functions
-│   │   ├── models/         # Data models
-│   │   ├── repositories/   # Data access layer
-│   │   ├── routes/         # API route definitions
-│   │   ├── services/       # Business logic
-│   │   └── utils/          # Utility functions
+│   │   ├── config/         # Configurações
+│   │   ├── controllers/    # Manipuladores de requisições
+│   │   ├── dtos/           # Objetos de transferência de dados
+│   │   ├── entities/       # Entidades de banco de dados
+│   │   ├── middlewares/    # Funções middleware personalizadas
+│   │   ├── models/         # Modelos de dados
+│   │   ├── repositories/   # Camada de acesso a dados
+│   │   ├── routes/         # Definições de rotas API
+│   │   ├── services/       # Lógica de negócios
+│   │   └── utils/          # Funções utilitárias
 │   │
-│   ├── package.json        # Backend dependencies
-│   └── tsconfig.json       # TypeScript configuration
+│   ├── package.json        # Dependências do backend
+│   └── tsconfig.json       # Configuração TypeScript
 │
-├── docs/                   # Documentation
-│   ├── api.md              # API documentation
-│   └── architecture.md     # Architecture documentation
-│
-├── public/                 # Static public files
-├── tests/                  # Test files
-├── eslint.config.js        # ESLint configuration
-├── package.json            # Root package.json
-├── pnpm-workspace.yaml     # pnpm workspace configuration
-├── tsconfig.base.json      # Base TypeScript configuration
-└── vite.config.ts          # Vite configuration
+├── docs/                   # Documentação
+├── dist/                   # Arquivos de build
+├── public/                 # Arquivos públicos estáticos
+├── tests/                  # Arquivos de teste
+├── eslint.config.js        # Configuração ESLint
+├── package.json            # package.json raiz
+├── pnpm-workspace.yaml     # Configuração do workspace pnpm
+├── tsconfig.base.json      # Configuração TypeScript base
+└── tsconfig.json           # Configuração TypeScript raiz
 ```
 
-## Key Features
+## Principais Recursos
 
-- **Interactive Terminal**: A simulated terminal interface for executing Git commands
-- **Git Repository Visualization**: Visual representation of Git repositories using both GitGraph and Mermaid diagrams
-- **Mission-based Learning**: Structured missions to learn Git concepts step by step
-- **Progress Tracking**: Track your Git learning progress
-- **Command Validation**: Backend validation of Git commands against expected patterns for each learning step
-- **Multiple Visualization Options**: Toggle between different Git visualization approaches
+- **Terminal Interativo**: Uma interface de terminal simulada para executar comandos Git
+- **Visualização de Repositório Git**: Representação visual de repositórios Git usando GitGraph e diagramas Mermaid
+- **Aprendizado Baseado em Missões**: Missões estruturadas para aprender conceitos Git passo a passo
+- **Acompanhamento de Progresso**: Acompanhe seu progresso de aprendizado Git
+- **Validação de Comandos**: Validação de backend de comandos Git contra padrões esperados para cada etapa de aprendizado
+- **Múltiplas Opções de Visualização**: Alterne entre diferentes abordagens de visualização Git
 
-## Getting Started
+## Começando
 
-### Prerequisites
+### Pré-requisitos
 
 - Node.js (>= 16.x)
 - pnpm (>= 8.x)
-- PostgreSQL Database Server
+- Servidor de Banco de Dados PostgreSQL
 
-### Installation
+### Instalação
 
-1. Clone the repository:
+1. Clone o repositório:
    ```bash
-   git clone https://github.com/yourusername/GitAdventure.git
+   git clone https://github.com/seuusuario/GitAdventure.git
    cd GitAdventure
    ```
 
-2. Install dependencies using pnpm:
+2. Instale as dependências usando pnpm:
    ```bash
    pnpm install
    ```
 
-3. Configure the backend database connection:
-   - Create a `.env` file in the `backend/` directory.
-   - Add the necessary environment variables for your PostgreSQL database connection (see `backend/src/config/database.ts` for details, e.g., `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`).
+3. Configure a conexão do banco de dados do backend:
+   - Crie um arquivo `.env` no diretório `backend/`.
+   - Adicione as variáveis de ambiente necessárias para sua conexão com o banco de dados PostgreSQL (veja `backend/src/config/database.ts` para detalhes, ex: `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`).
 
-### Running the Application
+### Executando a Aplicação
 
-1. Start the backend server:
+1. Inicie o servidor backend:
    ```bash
-   pnpm --filter backend dev
+   pnpm dev:backend
    ```
 
-2. In a separate terminal, start the frontend:
+2. Em um terminal separado, inicie o frontend:
    ```bash
-   pnpm --filter frontend dev
+   pnpm dev:frontend
    ```
 
-3. Open your browser and navigate to `http://localhost:5173` (or the URL shown in your terminal).
+3. Abra seu navegador e navegue até `http://localhost:5173` (ou a URL mostrada em seu terminal).
 
-## Development
+## Desenvolvimento
 
-### Frontend Development
+### Desenvolvimento Frontend
 
-The frontend is built with React 19, TypeScript, and Vite. Key features include:
+O frontend é construído com React 18, TypeScript e Vite. Recursos principais incluem:
 
-- **Component-based architecture**: Modular UI components
-- **Context API**: For state management (GitRepoContext and GitRepositoryContext)
-- **Tailwind CSS**: For styling
-- **Multiple visualization libraries**: @gitgraph/react and Mermaid for Git graph visualization
+- **Arquitetura baseada em componentes**: Componentes UI modulares
+- **Context API**: Para gerenciamento de estado
+- **Tailwind CSS**: Para estilização
+- **Múltiplas bibliotecas de visualização**: @gitgraph/react e Mermaid para visualização de gráficos Git
 
-### Backend Development
+### Desenvolvimento Backend
 
-The backend is built with Express.js and TypeScript. It provides:
+O backend é construído com Express.js e TypeScript. Ele fornece:
 
-- **RESTful API**: For command validation, quest progression, authentication, etc.
-- **Service-based architecture**: Separation of concerns with controllers, services, and routes.
-- **Database Integration**: Uses TypeORM to interact with a PostgreSQL database.
+- **API RESTful**: Para validação de comandos, progressão de missões, autenticação, etc.
+- **Arquitetura baseada em serviços**: Separação de preocupações com controllers, services e routes.
+- **Integração com Banco de Dados**: Usa TypeORM para interagir com um banco de dados PostgreSQL.
 
-## Building for Production
+## Construindo para Produção
 
-1. Build the entire application:
+1. Construa a aplicação inteira:
    ```bash
    pnpm build
    ```
 
-2. Or build specific packages:
+2. Ou construa pacotes específicos:
    ```bash
-   pnpm --filter frontend build
-   pnpm --filter backend build
+   pnpm build:frontend
+   pnpm build:backend
    ```
 
-## Contributing
+## Contribuindo
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contribuições são bem-vindas! Sinta-se à vontade para enviar um Pull Request.
 
-## License
+## Licença
 
-This project is licensed under the MIT License.
+Este projeto está licenciado sob a Licença MIT.

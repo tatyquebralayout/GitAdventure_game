@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_URL = process.env.VITE_API_URL || 'http://localhost:3001/api';
+import { api } from './authApi';
 
 // Interface para GameState
 export interface GameState {
@@ -9,8 +8,8 @@ export interface GameState {
   inventory: string[];
   location: string;
   completedActions: string[];
-  playerStats: Record<string, any>;
-  [key: string]: any; // Outras propriedades
+  playerStats: Record<string, number>;
+  [key: string]: unknown;
 }
 
 // Interface para GameSave
@@ -47,27 +46,23 @@ interface UpdateProgressPayload {
   // Add other relevant fields
 }
 
-// Configuração do axios com interceptor para adicionar o token
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
+// Adicione esses tipos adequados
+interface UserProgress {
+  userId: number;
+  worldId: number;
+  progress: number;
+  completedMissions: number[];
+  currentMission: number;
+  lastUpdate: Date;
+}
 
-// Interceptor para adicionar o token em todas as requisições
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+interface MissionProgress {
+  missionId: number;
+  status: 'pending' | 'in_progress' | 'completed';
+  progress: number;
+  objectives: Record<string, boolean>;
+  timestamp: Date;
+}
 
 // Serviço de progresso do jogo
 export const progressApi = {
@@ -146,7 +141,7 @@ export const progressApi = {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data; // Assuming response.data matches ProgressData
-    } catch (error) {
+    } catch {
       throw new Error('Erro ao obter progresso do jogo');
     }
   },
@@ -158,8 +153,38 @@ export const progressApi = {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data; // Assuming response.data matches ProgressData
-    } catch (error) {
+    } catch {
       throw new Error('Erro ao atualizar progresso do jogo');
+    }
+  },
+
+  /**
+   * Atualiza o progresso de um usuário em um mundo
+   */
+  async updateUserProgress(
+    worldId: number, 
+    progressData: Partial<UserProgress>
+  ): Promise<UserProgress> {
+    try {
+      const response = await api.post(`/progress/worlds/${worldId}`, progressData);
+      return response.data;
+    } catch {
+      throw new Error('Erro ao atualizar progresso do usuário');
+    }
+  },
+
+  /**
+   * Atualiza o progresso de uma missão específica
+   */
+  async updateMissionProgress(
+    missionId: number, 
+    progressData: Partial<MissionProgress>
+  ): Promise<MissionProgress> {
+    try {
+      const response = await api.post(`/progress/missions/${missionId}`, progressData);
+      return response.data;
+    } catch {
+      throw new Error('Erro ao atualizar progresso da missão');
     }
   }
 };

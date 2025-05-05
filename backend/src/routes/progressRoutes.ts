@@ -1,11 +1,11 @@
 import { Router, RequestHandler } from 'express';
 import { gameProgressController } from '../controllers/GameProgressController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { protect } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// Todas as rotas de progresso exigem autenticação
-router.use(authMiddleware);
+// Aplicar middleware de autenticação para todas as rotas
+router.use(protect);
 
 // Fix TypeScript errors by casting controller methods to RequestHandler type
 router.post('/save', gameProgressController.saveProgress as unknown as RequestHandler);

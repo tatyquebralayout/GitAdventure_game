@@ -1,37 +1,47 @@
 import { useState } from 'react';
 
-export function useCommandHistory(maxHistory = 50) {
+export const useCommandHistory = () => {
   const [history, setHistory] = useState<string[]>([]);
-  const [position, setPosition] = useState(-1);
-  
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
   const addToHistory = (command: string) => {
-    // Avoid consecutive duplicate commands
-    if (history.length === 0 || history[0] !== command) {
-      setHistory(prev => [command, ...prev].slice(0, maxHistory));
-    }
-    setPosition(-1);
+    setHistory(prev => [...prev, command]);
+    setHistoryIndex(-1);
   };
-  
-  const navigateHistory = (direction: 'up' | 'down') => {
+
+  const navigateHistory = (direction: 'up' | 'down'): string | null => {
     if (history.length === 0) return null;
-    
-    let newPosition: number;
-    
+
     if (direction === 'up') {
-      // Navigate backwards in history
-      newPosition = Math.min(position + 1, history.length - 1);
+      // Navigate backwards through history
+      const newIndex = historyIndex === -1 
+        ? history.length - 1 
+        : Math.max(0, historyIndex - 1);
+      
+      setHistoryIndex(newIndex);
+      return history[newIndex];
     } else {
-      // Navigate forwards in history
-      newPosition = Math.max(position - 1, -1);
+      // Navigate forwards through history
+      if (historyIndex === -1) return '';
+      
+      const newIndex = historyIndex === history.length - 1 
+        ? -1 
+        : historyIndex + 1;
+      
+      setHistoryIndex(newIndex);
+      return newIndex === -1 ? '' : history[newIndex];
     }
-    
-    setPosition(newPosition);
-    return newPosition === -1 ? '' : history[newPosition];
   };
-  
+
+  const clearHistory = () => {
+    setHistory([]);
+    setHistoryIndex(-1);
+  };
+
   return {
+    history,
     addToHistory,
     navigateHistory,
-    history
+    clearHistory
   };
-}
+};

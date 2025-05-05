@@ -1,13 +1,22 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useRef, useCallback } from 'react';
 import './GitSimulator.css';
-import { useGitRepository } from '@frontend/contexts/GitRepositoryContext';
-import { useGitRepo } from '@frontend/hooks/useGitRepo';
+import { useGitRepository } from '../../../hooks/useGitRepository';
+import { useGitRepo } from '../../../hooks/useGitRepo';
 import VisualizationToggle, { ViewMode } from './VisualizationToggle';
+import DevTip from '../../ui/DevHelper/DevTip';
+import { GitCommit as GraphViewerCommit } from './GitGraphViewer';
 
 // Lazy load visualization components to reduce initial bundle size
 const MermaidViewer = lazy(() => import('./MermaidViewer'));
 const GitGraphViewer = lazy(() => import('./GitGraphViewer'));
 
+// Definição dos tipos para arquivos
+interface GitFile {
+  name: string;
+  status: 'untracked' | 'modified' | 'staged' | 'committed';
+}
+
+// Adicionar tipos ao window global para executeGitCommand
 declare global {
   interface Window {
     executeGitCommand: (command: string) => Promise<unknown>;
@@ -17,25 +26,127 @@ declare global {
 export default function GitSimulator() {
   const [repositoryView, setRepositoryView] = useState<'working' | 'staged' | 'committed'>('working');
   const [viewMode, setViewMode] = useState<ViewMode>('gitgraph');
+  const [files, setFiles] = useState<GitFile[]>([
+    { name: 'README.md', status: 'untracked' },
+    { name: 'index.js', status: 'untracked' }
+  ]);
   
   // Use both Git repository contexts
   const { 
     commits, 
-    files, 
-    currentBranch, 
+    currentBranch,
     executeCommand: executeGitRepositoryCommand 
   } = useGitRepository();
   
   // Use the new GitRepoContext for Mermaid integration
-  const { 
-    mermaidLines, 
-    gitgraphRef, 
-    branches: gitRepoBranches, 
-    commits: gitRepoCommits,
-    executeCommand: executeGitRepoCommand 
-  } = useGitRepo();
+  const gitRepoContext = useGitRepo();
   
-  const diagramText = mermaidLines.join('\n');
+  // Referência para o gitgraphRef
+  const gitgraphRef = useRef<HTMLDivElement>(null);
+  
+  // Criar cópias seguras dos arrays para evitar null/undefined
+  const mermaidLines: string[] = [];
+  const gitRepoBranches = gitRepoContext?.branches || [];
+  const gitRepoCommits = gitRepoContext?.commits || [];
+  const executeGitRepoCommand = gitRepoContext?.executeCommand;
+  
+  const diagramText = Array.isArray(mermaidLines) ? mermaidLines.join('\n') : '';
+  
+  // Função para atualizar a lista de arquivos
+  const updateFileList = useCallback(() => {
+    const updatedFiles: GitFile[] = [];
+    
+    // Se estiver usando o contexto GitRepo, aproveitar para obter status real
+    if (gitRepoContext && gitRepoContext.status) {
+      // Obter arquivos não rastreados do repositório Git
+      gitRepoContext.status.untracked.forEach(filename => {
+        updatedFiles.push({ name: filename, status: 'untracked' });
+      });
+      
+      // Obter arquivos modificados
+      gitRepoContext.status.modified.forEach(filename => {
+        updatedFiles.push({ name: filename, status: 'modified' });
+      });
+      
+      // Obter arquivos no staged
+      gitRepoContext.status.staged.forEach(filename => {
+        updatedFiles.push({ name: filename, status: 'staged' });
+      });
+      
+      // Para arquivos commitados, usar commits mais recentes
+      if (commits && commits.length > 0) {
+        const mostRecentCommit = commits[0];
+        if (mostRecentCommit && mostRecentCommit.message) {
+          // Extrair nomes de arquivos da mensagem de commit (simulação simplificada)
+          const commitMessage = mostRecentCommit.message.toLowerCase();
+          
+          // Simulação simples para detectar arquivos commitados
+          ['app.js', 'style.css', 'index.html', 'README.md'].forEach(filename => {
+            if (commitMessage.includes(filename.toLowerCase()) && 
+                !updatedFiles.some(file => file.name === filename)) {
+              updatedFiles.push({ name: filename, status: 'committed' });
+            }
+          });
+        }
+      }
+    } else {
+      // Fallback para simulação se não tiver acesso ao estado do Git
+      // Arquivos não rastreados (simulados)
+      updatedFiles.push({ name: 'README.md', status: 'untracked' });
+      updatedFiles.push({ name: 'index.js', status: 'untracked' });
+      
+      // Se existir commits, simular alguns arquivos commitados
+      if (commits && commits.length > 0) {
+        updatedFiles.push({ name: 'app.js', status: 'committed' });
+        updatedFiles.push({ name: 'style.css', status: 'committed' });
+      }
+    }
+    
+    setFiles(updatedFiles);
+  }, [gitRepoContext, commits]);
+  
+  // Função para atualizar a visualização Git
+  const updateGitVisualization = useCallback(() => {
+    // Atualizar arquivos
+    updateFileList();
+    
+    // Recarregar visualização de commits se disponível
+    if (gitRepoContext && gitRepoContext.executeCommand) {
+      // Simular um refresh na UI chamando o status
+      gitRepoContext.executeCommand('git status').catch(error => 
+        console.error('Erro ao atualizar visualização Git:', error)
+      );
+    }
+  }, [updateFileList, gitRepoContext]);
+  
+  // Atualizar o estado dos arquivos quando o status do repositório mudar
+  useEffect(() => {
+    if (commits) {
+      updateFileList();
+    }
+  }, [commits, updateFileList]);
+  
+  // Atualizar quando o contexto do repositório git mudar
+  useEffect(() => {
+    if (gitRepoContext) {
+      updateFileList();
+    }
+  }, [gitRepoContext, gitRepoContext?.status, updateFileList]);
+  
+  // Atualizar periodicamente para manter visualizações sincronizadas
+  useEffect(() => {
+    // Atualizar na inicialização
+    updateGitVisualization();
+    
+    // Configurar intervalo para atualização periódica
+    const intervalId = setInterval(() => {
+      updateGitVisualization();
+    }, 5000); // Atualizar a cada 5 segundos
+    
+    // Limpar intervalo quando o componente for desmontado
+    return () => clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Keep contexts in sync
   useEffect(() => {
@@ -44,7 +155,9 @@ export default function GitSimulator() {
     
     window.executeGitCommand = async (command: string) => {
       // Execute in both contexts to keep them in sync
-      await executeGitRepoCommand(command);
+      if (executeGitRepoCommand) {
+        await executeGitRepoCommand(command);
+      }
       const gitRepositoryResult = await executeGitRepositoryCommand(command);
       
       // Return result from the original context for backward compatibility
@@ -79,81 +192,99 @@ export default function GitSimulator() {
     </div>
   );
 
+  // Converter GitCommit para GraphViewerCommit
+  const convertCommits = (): GraphViewerCommit[] => {
+    return gitRepoCommits.map(commit => ({
+      id: commit.hash || '',
+      message: commit.message || '',
+      author: commit.author || '',
+      branch: currentBranch,
+      parents: [],
+      date: new Date(commit.date || new Date())
+    }));
+  };
+
   return (
-    <div className="git-simulator card">
-      <div className="git-header">
-        <h3>simulador git</h3>
-      </div>
-      
-      <div className="git-content">
-        <div className="git-tabs">
-          <button 
-            className={`git-tab-button ${repositoryView === 'working' ? 'active' : ''}`}
-            onClick={() => setRepositoryView('working')}
-          >
-            Working Directory
-          </button>
-          <button 
-            className={`git-tab-button ${repositoryView === 'staged' ? 'active' : ''}`}
-            onClick={() => setRepositoryView('staged')}
-          >
-            Staging Area
-          </button>
-          <button 
-            className={`git-tab-button ${repositoryView === 'committed' ? 'active' : ''}`}
-            onClick={() => setRepositoryView('committed')}
-          >
-            Local Repository
-          </button>
+    <DevTip
+      componentName="GitSimulator"
+      description="Simulador visual de repositório Git, mostrando graficamente branches, commits e status de arquivos."
+      integrationTip="Deve ser integrado com commandApi para executar comandos Git reais e persistir o estado no backend."
+    >
+      <div className="git-simulator card">
+        <div className="git-header">
+          <h3>simulador git</h3>
         </div>
         
-        <div className="git-files-container">
-          {/* Toggle between file list and graph view */}
-          {repositoryView === 'committed' ? (
-            <div className="git-graph-view">
-              <VisualizationToggle viewMode={viewMode} onToggle={handleViewModeToggle} />
-              
-              <Suspense fallback={<LoadingFallback />}>
-                {viewMode === 'mermaid' 
-                  ? <MermaidViewer diagramText={diagramText} />
-                  : <GitGraphViewer 
-                      repoState={{ 
-                        branches: gitRepoBranches, 
-                        commits: gitRepoCommits
-                      }}
-                      gitgraphRef={gitgraphRef}
-                    />
-                }
-              </Suspense>
-            </div>
-          ) : (
-            <div className="git-file-list">
-              {files.filter(file => {
-                if (repositoryView === 'working') return file.status === 'untracked' || file.status === 'modified';
-                if (repositoryView === 'staged') return file.status === 'staged';
-                if (repositoryView === 'committed') return file.status === 'committed';
-                return true;
-              }).map((file, index) => (
-                <div key={index} className={`git-file ${getStatusClass(file.status)}`}>
-                  <span className="file-name">{file.name}</span>
-                  <span className="file-status">{file.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        
-        <div className="git-info">
-          <div className="git-branch-info">
-            <span className="branch-label">Current Branch:</span>
-            <span className="branch-name">{currentBranch}</span>
+        <div className="git-content">
+          <div className="git-tabs">
+            <button 
+              className={`git-tab-button ${repositoryView === 'working' ? 'active' : ''}`}
+              onClick={() => setRepositoryView('working')}
+            >
+              Working Directory
+            </button>
+            <button 
+              className={`git-tab-button ${repositoryView === 'staged' ? 'active' : ''}`}
+              onClick={() => setRepositoryView('staged')}
+            >
+              Staging Area
+            </button>
+            <button 
+              className={`git-tab-button ${repositoryView === 'committed' ? 'active' : ''}`}
+              onClick={() => setRepositoryView('committed')}
+            >
+              Local Repository
+            </button>
           </div>
-          <div className="git-commit-count">
-            <span className="commit-label">Commits:</span>
-            <span className="commit-number">{commits.length}</span>
+          
+          <div className="git-files-container">
+            {/* Toggle between file list and graph view */}
+            {repositoryView === 'committed' ? (
+              <div className="git-graph-view">
+                <VisualizationToggle viewMode={viewMode} onToggle={handleViewModeToggle} />
+                
+                <Suspense fallback={<LoadingFallback />}>
+                  {viewMode === 'mermaid' 
+                    ? <MermaidViewer diagramText={diagramText} />
+                    : <GitGraphViewer 
+                        repoState={{ 
+                          branches: gitRepoBranches.map(name => ({ name, commits: [] })), 
+                          commits: convertCommits()
+                        }}
+                        gitgraphRef={gitgraphRef}
+                      />
+                  }
+                </Suspense>
+              </div>
+            ) : (
+              <div className="git-file-list">
+                {files.filter(file => {
+                  if (repositoryView === 'working') return file.status === 'untracked' || file.status === 'modified';
+                  if (repositoryView === 'staged') return file.status === 'staged';
+                  if (repositoryView === 'committed') return file.status === 'committed';
+                  return true;
+                }).map((file, index) => (
+                  <div key={index} className={`git-file ${getStatusClass(file.status)}`}>
+                    <span className="file-name">{file.name}</span>
+                    <span className="file-status">{file.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="git-info">
+            <div className="git-branch-info">
+              <span className="branch-label">Current Branch:</span>
+              <span className="branch-name">{currentBranch}</span>
+            </div>
+            <div className="git-commit-count">
+              <span className="commit-label">Commits:</span>
+              <span className="commit-number">{commits ? commits.length : 0}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </DevTip>
   );
 }

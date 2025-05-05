@@ -1,17 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
-import { useGitRepository } from '@frontend/contexts/GitRepositoryContext';
-import { useGitRepo } from '@frontend/hooks/useGitRepo';
-import { useGame } from '@frontend/hooks/useGame';
-import { useCommandHistory } from '@frontend/hooks/useCommandHistory';
-import { processCommand } from '@frontend/services/commands';
-import { autocompleteCommand } from '@frontend/services/commands/autocomplete';
-import { GameState } from '@frontend/stores/gameStore';
+import { useGitRepository } from '../../../hooks/useGitRepository';
+import { useGitRepo } from '../../../hooks/useGitRepo';
+import { useGame } from '../../../hooks/useGame';
+import { useCommandHistory } from '../../../hooks/useCommandHistory';
+import { processCommand } from '../../../services/commands';
+import { processGitCommand } from '../../../services/commands/gitCommands';
+import { processShellCommand } from '../../../services/commands/shellCommands';
+import { autocompleteCommand } from '../../../services/commands/autocomplete';
+import { CommandEffect } from '../../../services/commands';
+import { GameState } from '../../../stores/gameStore';
+import DevTip from '../../ui/DevHelper/DevTip';
 import './TerminalSimulator.css';
 
 export default function TerminalSimulator() {
   const [commandHistory, setCommandHistory] = useState<Array<{ text: string; isOutput: boolean }>>([
-    { text: "Welcome to Git Adventure Terminal", isOutput: true },
-    { text: "Type 'help' to see available commands", isOutput: true }
+    { text: "Bem-vindo ao Terminal do Git Adventure", isOutput: true },
+    { text: "Digite 'help' para ver comandos disponíveis ou 'git --help' para comandos Git", isOutput: true }
   ]);
   const [currentCommand, setCurrentCommand] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -104,36 +108,74 @@ export default function TerminalSimulator() {
       // Add to command history for navigation
       addToHistory(commandText);
       
-      // Check if it's a Git command
-      if (commandText.startsWith('git ')) {
-        try {
-          // Execute Git command in both contexts to keep them in sync
-          await gitRepoContext.executeCommand(commandText);
-          const result = await gitRepo.executeCommand(commandText);
+      try {
+        // Determinar o tipo de comando (Git, Shell ou Adventure)
+        if (commandText.startsWith('git ')) {
+          // Processa comando Git
+          try {
+            // Execute Git command in both contexts to keep them in sync
+            if (gitRepoContext) {
+              await gitRepoContext.executeCommand(commandText);
+            }
+            
+            // Execute no GitRepository context
+            const result = await gitRepo.executeCommand(commandText);
+            
+            // Processa também usando nosso próprio handler para efeitos no jogo
+            const gameState = buildGameState();
+            const gitResult = await processGitCommand(commandText, gameState);
+            
+            // Aplicar efeitos no estado do jogo se houver
+            if (gitResult.success && gitResult.effects) {
+              applyEffectsToGameState(gitResult.effects);
+            }
+            
+            // Add result to command history (usando o resultado do hook do repositório)
+            setCommandHistory(prev => [
+              ...prev, 
+              { 
+                text: result.message || gitResult.message,
+                isOutput: true
+              }
+            ]);
+          } catch (error) {
+            // Handle Git command errors
+            setCommandHistory(prev => [
+              ...prev, 
+              { 
+                text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+                isOutput: true
+              }
+            ]);
+          }
+        } else if (isShellCommand(commandText)) {
+          // Processa comando Shell
+          const shellResult = processShellCommand(commandText);
           
-          // Add result to command history
+          // Verifica se o comando shell deveria afetar a visualização Git
+          if (shellResult.success) {
+            // Comandos que podem afetar o GitSimulator
+            if (commandText.startsWith('cd ') || 
+                commandText.startsWith('mkdir ') || 
+                commandText.startsWith('touch ') || 
+                commandText.startsWith('rm ')) {
+              // Atualizar visualização Git se necessário
+              if (gitRepoContext) {
+                await gitRepoContext.executeCommand('git status');
+              }
+            }
+          }
+          
+          // Adiciona resultado ao histórico
           setCommandHistory(prev => [
-            ...prev, 
-            { 
-              text: result.message,
+            ...prev,
+            {
+              text: shellResult.message || '',
               isOutput: true
             }
           ]);
-        } catch (error) {
-          // Handle Git command errors
-          setCommandHistory(prev => [
-            ...prev, 
-            { 
-              text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
-              isOutput: true
-            }
-          ]);
-        } finally {
-          setIsProcessing(false);
-        }
-      } else {
-        // Process adventure command with our new pattern matching system
-        try {
+        } else {
+          // Process adventure command with our pattern matching system
           // Get the complete current state from the game store
           const currentState = buildGameState();
           
@@ -142,21 +184,7 @@ export default function TerminalSimulator() {
           
           // Apply command effects if successful
           if (result.success && result.effects) {
-            if (result.effects.setLocation) {
-              gameState.move(result.effects.setLocation);
-            }
-            
-            if (result.effects.addToInventory?.length) {
-              for (const item of result.effects.addToInventory) {
-                gameState.pickupItem(item);
-              }
-            }
-            
-            if (result.effects.setFlag) {
-              for (const [flag, value] of Object.entries(result.effects.setFlag)) {
-                gameState.setFlag(flag, value);
-              }
-            }
+            applyEffectsToGameState(result.effects);
           }
           
           // Add result to command history
@@ -167,52 +195,115 @@ export default function TerminalSimulator() {
               isOutput: true
             }
           ]);
-        } catch (error) {
-          // Handle adventure command errors
-          setCommandHistory(prev => [
-            ...prev,
-            {
-              text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
-              isOutput: true
-            }
-          ]);
-        } finally {
-          setIsProcessing(false);
+        }
+      } catch (error) {
+        // Handle any errors
+        setCommandHistory(prev => [
+          ...prev,
+          {
+            text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+            isOutput: true
+          }
+        ]);
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+  };
+
+  // Helper function to check if command is a shell command
+  const isShellCommand = (command: string): boolean => {
+    const shellCommands = [
+      'ls', 'cd', 'pwd', 'mkdir', 'touch', 'rm', 'cat', 
+      'echo', 'clear', 'man', 'help', 'grep', 'find', 'diff',
+      'less', 'more', 'head', 'tail', 'vimdiff'
+    ];
+    
+    const commandName = command.split(' ')[0];
+    return shellCommands.includes(commandName);
+  };
+
+  // Helper function to apply effects to game state
+  const applyEffectsToGameState = (effects: CommandEffect) => {
+    if (effects.setLocation) {
+      gameState.move(effects.setLocation);
+    }
+    
+    if (effects.addToInventory?.length) {
+      for (const item of effects.addToInventory) {
+        gameState.pickupItem(item);
+      }
+    }
+    
+    if (effects.removeFromInventory?.length) {
+      for (const item of effects.removeFromInventory) {
+        gameState.removeItem(item);
+      }
+    }
+    
+    if (effects.setFlag) {
+      for (const [flag, value] of Object.entries(effects.setFlag)) {
+        gameState.setFlag(flag, value);
+        
+        // Atualizar visualização do Git quando relevante
+        if (gitRepoContext && (
+            flag === 'created_commit' || 
+            flag === 'created_branch' || 
+            flag === 'merged_branch' || 
+            flag === 'added_remote' || 
+            flag === 'pushed_changes' || 
+            flag === 'pulled_changes' || 
+            flag === 'cloned_repo' ||
+            flag === 'fetched_changes' ||
+            flag === 'stashed_changes' ||
+            flag === 'reset_hard' ||
+            flag === 'reset_soft' ||
+            flag === 'reset_changes' ||
+            flag === 'reverted_commit'
+          )) {
+          // Recarregar estado do git para atualizar a visualização
+          gitRepoContext.executeCommand('git status');
         }
       }
     }
   };
 
   return (
-    <div className="terminal-simulator card">
-      <div className="terminal-header">
-        <h3>simulador de terminal</h3>
-      </div>
-      <div className="terminal-window">
-        <div className="terminal-output" ref={outputRef}>
-          {commandHistory.map((entry, index) => (
-            <div 
-              key={index} 
-              className={`terminal-line ${entry.isOutput ? 'terminal-output-line' : 'terminal-command-line'}`}
-            >
-              {entry.text}
-            </div>
-          ))}
+    <DevTip
+      componentName="TerminalSimulator"
+      description="Simulador de terminal para executar comandos Git e de aventura. Permite ao jogador interagir com o repositório e o mundo do jogo."
+      integrationTip="Deve processar comandos Git através da API commandApi e verificar se os comandos completam etapas da missão usando questApi.completeQuestStep()."
+    >
+      <div className="terminal-simulator card">
+        <div className="terminal-header">
+          <h3>simulador de terminal</h3>
         </div>
-        <form onSubmit={handleSubmit} className="terminal-input-line">
-          <span className="terminal-prompt">$</span>
-          <input
-            type="text"
-            value={currentCommand}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            className="terminal-input"
-            placeholder={isProcessing ? "Processing..." : "Digite um comando..."}
-            autoFocus
-            disabled={isProcessing}
-          />
-        </form>
+        <div className="terminal-window">
+          <div className="terminal-output" ref={outputRef}>
+            {commandHistory.map((entry, index) => (
+              <div 
+                key={index} 
+                className={`terminal-line ${entry.isOutput ? 'terminal-output-line' : 'terminal-command-line'}`}
+              >
+                {entry.text}
+              </div>
+            ))}
+          </div>
+          <form onSubmit={handleSubmit} className="terminal-input-line">
+            <span className="terminal-prompt">$</span>
+            <input
+              type="text"
+              value={currentCommand}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              className="terminal-input"
+              placeholder={isProcessing ? "Processando..." : "Digite um comando..."}
+              autoFocus
+              disabled={isProcessing}
+            />
+          </form>
+        </div>
       </div>
-    </div>
+    </DevTip>
   );
 }

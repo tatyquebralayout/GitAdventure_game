@@ -1,19 +1,19 @@
 // Entry point for the application layout
 import './App.css';
 import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // Import necessary components
 import Header from './components/ui/Header/Header';
 import Footer from './components/ui/Footer/Footer';
-import { GitRepositoryProvider } from './contexts/GitRepositoryContext';
+import { GitRepositoryProvider } from './contexts/GitRepositoryProvider';
 import { GitRepoProvider } from './contexts/GitRepoContext';
 
-// Lazy load heavier components that are not immediately needed
-const DialogCard = lazy(() => import('./components/game/DialogCard/DialogCard'));
-const WorldCard = lazy(() => import('./components/game/WorldCard/WorldCard'));
-const ProgressCard = lazy(() => import('./components/game/ProgressCard/ProgressCard'));
-const GitSimulator = lazy(() => import('./components/game/GitSimulator/GitSimulator'));
-const TerminalSimulator = lazy(() => import('./components/terminal/TerminalSimulator/TerminalSimulator'));
+// Lazy load pages
+const WorldsPage = lazy(() => import('./pages/WorldsPage'));
+const QuestPage = lazy(() => import('./pages/QuestPage'));
+const PlayerProgressPage = lazy(() => import('./pages/PlayerProgressPage'));
+const GamePage = lazy(() => import('./pages/GamePage'));
 
 // Loading fallback component
 const LoadingPlaceholder = () => (
@@ -22,68 +22,60 @@ const LoadingPlaceholder = () => (
   </div>
 );
 
-// Define the grid layout for the application
+// Define the main App with routing
 export default function App() {
-  // Restore original layout
   return (
-    <div className="app-container">
-      <div className="header">
-        <Header />
+    <BrowserRouter>
+      <div className="app-container">
+        <div className="header">
+          <Header />
+        </div>
+        
+        <GitRepositoryProvider>
+          <GitRepoProvider>
+            <Suspense fallback={<LoadingPlaceholder />}>
+              <Routes>
+                {/* Página inicial redireciona para mundos */}
+                <Route path="/" element={<Navigate to="/worlds" replace />} />
+                
+                {/* Páginas principais */}
+                <Route path="/worlds" element={<WorldsPage />} />
+                <Route path="/quests/:questId" element={<QuestPage />} />
+                <Route path="/progress" element={<PlayerProgressPage />} />
+                
+                {/* Nova página de jogo integrada */}
+                <Route path="/game" element={<GamePage />} />
+                
+                {/* Layout de simulador completo para quests ativas */}
+                <Route path="/simulator/:worldId/:questId" element={<GamePage />} />
+                
+                {/* Rota para teste */}
+                <Route path="/test" element={<div className="p-8 text-center">Página de teste funcionando!</div>} />
+                
+                {/* Rota de fallback para páginas não encontradas */}
+                <Route path="*" element={
+                  <div className="flex justify-center items-center min-h-screen">
+                    <div className="text-center">
+                      <h1 className="text-4xl font-bold mb-4">Página não encontrada</h1>
+                      <p className="mb-8">A página que você está procurando não existe.</p>
+                      <a 
+                        href="/"
+                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                      >
+                        Voltar para o início
+                      </a>
+                    </div>
+                  </div>
+                } />
+              </Routes>
+            </Suspense>
+          </GitRepoProvider>
+        </GitRepositoryProvider>
+        
+        <div className="footer">
+          <Footer />
+        </div>
       </div>
-      
-      <GitRepositoryProvider>
-        <GitRepoProvider>
-          <div className="content-grid">
-            <div className="left-column">
-              <div className="dialog-area">
-                <Suspense fallback={<LoadingPlaceholder />}>
-                  <DialogCard />
-                </Suspense>
-              </div>
-              
-              <div className="worldbuilding-area">
-                <Suspense fallback={<LoadingPlaceholder />}>
-                  <WorldCard />
-                </Suspense>
-              </div>
-              
-              <div className="progress-area">
-                <Suspense fallback={<LoadingPlaceholder />}>
-                  <ProgressCard />
-                </Suspense>
-              </div>
-            </div>
-            
-            <div className="right-column">
-              <div className="git-simulator-area">
-                <Suspense fallback={<LoadingPlaceholder />}>
-                  <GitSimulator />
-                </Suspense>
-              </div>
-              
-              <div className="terminal-simulator-area">
-                <Suspense fallback={<LoadingPlaceholder />}>
-                  <TerminalSimulator />
-                </Suspense>
-              </div>
-            </div>
-          </div>
-        </GitRepoProvider>
-      </GitRepositoryProvider>
-      
-      <div className="footer">
-        <Footer />
-      </div>
-    </div>
+    </BrowserRouter>
   );
-
-  // Remove simple test content
-  /*
-  return (
-    <div>
-      <h1>Teste</h1>
-      <p>Se você vê isso, o problema está no layout original do App.</p>
-    </div>
-  );
-  */
 }

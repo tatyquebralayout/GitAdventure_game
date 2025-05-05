@@ -1,32 +1,48 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
-import { QuestCommandStep } from "./QuestCommandStep";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { QuestModule } from './QuestModule';
+import { QuestNarrative } from './QuestNarrative';
+import { WorldQuest } from './WorldQuest';
+import { QuestCommandStep } from './QuestCommandStep';
+import { PlayerWorldsQuest } from './PlayerWorldsQuest';
 
-@Entity("quests")
+@Entity('quests')
 export class Quest {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
-  @Column()
-  title!: string;
+  @Column({ type: 'text' })
+  name!: string;
 
-  @Column()
+  @Column({ type: 'text', nullable: true })
   description!: string;
 
-  @Column({ nullable: true })
-  imageUrl?: string;
+  @Column({ type: 'text' })
+  type!: string;
 
-  @Column({ default: 1 })
-  difficulty!: number;
+  @Column({ name: 'parent_quest_id', nullable: true })
+  parentQuestId!: string | null;
 
-  @Column({ default: 0 })
-  xpReward!: number;
+  // Auto-relacionamento (sub-quests)
+  @ManyToOne(() => Quest, quest => quest.childQuests)
+  @JoinColumn({ name: 'parent_quest_id' })
+  parentQuest!: Quest | null;
 
-  @CreateDateColumn({ name: "created_at" })
-  createdAt!: Date;
+  @OneToMany(() => Quest, quest => quest.parentQuest)
+  childQuests!: Quest[];
 
-  @UpdateDateColumn({ name: "updated_at" })
-  updatedAt!: Date;
+  // Outros relacionamentos
+  @OneToMany(() => QuestModule, questModule => questModule.quest)
+  questModules!: QuestModule[];
+
+  @OneToMany(() => QuestNarrative, narrative => narrative.quest)
+  narratives!: QuestNarrative[];
+
+  @OneToMany(() => WorldQuest, worldQuest => worldQuest.quest)
+  worldQuests!: WorldQuest[];
 
   @OneToMany(() => QuestCommandStep, step => step.quest)
   commandSteps!: QuestCommandStep[];
+
+  @OneToMany(() => PlayerWorldsQuest, playerQuest => playerQuest.quest)
+  playerQuests!: PlayerWorldsQuest[];
 }

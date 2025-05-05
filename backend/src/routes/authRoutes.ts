@@ -1,14 +1,29 @@
-import { Router, Request, Response } from 'express';
-import { authController } from '../controllers/AuthController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { Router, Request, Response, NextFunction } from 'express';
+import * as authController from '../controllers/AuthController';
+import { protect } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 // Rotas públicas
-router.post('/register', (req: Request, res: Response) => authController.register(req, res));
-router.post('/login', (req: Request, res: Response) => authController.login(req, res));
+router.post('/register', (req: Request, res: Response, next: NextFunction) => {
+  authController.register(req, res, next);
+});
+
+router.post('/login', (req: Request, res: Response, next: NextFunction) => {
+  authController.login(req, res, next);
+});
+
+router.post('/refresh-token', (req: Request, res: Response, next: NextFunction) => {
+  authController.refreshToken(req, res, next);
+});
 
 // Rotas protegidas
-router.get('/profile', authMiddleware, (req: Request, res: Response) => authController.getProfile(req, res));
+router.post('/logout', protect, (req: Request, res: Response, next: NextFunction) => {
+  authController.logout(req, res, next);
+});
+
+router.get('/profile', protect, (req: Request, res: Response, next: NextFunction) => {
+  authController.getProfile(req, res, next);
+});
 
 export default router;

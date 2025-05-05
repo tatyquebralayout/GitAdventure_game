@@ -1,116 +1,232 @@
 import { AppDataSource } from '../config/database';
 import { Quest } from '../entities/Quest';
-import { UserProgress } from '../entities/UserProgress';
+import { QuestNarrative } from '../entities/QuestNarrative';
 import { QuestCommandStep } from '../entities/QuestCommandStep';
+import { PlayerWorld } from '../entities/PlayerWorld';
+import { PlayerWorldsQuest } from '../entities/PlayerWorldsQuest';
+import { PlayerQuestStep } from '../entities/PlayerQuestStep';
 
 export class QuestService {
-  // Buscar todas as quests disponíveis
-  public async getAllQuests(): Promise<Quest[]> {
-    try {
-      const questRepository = AppDataSource.getRepository(Quest);
-      return await questRepository.find({
-        order: { id: 'ASC' }
-      });
-    } catch (error) {
-      console.error('Erro ao buscar quests:', error);
-      return [];
-    }
+  private questRepository = AppDataSource.getRepository(Quest);
+  private narrativeRepository = AppDataSource.getRepository(QuestNarrative);
+  private commandStepRepository = AppDataSource.getRepository(QuestCommandStep);
+  private playerWorldRepository = AppDataSource.getRepository(PlayerWorld);
+  private playerQuestRepository = AppDataSource.getRepository(PlayerWorldsQuest);
+  private playerStepRepository = AppDataSource.getRepository(PlayerQuestStep);
+
+  /**
+   * Obter quest por ID
+   */
+  async getQuestById(id: string): Promise<Quest | null> {
+    return this.questRepository.findOne({
+      where: { id },
+      relations: ['narratives', 'commandSteps']
+    });
   }
 
-  // Buscar uma quest específica por ID
-  public async getQuestById(questId: number): Promise<Quest | null> {
-    try {
-      const questRepository = AppDataSource.getRepository(Quest);
-      return await questRepository.findOne({
-        where: { id: questId },
-        relations: ['commandSteps']
-      });
-    } catch (error) {
-      console.error(`Erro ao buscar quest ${questId}:`, error);
-      return null;
-    }
-  }
-
-  // Buscar progresso do usuário em todas as quests
-  public async getUserProgress(userId: string): Promise<UserProgress[]> {
-    try {
-      const userProgressRepository = AppDataSource.getRepository(UserProgress);
-      return await userProgressRepository.find({
-        where: { userId },
-        relations: ['quest'],
-        order: { questId: 'ASC' }
-      });
-    } catch (error) {
-      console.error(`Erro ao buscar progresso do usuário ${userId}:`, error);
-      return [];
-    }
-  }
-
-  // Buscar progresso do usuário em uma quest específica
-  public async getUserQuestProgress(userId: string, questId: number): Promise<UserProgress | null> {
-    try {
-      const userProgressRepository = AppDataSource.getRepository(UserProgress);
-      return await userProgressRepository.findOne({
-        where: { userId, questId },
-        relations: ['quest']
-      });
-    } catch (error) {
-      console.error(`Erro ao buscar progresso da quest ${questId} para o usuário ${userId}:`, error);
-      return null;
-    }
-  }
-
-  // Iniciar uma nova quest para o usuário
-  public async startQuest(userId: string, questId: number): Promise<UserProgress | null> {
-    try {
-      // Verificar se a quest existe
-      const questRepository = AppDataSource.getRepository(Quest);
-      const quest = await questRepository.findOne({
-        where: { id: questId }
-      });
-      
-      if (!quest) {
-        console.error(`Quest ${questId} não encontrada`);
-        return null;
+  /**
+   * Obter narrativas de uma quest
+   */
+  async getQuestNarratives(questId: string): Promise<QuestNarrative[]> {
+    return this.narrativeRepository.find({
+      where: { questId },
+      order: {
+        status: 'ASC'
       }
-      
-      // Verificar se o usuário já tem progresso nesta quest
-      const userProgressRepository = AppDataSource.getRepository(UserProgress);
-      let userProgress = await userProgressRepository.findOne({
-        where: { userId, questId }
-      });
-      
-      // Se não tiver, criar um novo progresso
-      if (!userProgress) {
-        userProgress = userProgressRepository.create({
-          userId,
-          questId,
-          currentStep: 1,
-          isCompleted: false
+    });
+  }
+
+  /**
+   * Obter passos de comando de uma quest
+   */
+  async getQuestCommandSteps(questId: string): Promise<QuestCommandStep[]> {
+    return this.commandStepRepository.find({
+      where: { questId },
+      order: {
+        stepNumber: 'ASC'
+      }
+    });
+  }
+
+  /**
+   * Iniciar uma quest para o jogador
+   */
+  async startQuest(userId: string, worldId: string, questId: string): Promise<PlayerWorldsQuest> {
+    // Verificar se o mundo está iniciado para o jogador
+    const playerWorld = await this.playerWorldRepository.findOne({
+      where: { userId, worldId }
+    });
+
+    if (!playerWorld) {
+      throw new Error('Mundo não iniciado pelo jogador');
+    }
+
+    // Verificar se a quest já foi iniciada
+    const existingQuest = await this.playerQuestRepository.findOne({
+      where: { 
+        playerWorldId: playerWorld.id,
+        questId
+      }
+    });
+
+    if (existingQuest) {
+      return existingQuest;
+    }
+
+    // Criar nova quest para o jogador
+    const playerQuest = this.playerQuestRepository.create({
+      playerWorldId: playerWorld.id,
+      questId,
+      status: 'starting'
+    });
+
+    await this.playerQuestRepository.save(playerQuest);
+
+    // Obter os passos de comando da quest e criar progresso para cada um
+    const commandSteps = await this.getQuestCommandSteps(questId);
+    
+    if (commandSteps.length > 0) {
+      const playerSteps = commandSteps.map(step => {
+        return this.playerStepRepository.create({
+          playerWorldsQuestsId: playerQuest.id,
+          questCommandStepId: step.id,
+          status: 'pending'
         });
-        
-        await userProgressRepository.save(userProgress);
-      }
-      
-      return userProgress;
-    } catch (error) {
-      console.error(`Erro ao iniciar quest ${questId} para o usuário ${userId}:`, error);
-      return null;
+      });
+
+      await this.playerStepRepository.save(playerSteps);
     }
+
+    return playerQuest;
   }
 
-  // Buscar os passos da quest atual do usuário
-  public async getCurrentQuestSteps(userId: string, questId: number): Promise<QuestCommandStep[]> {
-    try {
-      const questCommandStepRepository = AppDataSource.getRepository(QuestCommandStep);
-      return await questCommandStepRepository.find({
-        where: { questId },
-        order: { stepNumber: 'ASC' }
-      });
-    } catch (error) {
-      console.error(`Erro ao buscar passos da quest ${questId}:`, error);
-      return [];
+  /**
+   * Completar um passo de quest
+   */
+  async completeQuestStep(
+    userId: string, 
+    questId: string, 
+    stepId: string, 
+    command: string
+  ): Promise<{ success: boolean, message: string, step: PlayerQuestStep | null }> {
+    // Obter o passo de comando
+    const commandStep = await this.commandStepRepository.findOne({
+      where: { id: stepId, questId }
+    });
+
+    if (!commandStep) {
+      return { 
+        success: false, 
+        message: 'Passo de comando não encontrado', 
+        step: null 
+      };
     }
+
+    // Verificar se o comando corresponde ao padrão esperado
+    const commandRegex = new RegExp(commandStep.commandRegex);
+    if (!commandRegex.test(command)) {
+      return { 
+        success: false, 
+        message: 'Comando inválido', 
+        step: null 
+      };
+    }
+
+    // Obter o progresso do jogador nesta quest
+    const playerWorlds = await this.playerWorldRepository.find({
+      where: { userId },
+      relations: ['quests']
+    });
+
+    let playerQuest: PlayerWorldsQuest | null = null;
+    for (const pw of playerWorlds) {
+      const pq = pw.quests.find(q => q.questId === questId);
+      if (pq) {
+        playerQuest = pq;
+        break;
+      }
+    }
+
+    if (!playerQuest) {
+      return { 
+        success: false, 
+        message: 'Quest não iniciada pelo jogador', 
+        step: null 
+      };
+    }
+
+    // Obter o passo do jogador
+    const playerStep = await this.playerStepRepository.findOne({
+      where: { 
+        playerWorldsQuestsId: playerQuest.id,
+        questCommandStepId: stepId
+      }
+    });
+
+    if (!playerStep) {
+      return { 
+        success: false, 
+        message: 'Passo não encontrado para o jogador', 
+        step: null 
+      };
+    }
+
+    // Atualizar o status do passo
+    playerStep.status = 'completed';
+    playerStep.executedAt = new Date();
+    await this.playerStepRepository.save(playerStep);
+
+    // Verificar se todos os passos foram completados e atualizar o status da quest
+    const allPlayerSteps = await this.playerStepRepository.find({
+      where: { playerWorldsQuestsId: playerQuest.id }
+    });
+
+    const allCompleted = allPlayerSteps.every(s => s.status === 'completed');
+    if (allCompleted) {
+      playerQuest.status = 'completed';
+      await this.playerQuestRepository.save(playerQuest);
+    } else if (playerQuest.status === 'starting') {
+      playerQuest.status = 'ongoing';
+      await this.playerQuestRepository.save(playerQuest);
+    }
+
+    return { 
+      success: true, 
+      message: commandStep.successMessage, 
+      step: playerStep 
+    };
+  }
+
+  /**
+   * Completar uma quest
+   */
+  async completeQuest(userId: string, worldId: string, questId: string): Promise<PlayerWorldsQuest> {
+    // Obter o mundo do jogador
+    const playerWorld = await this.playerWorldRepository.findOne({
+      where: { userId, worldId }
+    });
+
+    if (!playerWorld) {
+      throw new Error('Mundo não iniciado pelo jogador');
+    }
+
+    // Obter a quest do jogador
+    const playerQuest = await this.playerQuestRepository.findOne({
+      where: { 
+        playerWorldId: playerWorld.id,
+        questId
+      }
+    });
+
+    if (!playerQuest) {
+      throw new Error('Quest não iniciada pelo jogador');
+    }
+
+    // Atualizar status para 'completed'
+    playerQuest.status = 'completed';
+    await this.playerQuestRepository.save(playerQuest);
+
+    return playerQuest;
   }
 }
 
