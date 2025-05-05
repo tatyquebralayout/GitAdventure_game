@@ -17,6 +17,16 @@ The application follows a client-server architecture:
 └─────────────────┘          └─────────────────┘          └──────────────┘
 ```
 
+## Monorepo Structure
+
+The project utilizes a monorepo structure managed by `pnpm workspaces`. This allows for shared configurations (like `tsconfig.base.json`) and dependencies, promoting consistency across the different packages (`frontend`, `backend`, `shared`).
+
+- **`backend/`**: Contains the Express.js server code.
+- **`frontend/`**: Contains the React client application code.
+- **`shared/`**: Contains code and types shared between the frontend and backend, such as API response structures and core domain types (e.g., `World`, `PlayerWorld`). This eliminates duplication and ensures type consistency.
+- **`docs/`**: Contains project documentation.
+- **Root**: Configuration files for the entire monorepo (pnpm, TypeScript, ESLint).
+
 ## Frontend Architecture
 
 The frontend is built with React 19, TypeScript, Vite, and Zustand, structured for maintainability and modularity:
@@ -87,6 +97,14 @@ The backend is built with Express.js, TypeScript, and TypeORM, following a layer
 - **Entities**: `User`, `Quest`, `QuestCommandStep`, `GameProgress`, `UserProgress` (TypeORM entities)
 - **Config**: `database.ts` (TypeORM DataSource configuration)
 - **Middleware**: `authMiddleware.ts` (JWT authentication)
+
+### Error Handling
+
+The backend employs a centralized error handling strategy:
+
+- **`AppError` (`utils/AppError.ts`)**: A custom error class extending `Error`, allowing for specific HTTP status codes and optional details to be attached to errors.
+- **`errorMiddleware` (`middlewares/errorMiddleware.ts`)**: An Express middleware function registered *after* all routes. It catches errors passed via `next(error)`, logs them, and formats a standardized JSON response (`ApiResponse`) based on whether the error is an `AppError` or an unexpected internal error.
+- **Controllers**: Controllers use `try...catch` blocks. Specific, known errors (like 'Not Found') are thrown as `AppError` instances. All caught errors are passed to the `errorMiddleware` using `next(error)`.
 
 ## Data Flow
 
