@@ -1,10 +1,8 @@
-import axios from 'axios';
-import { api } from './authApi';
+import apiClient from '../services/apiClient';
+import { ApiResponse } from '../types/api';
 
 // Interface para GameState
 export interface GameState {
-  // Aqui você define a estrutura do estado do jogo
-  // Por exemplo:
   inventory: string[];
   location: string;
   completedActions: string[];
@@ -21,32 +19,17 @@ export interface GameSave {
   updatedAt?: Date;
 }
 
-// Interface para resposta da API
-export interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  progress?: T;
-  saves?: T[];
-}
-
 // Define specific types instead of using 'any'
 interface ProgressData {
-  // Define the expected structure of progress data
-  // Example:
   level?: number;
   questsCompleted?: string[];
-  // Add other relevant fields
 }
 
 interface UpdateProgressPayload {
-  // Define the expected structure of the payload for updating progress
-  // Example:
   questId?: string;
   action?: string;
-  // Add other relevant fields
 }
 
-// Adicione esses tipos adequados
 interface UserProgress {
   userId: number;
   worldId: number;
@@ -64,98 +47,46 @@ interface MissionProgress {
   timestamp: Date;
 }
 
-// Serviço de progresso do jogo
+// Serviço de progresso do jogo usando apiClient
 export const progressApi = {
   // Salvar o progresso do jogo
   async saveProgress(saveSlot: number, saveName: string, gameState: GameState): Promise<ApiResponse<GameSave>> {
-    try {
-      const response = await api.post('/progress/save', {
-        saveSlot,
-        saveName,
-        gameState
-      });
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        return error.response.data as ApiResponse<GameSave>;
-      }
-      return { 
-        success: false, 
-        message: 'Erro ao conectar ao servidor' 
-      };
-    }
+    const response = await apiClient.post<ApiResponse<GameSave>>('/progress/save', {
+      saveSlot,
+      saveName,
+      gameState
+    });
+    return response.data;
   },
   
   // Carregar o progresso do jogo
   async loadProgress(saveSlot: number): Promise<ApiResponse<GameSave>> {
-    try {
-      const response = await api.get(`/progress/load/${saveSlot}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        return error.response.data as ApiResponse<GameSave>;
-      }
-      return { 
-        success: false, 
-        message: 'Erro ao conectar ao servidor' 
-      };
-    }
+    const response = await apiClient.get<ApiResponse<GameSave>>(`/progress/load/${saveSlot}`);
+    return response.data;
   },
   
   // Listar todos os saves do usuário
-  async listSaves(): Promise<ApiResponse<GameSave>> {
-    try {
-      const response = await api.get('/progress/list');
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        return error.response.data as ApiResponse<GameSave>;
-      }
-      return { 
-        success: false, 
-        message: 'Erro ao conectar ao servidor' 
-      };
-    }
+  async listSaves(): Promise<ApiResponse<GameSave[]>> {
+    const response = await apiClient.get<ApiResponse<GameSave[]>>('/progress/list');
+    return response.data;
   },
   
   // Excluir um save
   async deleteSave(saveSlot: number): Promise<ApiResponse<void>> {
-    try {
-      const response = await api.delete(`/progress/delete/${saveSlot}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        return error.response.data as ApiResponse<void>;
-      }
-      return { 
-        success: false, 
-        message: 'Erro ao conectar ao servidor' 
-      };
-    }
+    const response = await apiClient.delete<ApiResponse<void>>(`/progress/delete/${saveSlot}`);
+    return response.data;
   },
 
   // Obter progresso do jogo
-  async getProgress(token: string): Promise<ProgressData> {
-    try {
-      const response = await api.get('/progress', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.data; // Assuming response.data matches ProgressData
-    } catch {
-      throw new Error('Erro ao obter progresso do jogo');
-    }
+  async getProgress(): Promise<ApiResponse<ProgressData>> {
+    const response = await apiClient.get<ApiResponse<ProgressData>>('/progress');
+    return response.data;
   },
 
   // Atualizar progresso do jogo
-  async updateProgress(payload: UpdateProgressPayload, token: string): Promise<ProgressData> {
-    try {
-      const response = await api.post('/progress', payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.data; // Assuming response.data matches ProgressData
-    } catch {
-      throw new Error('Erro ao atualizar progresso do jogo');
-    }
+  async updateProgress(payload: UpdateProgressPayload): Promise<ApiResponse<ProgressData>> {
+    const response = await apiClient.post<ApiResponse<ProgressData>>('/progress', payload);
+    return response.data;
   },
 
   /**
@@ -164,13 +95,9 @@ export const progressApi = {
   async updateUserProgress(
     worldId: number, 
     progressData: Partial<UserProgress>
-  ): Promise<UserProgress> {
-    try {
-      const response = await api.post(`/progress/worlds/${worldId}`, progressData);
-      return response.data;
-    } catch {
-      throw new Error('Erro ao atualizar progresso do usuário');
-    }
+  ): Promise<ApiResponse<UserProgress>> {
+    const response = await apiClient.post<ApiResponse<UserProgress>>(`/progress/worlds/${worldId}`, progressData);
+    return response.data;
   },
 
   /**
@@ -179,12 +106,8 @@ export const progressApi = {
   async updateMissionProgress(
     missionId: number, 
     progressData: Partial<MissionProgress>
-  ): Promise<MissionProgress> {
-    try {
-      const response = await api.post(`/progress/missions/${missionId}`, progressData);
-      return response.data;
-    } catch {
-      throw new Error('Erro ao atualizar progresso da missão');
-    }
+  ): Promise<ApiResponse<MissionProgress>> {
+    const response = await apiClient.post<ApiResponse<MissionProgress>>(`/progress/missions/${missionId}`, progressData);
+    return response.data;
   }
 };

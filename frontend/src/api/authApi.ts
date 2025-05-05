@@ -1,6 +1,6 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import apiClient from '../services/apiClient';
+import axios from 'axios'; // Keep for isAxiosError if needed, or remove if interceptor handles all
+import { ApiResponse } from '../types/api'; // Assuming ApiResponse is defined in types/api
 
 // Interface para o usuário
 export interface User {
@@ -25,157 +25,66 @@ export interface LoginData {
 }
 
 // Interface para resposta de autenticação
-export interface AuthResponse {
-  success: boolean;
-  message: string;
-  accessToken?: string;
-  refreshToken?: string;
-  user?: User;
+export interface AuthResponse extends ApiResponse {
+  data?: {
+    accessToken?: string;
+    refreshToken?: string;
+    user?: User;
+  };
 }
 
-// Configuração do axios com interceptor para adicionar o token
-export const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
+// Helper function for logout actions (can be kept here or moved)
+const performLogout = () => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  // Optionally add redirect logic here if needed upon explicit logout call
+};
 
-// Interceptor para adicionar o token em todas as requisições
-api.interceptors.request.use(
-  (config) => {
-    const accessToken = localStorage.getItem('accessToken');
-    if (accessToken) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Interceptor para renovar o token quando expirar
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // Se o erro for 401 (não autorizado) e não for uma tentativa de refresh
-    if (error.response.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh-token')) {
-      originalRequest._retry = true;
-      
-      try {
-        // Tente renovar o token
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          // Se não houver refresh token, faça logout
-          authApi.logout();
-          return Promise.reject(error);
-        }
-        
-        const response = await axios.post(`${API_URL}/auth/refresh-token`, { refreshToken });
-        
-        if (response.data.accessToken) {
-          // Salve os novos tokens
-          localStorage.setItem('accessToken', response.data.accessToken);
-          localStorage.setItem('refreshToken', response.data.refreshToken);
-          
-          // Configure o token para a requisição original e repita
-          originalRequest.headers['Authorization'] = `Bearer ${response.data.accessToken}`;
-          return axios(originalRequest);
-        }
-      } catch (refreshError) {
-        // Se falhar ao renovar o token, faça logout
-        authApi.logout();
-      }
-    }
-    
-    return Promise.reject(error);
-  }
-);
-
-// Serviço de autenticação
+// Serviço de autenticação usando apiClient
 export const authApi = {
   // Registrar um novo usuário
   async register(data: RegisterData): Promise<AuthResponse> {
-    try {
-      const response = await api.post('/auth/register', data);
-      if (response.data.accessToken) {
-        localStorage.setItem('accessToken', response.data.accessToken);
-        localStorage.setItem('refreshToken', response.data.refreshToken);
+    const response = await apiClient.post<AuthResponse>('/auth/register', data);
+    if (response.data.success && response.data.data?.accessToken) {
+      localStorage.setItem('accessToken', response.data.data.accessToken);
+      if (response.data.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.data.refreshToken);
       }
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        return error.response.data as AuthResponse;
-      }
-      return { 
-        success: false, 
-        message: 'Erro ao conectar ao servidor' 
-      };
     }
+    return response.data;
   },
 
   // Fazer login
   async login(data: LoginData): Promise<AuthResponse> {
-    try {
-      const response = await api.post('/auth/login', data);
-      if (response.data.accessToken) {
-        localStorage.setItem('accessToken', response.data.accessToken);
-        localStorage.setItem('refreshToken', response.data.refreshToken);
+    const response = await apiClient.post<AuthResponse>('/auth/login', data);
+    if (response.data.success && response.data.data?.accessToken) {
+      localStorage.setItem('accessToken', response.data.data.accessToken);
+      if (response.data.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.data.refreshToken);
       }
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        return error.response.data as AuthResponse;
-      }
-      return { 
-        success: false, 
-        message: 'Erro ao conectar ao servidor' 
-      };
     }
+    return response.data;
   },
   
   // Obter perfil do usuário
   async getProfile(): Promise<AuthResponse> {
-    try {
-      const response = await api.get('/auth/profile');
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        return error.response.data as AuthResponse;
-      }
-      return { 
-        success: false, 
-        message: 'Erro ao conectar ao servidor' 
-      };
-    }
+    const response = await apiClient.get<AuthResponse>('/auth/profile');
+    return response.data;
   },
 
   // Fazer logout
   async logout(): Promise<AuthResponse> {
     try {
-      // Enviar requisição para o backend para invalidar tokens
-      const response = await api.post('/auth/logout');
-      
-      // Limpar localStorage
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      
+      const response = await apiClient.post<AuthResponse>('/auth/logout');
+      performLogout(); // Ensure local cleanup happens regardless of backend success
       return response.data;
     } catch (error) {
-      // Mesmo que haja erro, limpar tokens locais
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      
-      if (axios.isAxiosError(error) && error.response) {
-        return error.response.data as AuthResponse;
-      }
+      console.warn('Logout API call failed, performing local logout anyway.', error);
+      performLogout(); // Ensure local cleanup even if API call fails
       return { 
         success: true, 
-        message: 'Logout realizado com sucesso' 
-      };
+        message: 'Logout realizado localmente.' 
+      } as AuthResponse;
     }
   },
 

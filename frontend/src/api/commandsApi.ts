@@ -1,7 +1,6 @@
-// API service for command validation
-import axios from 'axios';
-
-const API_URL = process.env.VITE_API_URL || 'http://localhost:3001/api';
+// Use the centralized apiClient
+import apiClient from '../services/apiClient';
+import { ApiResponse } from '../types/api'; // Assuming ApiResponse is defined
 
 // Interface para validação de comando (request)
 export interface ValidateCommandRequest {
@@ -10,9 +9,8 @@ export interface ValidateCommandRequest {
   currentStep?: number;
 }
 
-// Interface para resposta da validação de comando
-export interface ValidateCommandResponse {
-  success: boolean;
+// Update ValidateCommandResponse to align with ApiResponse
+export interface ValidateCommandResponseData {
   valid: boolean;
   message: string;
   nextStep?: number;
@@ -20,27 +18,7 @@ export interface ValidateCommandResponse {
   isQuestCompleted?: boolean;
 }
 
-// Configuração do axios com interceptor para adicionar o token
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Interceptor para adicionar o token em todas as requisições
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+export type ValidateCommandResponse = ApiResponse<ValidateCommandResponseData>;
 
 export const commandsApi = {
   validateCommand: async (
@@ -48,28 +26,12 @@ export const commandsApi = {
     questId = 1, 
     currentStep?: number
   ): Promise<ValidateCommandResponse> => {
-    try {
-      const response = await api.post('/commands/validate', {
-        command,
-        questId,
-        currentStep,
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('Error validating command:', error);
-      
-      if (axios.isAxiosError(error) && error.response) {
-        // Se recebemos uma resposta do servidor com erro
-        return error.response.data as ValidateCommandResponse;
-      }
-      
-      // Erro genérico, como falha de rede
-      return {
-        success: false,
-        valid: false,
-        message: 'Erro de conexão com o servidor',
-      };
-    }
+    // Remove try...catch, rely on apiClient interceptor
+    const response = await apiClient.post<ValidateCommandResponse>('/commands/validate', {
+      command,
+      questId,
+      currentStep,
+    });
+    return response.data; // Return the data part of the Axios response
   },
 };
