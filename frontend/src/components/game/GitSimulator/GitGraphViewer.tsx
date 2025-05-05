@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import './GitGraphViewer.css';
+import { GitCommit, GitBranch } from '../../../types/git'; // Importar tipos unificados
 
 // Tipagem para a biblioteca Gitgraph.js
 declare global {
@@ -26,23 +27,13 @@ interface GitgraphBranch {
 }
 
 // Interfaces para os tipos do repositório Git
-export interface GitCommit {
-  id: string;
-  message: string;
-  author: string;
-  branch: string;
-  parents: string[];
-  date: Date;
-}
-
-export interface GitBranch {
-  name: string;
-  commits: string[]; // IDs dos commits
-}
+// Remover definições locais, agora importadas de '../../../types/git'
+// export interface GitCommit { ... }
+// export interface GitBranch { ... }
 
 interface GitRepoState {
-  branches: GitBranch[];
-  commits: GitCommit[];
+  branches: GitBranch[]; // Usar tipo importado
+  commits: GitCommit[]; // Usar tipo importado
 }
 
 interface GitGraphViewerProps {

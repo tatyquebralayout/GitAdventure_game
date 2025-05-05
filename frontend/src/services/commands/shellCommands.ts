@@ -1,6 +1,8 @@
-import { CommandResult } from './index';
+import { CommandResult } from '../../types/commands';
+// import { useFileSystemStore } from '../../stores/fileSystemStore';
 
-// Definição da interface para sistema de arquivos virtual
+// Definição da interface para sistema de arquivos virtual - REMOVIDO
+/*
 interface VirtualFile {
   type: 'file' | 'dir';
   content?: string;
@@ -10,13 +12,16 @@ interface VirtualFS {
   currentDir: string;
   files: Record<string, VirtualFile>;
 }
+*/
 
 // Interface para os manipuladores de comandos shell
 export interface ShellCommandHandler {
-  (args: string[], fsState: VirtualFS): CommandResult;
+//  (args: string[], fsState: VirtualFS): CommandResult; // Assinatura será ajustada
+  (args: string[]): CommandResult;
 }
 
-// Estado inicial do sistema de arquivos virtual
+// Estado inicial do sistema de arquivos virtual - REMOVIDO
+/*
 const initialFS: VirtualFS = {
   currentDir: '/home/player',
   files: {
@@ -34,11 +39,14 @@ const initialFS: VirtualFS = {
     }
   }
 };
+*/
 
-// Estado atual do FS (seria melhor usar um store/context real em produção)
+// Estado atual do FS - REMOVIDO
+/*
 const fsState: VirtualFS = { ...initialFS };
+*/
 
-// Helpers para manipulação de caminhos
+// Helpers para manipulação de caminhos - Assinatura será ajustada
 const normalizePath = (path: string, currentDir: string): string => {
   // Se caminho absoluto
   if (path.startsWith('/')) {
@@ -61,11 +69,13 @@ const normalizePath = (path: string, currentDir: string): string => {
   return `${currentDir === '/' ? '' : currentDir}/${path}`;
 };
 
-const getDirectoryContents = (path: string, fs: VirtualFS): string[] => {
-  const normalizedPath = normalizePath(path, fs.currentDir);
+// Helper para obter conteúdo do diretório - Assinatura e uso serão ajustados
+// const getDirectoryContents = (path: string, fs: VirtualFS): string[] => {
+/* const getDirectoryContents = (path: string, files: Record<string, { type: 'file' | 'dir'; content?: string }>, currentDir: string): string[] => {
+  const normalizedPath = normalizePath(path, currentDir);
   const prefix = normalizedPath === '/' ? '/' : normalizedPath + '/';
   
-  return Object.keys(fs.files)
+  return Object.keys(files)
     .filter(filePath => {
       // Exatamente este diretório
       if (filePath === normalizedPath) {
@@ -81,22 +91,27 @@ const getDirectoryContents = (path: string, fs: VirtualFS): string[] => {
       return false;
     })
     .map(filePath => filePath.slice(prefix.length));
-};
+}; */
 
-// Implementação dos comandos shell
+
+// Implementação dos comandos shell - Será ajustada para usar useFileSystemStore
 export const shellCommandHandlers: Record<string, ShellCommandHandler> = {
   // Mostrar diretório atual
-  pwd: (_args, fs) => {
+  pwd: (_args) => { // Remover parâmetro fs
+//    const { currentDir } = useFileSystemStore.getState();
     return {
       success: true,
-      message: fs.currentDir
+//      message: fs.currentDir
+      message: 'TODO: Obter de useFileSystemStore' // Placeholder
     };
   },
   
   // Listar conteúdo do diretório
-  ls: (args, fs) => {
-    const targetDir = args.length > 0 ? args[0] : fs.currentDir;
-    const contents = getDirectoryContents(targetDir, fs);
+  ls: (args) => { // Remover parâmetro fs
+//    const { currentDir, files } = useFileSystemStore.getState();
+//    const targetDir = args.length > 0 ? args[0] : currentDir;
+//    const contents = getDirectoryContents(targetDir, files, currentDir);
+    const contents: string[] = []; // Placeholder
     
     if (contents.length === 0) {
       return {
@@ -112,35 +127,36 @@ export const shellCommandHandlers: Record<string, ShellCommandHandler> = {
   },
   
   // Mudar de diretório
-  cd: (args, fs) => {
+  cd: (args) => { // Remover parâmetro fs
+//    const { currentDir, files, changeDirectory } = useFileSystemStore.getState();
     if (args.length === 0) {
-      // Ir para home quando cd é chamado sem argumentos
-      fsState.currentDir = '/home/player';
+//      changeDirectory('/home/player');
       return {
         success: true,
         message: ''
       };
     }
     
-    const targetPath = normalizePath(args[0], fs.currentDir);
+//    const targetPath = normalizePath(args[0], currentDir);
+    const targetPath = 'TODO'; // Placeholder
+    const files = {}; // Placeholder
     
     // Verificar se existe e é um diretório
-    if (!fs.files[targetPath]) {
+    if (!files[targetPath]) {
       return {
         success: false,
         message: `cd: ${args[0]}: No such file or directory`
       };
     }
     
-    if (fs.files[targetPath].type !== 'dir') {
+    if (files[targetPath].type !== 'dir') {
       return {
         success: false,
         message: `cd: ${args[0]}: Not a directory`
       };
     }
     
-    // Atualizar diretório atual
-    fsState.currentDir = targetPath;
+//    changeDirectory(targetPath);
     
     return {
       success: true,
@@ -149,139 +165,16 @@ export const shellCommandHandlers: Record<string, ShellCommandHandler> = {
   },
   
   // Mostrar conteúdo de arquivo
-  cat: (args, fs) => {
-    if (args.length === 0) {
-      return {
-        success: false,
-        message: 'cat: missing file operand'
-      };
-    }
-    
-    const targetPath = normalizePath(args[0], fs.currentDir);
-    
-    // Verificar se existe e é um arquivo
-    if (!fs.files[targetPath]) {
-      return {
-        success: false,
-        message: `cat: ${args[0]}: No such file or directory`
-      };
-    }
-    
-    if (fs.files[targetPath].type !== 'file') {
-      return {
-        success: false,
-        message: `cat: ${args[0]}: Is a directory`
-      };
-    }
-    
-    return {
-      success: true,
-      message: fs.files[targetPath].content || ''
-    };
-  },
+  cat: (args) => ({ success: false, message: 'TODO: Refatorar cat com useFileSystemStore'}),
   
   // Criar diretório
-  mkdir: (args, fs) => {
-    if (args.length === 0) {
-      return {
-        success: false,
-        message: 'mkdir: missing operand'
-      };
-    }
-    
-    const newDirPath = normalizePath(args[0], fs.currentDir);
-    
-    // Verificar se já existe
-    if (fs.files[newDirPath]) {
-      return {
-        success: false,
-        message: `mkdir: cannot create directory '${args[0]}': File exists`
-      };
-    }
-    
-    // Criar o diretório
-    fsState.files[newDirPath] = { type: 'dir' };
-    
-    return {
-      success: true,
-      message: ''
-    };
-  },
+  mkdir: (args) => ({ success: false, message: 'TODO: Refatorar mkdir com useFileSystemStore'}),
   
   // Criar arquivo vazio
-  touch: (args, fs) => {
-    if (args.length === 0) {
-      return {
-        success: false,
-        message: 'touch: missing file operand'
-      };
-    }
-    
-    const newFilePath = normalizePath(args[0], fs.currentDir);
-    
-    // Criar ou atualizar timestamp
-    fsState.files[newFilePath] = fsState.files[newFilePath] || { type: 'file', content: '' };
-    
-    return {
-      success: true,
-      message: ''
-    };
-  },
+  touch: (args) => ({ success: false, message: 'TODO: Refatorar touch com useFileSystemStore'}),
   
-  // Remover arquivo ou diretório vazio
-  rm: (args, fs) => {
-    if (args.length === 0) {
-      return {
-        success: false,
-        message: 'rm: missing operand'
-      };
-    }
-    
-    const isRecursive = args.includes('-r') || args.includes('-rf');
-    const fileArgs = args.filter(arg => !arg.startsWith('-'));
-    
-    if (fileArgs.length === 0) {
-      return {
-        success: false,
-        message: 'rm: missing operand'
-      };
-    }
-    
-    const targetPath = normalizePath(fileArgs[0], fs.currentDir);
-    
-    // Verificar se existe
-    if (!fs.files[targetPath]) {
-      return {
-        success: false,
-        message: `rm: cannot remove '${fileArgs[0]}': No such file or directory`
-      };
-    }
-    
-    // Verificar se é diretório e precisa de -r
-    if (fs.files[targetPath].type === 'dir' && !isRecursive) {
-      return {
-        success: false,
-        message: `rm: cannot remove '${fileArgs[0]}': Is a directory`
-      };
-    }
-    
-    // Remover do sistema de arquivos
-    delete fsState.files[targetPath];
-    
-    // Caso seja recursivo, remover subdiretórios e arquivos
-    if (isRecursive) {
-      Object.keys(fs.files).forEach(path => {
-        if (path.startsWith(`${targetPath}/`)) {
-          delete fsState.files[path];
-        }
-      });
-    }
-    
-    return {
-      success: true,
-      message: ''
-    };
-  },
+  // Remover arquivo ou diretório
+  rm: (args) => ({ success: false, message: 'TODO: Refatorar rm com useFileSystemStore'}),
   
   // Limpar tela
   clear: () => {
@@ -341,185 +234,19 @@ export const shellCommandHandlers: Record<string, ShellCommandHandler> = {
   },
 
   // Grep - buscar padrões em arquivos de texto
-  grep: (args, fs) => {
-    if (args.length < 2) {
-      return {
-        success: false,
-        message: 'grep: padrão de busca e arquivo necessários'
-      };
-    }
-
-    const pattern = args[0];
-    const filePath = normalizePath(args[1], fs.currentDir);
-
-    // Verificar se arquivo existe
-    if (!fs.files[filePath]) {
-      return {
-        success: false,
-        message: `grep: ${args[1]}: No such file or directory`
-      };
-    }
-
-    if (fs.files[filePath].type !== 'file') {
-      return {
-        success: false,
-        message: `grep: ${args[1]}: Is a directory`
-      };
-    }
-
-    const content = fs.files[filePath].content || '';
-    
-    // Buscar linhas que contenham o padrão
-    const lines = content.split('\n');
-    const matchingLines = lines.filter(line => 
-      line.includes(pattern)
-    );
-
-    if (matchingLines.length === 0) {
-      return {
-        success: true,
-        message: '' // grep não retorna mensagem quando não encontra nada
-      };
-    }
-
-    return {
-      success: true,
-      message: matchingLines.join('\n')
-    };
-  },
+  grep: (args) => ({ success: false, message: 'TODO: Refatorar grep com useFileSystemStore'}),
 
   // Find - procurar arquivos
-  find: (args, fs) => {
-    const path = args.length > 0 ? normalizePath(args[0], fs.currentDir) : fs.currentDir;
-    
-    // Verificar se o diretório existe
-    if (!fs.files[path]) {
-      return {
-        success: false,
-        message: `find: '${path}': No such file or directory`
-      };
-    }
-
-    // Encontrar todos os arquivos a partir do caminho especificado
-    const results = Object.keys(fs.files)
-      .filter(filePath => filePath.startsWith(path + '/') || filePath === path)
-      .sort();
-
-    return {
-      success: true,
-      message: results.join('\n')
-    };
-  },
+  find: (args) => ({ success: false, message: 'TODO: Refatorar find com useFileSystemStore'}),
 
   // Diff - comparar arquivos
-  diff: (args, fs) => {
-    if (args.length < 2) {
-      return {
-        success: false,
-        message: 'diff: missing operand after `diff`'
-      };
-    }
-
-    const file1Path = normalizePath(args[0], fs.currentDir);
-    const file2Path = normalizePath(args[1], fs.currentDir);
-
-    // Verificar se ambos os arquivos existem
-    if (!fs.files[file1Path]) {
-      return {
-        success: false,
-        message: `diff: ${args[0]}: No such file or directory`
-      };
-    }
-
-    if (!fs.files[file2Path]) {
-      return {
-        success: false,
-        message: `diff: ${args[1]}: No such file or directory`
-      };
-    }
-
-    // Verificar se ambos são arquivos
-    if (fs.files[file1Path].type !== 'file') {
-      return {
-        success: false,
-        message: `diff: ${args[0]}: Is a directory`
-      };
-    }
-
-    if (fs.files[file2Path].type !== 'file') {
-      return {
-        success: false,
-        message: `diff: ${args[1]}: Is a directory`
-      };
-    }
-
-    const content1 = fs.files[file1Path].content || '';
-    const content2 = fs.files[file2Path].content || '';
-
-    if (content1 === content2) {
-      return {
-        success: true,
-        message: '' // diff não exibe nada se os arquivos forem iguais
-      };
-    }
-
-    // Implementação simplificada de diff
-    const lines1 = content1.split('\n');
-    const lines2 = content2.split('\n');
-    
-    let message = `--- ${args[0]}\n+++ ${args[1]}\n`;
-    
-    for (let i = 0; i < Math.max(lines1.length, lines2.length); i++) {
-      if (i >= lines1.length) {
-        message += `+${lines2[i]}\n`;
-      } else if (i >= lines2.length) {
-        message += `-${lines1[i]}\n`;
-      } else if (lines1[i] !== lines2[i]) {
-        message += `-${lines1[i]}\n+${lines2[i]}\n`;
-      }
-    }
-
-    return {
-      success: true,
-      message: message
-    };
-  },
+  diff: (args) => ({ success: false, message: 'TODO: Refatorar diff com useFileSystemStore'}),
 
   // Less - visualizador de arquivo com paginação
-  less: (args, fs) => {
-    if (args.length === 0) {
-      return {
-        success: false,
-        message: 'less: missing file operand'
-      };
-    }
-
-    const filePath = normalizePath(args[0], fs.currentDir);
-
-    // Verificar se o arquivo existe
-    if (!fs.files[filePath]) {
-      return {
-        success: false,
-        message: `less: ${args[0]}: No such file or directory`
-      };
-    }
-
-    if (fs.files[filePath].type !== 'file') {
-      return {
-        success: false,
-        message: `less: ${args[0]}: Is a directory`
-      };
-    }
-
-    // Simulação simplificada de less
-    return {
-      success: true,
-      message: fs.files[filePath].content || ''
-    };
-  },
+  less: (args) => ({ success: false, message: 'TODO: Refatorar less com useFileSystemStore'}),
 
   // More - visualizador de arquivo básico (versão antiga do less)
-  more: (args, fs) => {
+  more: (args) => {
     if (args.length === 0) {
       return {
         success: false,
@@ -527,17 +254,17 @@ export const shellCommandHandlers: Record<string, ShellCommandHandler> = {
       };
     }
 
-    const filePath = normalizePath(args[0], fs.currentDir);
+    const filePath = normalizePath(args[0], fsState.currentDir);
 
     // Verificar se o arquivo existe
-    if (!fs.files[filePath]) {
+    if (!fsState.files[filePath]) {
       return {
         success: false,
         message: `more: ${args[0]}: No such file or directory`
       };
     }
 
-    if (fs.files[filePath].type !== 'file') {
+    if (fsState.files[filePath].type !== 'file') {
       return {
         success: false,
         message: `more: ${args[0]}: Is a directory`
@@ -547,213 +274,46 @@ export const shellCommandHandlers: Record<string, ShellCommandHandler> = {
     // Simulação simplificada de more
     return {
       success: true,
-      message: fs.files[filePath].content || ''
+      message: fsState.files[filePath].content || ''
     };
   },
 
   // Head - mostrar o início de um arquivo
-  head: (args, fs) => {
-    if (args.length === 0) {
-      return {
-        success: false,
-        message: 'head: missing file operand'
-      };
-    }
-
-    let numLines = 10; // Padrão: 10 linhas
-    let fileArg = args[0];
-
-    // Verificar se tem opção -n
-    if (args[0] === '-n' && args.length > 2) {
-      numLines = parseInt(args[1], 10);
-      fileArg = args[2];
-
-      if (isNaN(numLines)) {
-        return {
-          success: false,
-          message: `head: invalid number of lines: '${args[1]}'`
-        };
-      }
-    }
-
-    const filePath = normalizePath(fileArg, fs.currentDir);
-
-    // Verificar se o arquivo existe
-    if (!fs.files[filePath]) {
-      return {
-        success: false,
-        message: `head: ${fileArg}: No such file or directory`
-      };
-    }
-
-    if (fs.files[filePath].type !== 'file') {
-      return {
-        success: false,
-        message: `head: ${fileArg}: Is a directory`
-      };
-    }
-
-    const content = fs.files[filePath].content || '';
-    const lines = content.split('\n');
-    
-    return {
-      success: true,
-      message: lines.slice(0, numLines).join('\n')
-    };
-  },
+  head: (args) => ({ success: false, message: 'TODO: Refatorar head com useFileSystemStore'}),
 
   // Tail - mostrar o final de um arquivo
-  tail: (args, fs) => {
-    if (args.length === 0) {
-      return {
-        success: false,
-        message: 'tail: missing file operand'
-      };
-    }
+  tail: (args) => ({ success: false, message: 'TODO: Refatorar tail com useFileSystemStore'}),
 
-    let numLines = 10; // Padrão: 10 linhas
-    let fileArg = args[0];
-
-    // Verificar se tem opção -n
-    if (args[0] === '-n' && args.length > 2) {
-      numLines = parseInt(args[1], 10);
-      fileArg = args[2];
-
-      if (isNaN(numLines)) {
-        return {
-          success: false,
-          message: `tail: invalid number of lines: '${args[1]}'`
-        };
-      }
-    }
-
-    const filePath = normalizePath(fileArg, fs.currentDir);
-
-    // Verificar se o arquivo existe
-    if (!fs.files[filePath]) {
-      return {
-        success: false,
-        message: `tail: ${fileArg}: No such file or directory`
-      };
-    }
-
-    if (fs.files[filePath].type !== 'file') {
-      return {
-        success: false,
-        message: `tail: ${fileArg}: Is a directory`
-      };
-    }
-
-    const content = fs.files[filePath].content || '';
-    const lines = content.split('\n');
-    
-    return {
-      success: true,
-      message: lines.slice(-numLines).join('\n')
-    };
-  },
-
-  // Vimdiff - comparar e editar arquivos lado a lado (versão simplificada)
-  vimdiff: (args, fs) => {
-    if (args.length < 2) {
-      return {
-        success: false,
-        message: 'vimdiff: 2 ou mais arquivos necessários'
-      };
-    }
-
-    const file1Path = normalizePath(args[0], fs.currentDir);
-    const file2Path = normalizePath(args[1], fs.currentDir);
-
-    // Verificar se ambos os arquivos existem
-    if (!fs.files[file1Path]) {
-      return {
-        success: false,
-        message: `vimdiff: ${args[0]}: No such file or directory`
-      };
-    }
-
-    if (!fs.files[file2Path]) {
-      return {
-        success: false,
-        message: `vimdiff: ${args[1]}: No such file or directory`
-      };
-    }
-
-    // Verificar se ambos são arquivos
-    if (fs.files[file1Path].type !== 'file') {
-      return {
-        success: false,
-        message: `vimdiff: ${args[0]}: Is a directory`
-      };
-    }
-
-    if (fs.files[file2Path].type !== 'file') {
-      return {
-        success: false,
-        message: `vimdiff: ${args[1]}: Is a directory`
-      };
-    }
-
-    // Versão simplificada do vimdiff (apenas exibe as diferenças)
-    const content1 = fs.files[file1Path].content || '';
-    const content2 = fs.files[file2Path].content || '';
-
-    if (content1 === content2) {
-      return {
-        success: true,
-        message: `No differences detected between ${args[0]} and ${args[1]}`
-      };
-    }
-
-    // Implementação simplificada de visualização de diferenças
-    const lines1 = content1.split('\n');
-    const lines2 = content2.split('\n');
-    
-    let message = `Vimdiff visualização:\n\n`;
-    message += `${args[0]} | ${args[1]}\n`;
-    message += `-----------------\n`;
-    
-    for (let i = 0; i < Math.max(lines1.length, lines2.length); i++) {
-      const line1 = i < lines1.length ? lines1[i] : '';
-      const line2 = i < lines2.length ? lines2[i] : '';
-      
-      if (line1 === line2) {
-        message += `${line1} | ${line2}\n`;
-      } else {
-        message += `${line1} | ${line2} (diferente)\n`;
-      }
-    }
-
-    return {
-      success: true,
-      message: message
-    };
-  }
+  // Vimdiff - Simulação simples
+  vimdiff: (args) => ({ success: false, message: 'TODO: Refatorar vimdiff com useFileSystemStore'}),
 };
 
-// Função para processar comandos shell
+// Função para processar o comando shell
 export const processShellCommand = (commandLine: string): CommandResult => {
-  const parts = commandLine.split(' ').filter(p => p.trim() !== '');
-  
-  if (parts.length === 0) {
-    return {
-      success: true,
-      message: ''
-    };
-  }
-  
-  const command = parts[0];
+  const parts = commandLine.trim().split(/\s+/);
+  const commandName = parts[0];
   const args = parts.slice(1);
-  
-  // Verificar se o comando existe
-  if (!shellCommandHandlers[command]) {
+
+  if (!commandName) {
+    return { success: true, message: '' }; // Linha vazia, sem erro
+  }
+
+  const handler = shellCommandHandlers[commandName];
+
+  if (handler) {
+    try {
+      return handler(args); // Chamar handler atualizado (sem fsState)
+    } catch (error) {
+      console.error(`Erro ao executar comando shell '${commandName}':`, error);
+      return {
+        success: false,
+        message: `Erro interno ao executar comando ${commandName}.`
+      };
+    }
+  } else {
     return {
       success: false,
-      message: `${command}: comando não encontrado`
+      message: `${commandName}: comando não encontrado`
     };
   }
-  
-  // Executar o comando
-  return shellCommandHandlers[command](args, fsState);
 }; 

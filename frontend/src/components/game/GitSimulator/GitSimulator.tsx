@@ -1,10 +1,9 @@
 import { useState, useEffect, lazy, Suspense, useRef, useCallback } from 'react';
 import './GitSimulator.css';
 import { useGitRepository } from '../../../hooks/useGitRepository';
-import { useGitRepo } from '../../../hooks/useGitRepo';
 import VisualizationToggle, { ViewMode } from './VisualizationToggle';
 import DevTip from '../../ui/DevHelper/DevTip';
-import { GitCommit as GraphViewerCommit } from './GitGraphViewer';
+import { GitCommit } from '../../../types/git';
 
 // Lazy load visualization components to reduce initial bundle size
 const MermaidViewer = lazy(() => import('./MermaidViewer'));
@@ -35,75 +34,53 @@ export default function GitSimulator() {
   const { 
     commits, 
     currentBranch,
-    executeCommand: executeGitRepositoryCommand 
+    status,
+    executeCommand: executeGitCommand
   } = useGitRepository();
-  
-  // Use the new GitRepoContext for Mermaid integration
-  const gitRepoContext = useGitRepo();
   
   // Referência para o gitgraphRef
   const gitgraphRef = useRef<HTMLDivElement>(null);
-  
-  // Criar cópias seguras dos arrays para evitar null/undefined
-  const mermaidLines: string[] = [];
-  const gitRepoBranches = gitRepoContext?.branches || [];
-  const gitRepoCommits = gitRepoContext?.commits || [];
-  const executeGitRepoCommand = gitRepoContext?.executeCommand;
-  
-  const diagramText = Array.isArray(mermaidLines) ? mermaidLines.join('\n') : '';
   
   // Função para atualizar a lista de arquivos
   const updateFileList = useCallback(() => {
     const updatedFiles: GitFile[] = [];
     
-    // Se estiver usando o contexto GitRepo, aproveitar para obter status real
-    if (gitRepoContext && gitRepoContext.status) {
-      // Obter arquivos não rastreados do repositório Git
-      gitRepoContext.status.untracked.forEach(filename => {
+    // Obter status do repositório principal
+    if (status) {
+      status.untracked.forEach(filename => {
         updatedFiles.push({ name: filename, status: 'untracked' });
       });
       
       // Obter arquivos modificados
-      gitRepoContext.status.modified.forEach(filename => {
+      status.modified.forEach(filename => {
         updatedFiles.push({ name: filename, status: 'modified' });
       });
       
       // Obter arquivos no staged
-      gitRepoContext.status.staged.forEach(filename => {
+      status.staged.forEach(filename => {
         updatedFiles.push({ name: filename, status: 'staged' });
       });
-      
-      // Para arquivos commitados, usar commits mais recentes
-      if (commits && commits.length > 0) {
-        const mostRecentCommit = commits[0];
-        if (mostRecentCommit && mostRecentCommit.message) {
-          // Extrair nomes de arquivos da mensagem de commit (simulação simplificada)
-          const commitMessage = mostRecentCommit.message.toLowerCase();
-          
-          // Simulação simples para detectar arquivos commitados
-          ['app.js', 'style.css', 'index.html', 'README.md'].forEach(filename => {
-            if (commitMessage.includes(filename.toLowerCase()) && 
-                !updatedFiles.some(file => file.name === filename)) {
-              updatedFiles.push({ name: filename, status: 'committed' });
-            }
-          });
-        }
-      }
-    } else {
-      // Fallback para simulação se não tiver acesso ao estado do Git
-      // Arquivos não rastreados (simulados)
-      updatedFiles.push({ name: 'README.md', status: 'untracked' });
-      updatedFiles.push({ name: 'index.js', status: 'untracked' });
-      
-      // Se existir commits, simular alguns arquivos commitados
-      if (commits && commits.length > 0) {
-        updatedFiles.push({ name: 'app.js', status: 'committed' });
-        updatedFiles.push({ name: 'style.css', status: 'committed' });
+    }
+    
+    // Para arquivos commitados, usar commits mais recentes
+    if (commits && commits.length > 0) {
+      const mostRecentCommit = commits[0];
+      if (mostRecentCommit && mostRecentCommit.message) {
+        // Extrair nomes de arquivos da mensagem de commit (simulação simplificada)
+        const commitMessage = mostRecentCommit.message.toLowerCase();
+        
+        // Simulação simples para detectar arquivos commitados
+        ['app.js', 'style.css', 'index.html', 'README.md'].forEach(filename => {
+          if (commitMessage.includes(filename.toLowerCase()) && 
+              !updatedFiles.some(file => file.name === filename)) {
+            updatedFiles.push({ name: filename, status: 'committed' });
+          }
+        });
       }
     }
     
     setFiles(updatedFiles);
-  }, [gitRepoContext, commits]);
+  }, [commits, status]);
   
   // Função para atualizar a visualização Git
   const updateGitVisualization = useCallback(() => {
@@ -111,27 +88,22 @@ export default function GitSimulator() {
     updateFileList();
     
     // Recarregar visualização de commits se disponível
-    if (gitRepoContext && gitRepoContext.executeCommand) {
-      // Simular um refresh na UI chamando o status
-      gitRepoContext.executeCommand('git status').catch(error => 
-        console.error('Erro ao atualizar visualização Git:', error)
-      );
-    }
-  }, [updateFileList, gitRepoContext]);
+    executeGitCommand('git status').catch(error => 
+      console.error('Erro ao atualizar visualização Git:', error)
+    );
+  }, [updateFileList, executeGitCommand]);
   
   // Atualizar o estado dos arquivos quando o status do repositório mudar
   useEffect(() => {
     if (commits) {
       updateFileList();
     }
-  }, [commits, updateFileList]);
+  }, [commits, status, updateFileList]);
   
   // Atualizar quando o contexto do repositório git mudar
   useEffect(() => {
-    if (gitRepoContext) {
-      updateFileList();
-    }
-  }, [gitRepoContext, gitRepoContext?.status, updateFileList]);
+    updateFileList();
+  }, [status, updateFileList]);
   
   // Atualizar periodicamente para manter visualizações sincronizadas
   useEffect(() => {
@@ -145,30 +117,17 @@ export default function GitSimulator() {
     
     // Limpar intervalo quando o componente for desmontado
     return () => clearInterval(intervalId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [updateGitVisualization]);
   
   // Keep contexts in sync
   useEffect(() => {
-    // Add a listener to intercept terminal commands
     const originalExecuteCommand = window.executeGitCommand;
-    
-    window.executeGitCommand = async (command: string) => {
-      // Execute in both contexts to keep them in sync
-      if (executeGitRepoCommand) {
-        await executeGitRepoCommand(command);
-      }
-      const gitRepositoryResult = await executeGitRepositoryCommand(command);
-      
-      // Return result from the original context for backward compatibility
-      return gitRepositoryResult;
-    };
-    
+    window.executeGitCommand = executeGitCommand;
+
     return () => {
-      // Clean up by restoring original function
-      window.executeGitCommand = originalExecuteCommand;
+      window.executeGitCommand = originalExecuteCommand; // Limpar ao desmontar
     };
-  }, [executeGitRepoCommand, executeGitRepositoryCommand]);
+  }, [executeGitCommand]);
   
   // Handle view mode toggle
   const handleViewModeToggle = (mode: ViewMode) => {
@@ -193,12 +152,12 @@ export default function GitSimulator() {
   );
 
   // Converter GitCommit para GraphViewerCommit
-  const convertCommits = (): GraphViewerCommit[] => {
-    return gitRepoCommits.map(commit => ({
-      id: commit.hash || '',
+  const convertCommits = (): GitCommit[] => {
+    return commits.map(commit => ({
+      id: commit.id || '',
       message: commit.message || '',
       author: commit.author || '',
-      branch: currentBranch,
+      branch: 'main',
       parents: [],
       date: new Date(commit.date || new Date())
     }));
@@ -245,11 +204,11 @@ export default function GitSimulator() {
                 
                 <Suspense fallback={<LoadingFallback />}>
                   {viewMode === 'mermaid' 
-                    ? <MermaidViewer diagramText={diagramText} />
+                    ? <MermaidViewer diagramText="" />
                     : <GitGraphViewer 
                         repoState={{ 
-                          branches: gitRepoBranches.map(name => ({ name, commits: [] })), 
-                          commits: convertCommits()
+                          branches: [],
+                          commits: convertCommits(),
                         }}
                         gitgraphRef={gitgraphRef}
                       />

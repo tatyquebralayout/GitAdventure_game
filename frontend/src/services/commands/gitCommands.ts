@@ -1,5 +1,5 @@
 import { GameState } from '../../stores/gameStore';
-import { CommandResult } from './index';
+import { CommandResult } from '../../types/commands';
 
 // Interface para funções de comando Git
 export interface GitCommandHandler {

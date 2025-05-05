@@ -1,31 +1,14 @@
 import { GameState } from '../../stores/gameStore';
-import { processShellCommand } from './shellCommands';
-
-export interface CommandEffect {
-  setLocation?: string;
-  addToInventory?: string[];
-  removeFromInventory?: string[];
-  setFlag?: Record<string, boolean>;
-}
-
-export interface CommandResult {
-  success: boolean;
-  message: string;
-  effects?: CommandEffect;
-}
-
-export interface Command {
-  name: string;
-  description: string;
-  aliases?: string[];
-  execute: (args: string[], state: GameState) => CommandResult;
-}
+import { processShellCommand, shellCommandHandlers } from './shellCommands';
+import { helpCommand as importedHelpCommand } from './helpCommand';
+import { Command, CommandResult, HelpInfo } from '../../types/commands';
 
 // Definição básica de comandos
 const moveCommand: Command = {
   name: 'move',
   description: 'Mover para um novo local',
   aliases: ['go', 'ir', 'caminhar', 'andar'],
+  help: 'move [destino] - Tenta mover o jogador para o destino especificado (ex: move floresta).',
   execute: (args, state) => {
     if (args.length === 0) {
       return {
@@ -77,6 +60,7 @@ const lookCommand: Command = {
   name: 'look',
   description: 'Examinar o ambiente ou um objeto',
   aliases: ['olhar', 'examinar', 'ver', 'observar'],
+  help: 'look [objeto] - Descreve o local atual ou examina um objeto específico.',
   execute: (args, state) => {
     if (args.length === 0) {
       // Descrever o ambiente atual
@@ -132,6 +116,7 @@ const takeCommand: Command = {
   name: 'take',
   description: 'Pegar um item',
   aliases: ['pegar', 'coletar', 'obter'],
+  help: 'take [item] - Tenta pegar um item do local atual e adicioná-lo ao inventário.',
   execute: (args, state) => {
     if (args.length === 0) {
       return {
@@ -191,6 +176,7 @@ const useCommand: Command = {
   name: 'use',
   description: 'Usar um item',
   aliases: ['usar', 'utilizar'],
+  help: 'use [item] - Tenta usar um item do seu inventário no local atual.',
   execute: (args, state) => {
     if (args.length === 0) {
       return {
@@ -236,6 +222,7 @@ const inventoryCommand: Command = {
   name: 'inventory',
   description: 'Verificar seu inventário',
   aliases: ['inventário', 'itens', 'i'],
+  help: 'inventory - Lista os itens que você está carregando atualmente.',
   execute: (args, state) => {
     if (state.inventory.length === 0) {
       return {
@@ -251,31 +238,22 @@ const inventoryCommand: Command = {
   }
 };
 
-const helpCommand: Command = {
-  name: 'help',
-  description: 'Mostrar lista de comandos disponíveis',
-  aliases: ['ajuda', '?'],
-  execute: () => {
-    const commandList = commands
-      .map(cmd => `${cmd.name}: ${cmd.description}`)
-      .join('\n');
-    
-    return {
-      success: true,
-      message: `Comandos disponíveis:\n${commandList}\n\nVocê também pode usar comandos git para interagir com seu repositório.\nE comandos shell como: ls, cd, pwd, mkdir, rm, cat, etc.`
-    };
-  }
-};
-
-// Lista de comandos disponíveis
-export const commands: Command[] = [
+// Lista de comandos de aventura disponíveis (agora inclui o help importado)
+export const adventureCommands: Command[] = [
   moveCommand,
   lookCommand,
   takeCommand,
   useCommand,
   inventoryCommand,
-  helpCommand
+  importedHelpCommand
 ];
+
+// Obter descrições dos comandos shell para o help
+const shellHelpInfo: HelpInfo[] = Object.keys(shellCommandHandlers).map(name => ({
+  name,
+  description: `Comando de shell: ${name}`, // Descrição genérica
+  helpText: `Use 'man ${name}' para obter ajuda sobre este comando shell.`
+}));
 
 // Função para processar um comando de texto
 export const processCommand = (input: string, state: GameState): CommandResult => {
@@ -283,8 +261,29 @@ export const processCommand = (input: string, state: GameState): CommandResult =
   const commandName = parts[0];
   const args = parts.slice(1);
   
+  if (!commandName) {
+    return { success: true, message: '' }; // Linha vazia, sem erro
+  }
+
+  // --- Tratamento Especial para HELP --- 
+  if (commandName === 'help' || commandName === 'ajuda' || commandName === '?') {
+    // Coletar informações de todos os comandos disponíveis (aventura + shell)
+    const availableAdventureCommands: HelpInfo[] = adventureCommands
+      .filter(cmd => !cmd.availability || cmd.availability(state))
+      .map(cmd => ({ 
+        name: cmd.name, 
+        description: cmd.description, 
+        helpText: cmd.help // Usar a propriedade help adicionada
+      }));
+      
+    const allAvailableCommandsInfo: HelpInfo[] = [...availableAdventureCommands, ...shellHelpInfo];
+
+    // Chamar o execute do help importado, passando as informações
+    return importedHelpCommand.execute(args, state, allAvailableCommandsInfo);
+  }
+  // --- Fim do Tratamento Especial para HELP ---
+
   // Verificar se é um comando Git - não processamos aqui
-  // pois os comandos Git são assíncronos e processados diretamente no TerminalSimulator
   if (commandName === 'git') {
     return {
       success: false,
@@ -292,15 +291,16 @@ export const processCommand = (input: string, state: GameState): CommandResult =
     };
   }
   
-  // Verificar se é um comando Shell
-  const shellCommands = ['ls', 'cd', 'pwd', 'mkdir', 'touch', 'rm', 'cat', 'echo', 'clear', 'man', 'grep', 'find', 'diff', 'less', 'more', 'head', 'tail', 'vimdiff'];
-  if (shellCommands.includes(commandName)) {
+  // Verificar se é um comando Shell (exceto help)
+  if (shellCommandHandlers[commandName]) {
     return processShellCommand(input);
   }
   
-  // Buscar comando de aventura correspondente
-  const matchedCommand = commands.find(cmd => 
-    cmd.name === commandName || (cmd.aliases && cmd.aliases.includes(commandName))
+  // Buscar comando de aventura correspondente (exceto help, já tratado)
+  const matchedCommand = adventureCommands.find(cmd => 
+    cmd.name !== 'help' && // Não buscar help aqui novamente
+    (cmd.name === commandName || (cmd.aliases && cmd.aliases.includes(commandName))) &&
+    (!cmd.availability || cmd.availability(state)) // Verificar disponibilidade
   );
   
   if (!matchedCommand) {

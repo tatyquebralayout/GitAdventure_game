@@ -2,28 +2,24 @@ import { useEffect, useState } from 'react';
 import { Gitgraph, templateExtend, TemplateName } from '@gitgraph/react';
 import type { GitgraphOptions, GitgraphApi, GitgraphBranchApi } from '@gitgraph/react';
 import './GitGraph.css';
+import { GitCommit, GitBranch } from '../../../types/git';
 
 // Define the structure for each commit in our history
-export interface GitCommit {
-  sha: string;
-  message: string;
-  branch: string;
-}
+// Remover definição local, agora importada de '../../../types/git'
+// export interface GitCommit { ... }
 
 // Define the structure for branch information
-export interface GitBranch {
-  name: string;
-  isActive: boolean; // Is this the current HEAD branch
-}
+// Remover definição local, agora importada de '../../../types/git'
+// export interface GitBranch { ... }
 
 interface GitGraphProps {
-  commits: GitCommit[];
-  branches: GitBranch[];
+  commits: GitCommit[]; // Usar tipo importado
+  branches: GitBranch[]; // Usar tipo importado
 }
 
 export default function GitGraph({ commits, branches }: GitGraphProps) {
-  const [activeCommits, setActiveCommits] = useState<GitCommit[]>(commits);
-  const [activeBranches, setActiveBranches] = useState<GitBranch[]>(branches);
+  const [activeCommits, setActiveCommits] = useState<GitCommit[]>(commits); // Usar tipo importado
+  const [activeBranches, setActiveBranches] = useState<GitBranch[]>(branches); // Usar tipo importado
 
   // Update state when props change
   useEffect(() => {
@@ -77,7 +73,7 @@ export default function GitGraph({ commits, branches }: GitGraphProps) {
             if (branch) {
               branch.commit({
                 subject: commit.message,
-                hash: commit.sha,
+                hash: commit.id, // Ajustado para usar a propriedade 'id' do tipo unificado
                 style: {
                   // Highlight the active branch's commits
                   dot: activeBranches.find(b => b.name === commit.branch && b.isActive)
