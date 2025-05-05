@@ -8,8 +8,8 @@ export const errorMiddleware = (
   req: Request,
   res: Response,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: NextFunction 
-): Response => {
+  next: NextFunction
+): void => { // Alterado para void
   console.error('Error caught by middleware:', err); // Log the error for debugging
 
   if (err instanceof AppError) {
@@ -21,7 +21,8 @@ export const errorMiddleware = (
         details: err.details,
       },
     };
-    return res.status(err.statusCode).json(response);
+    res.status(err.statusCode).json(response); // Removido o return
+    return; // Adicionado return explícito para clareza
   }
 
   // Handle unexpected errors
@@ -34,5 +35,5 @@ export const errorMiddleware = (
     },
   };
 
-  return res.status(500).json(response);
+  res.status(500).json(response); // Removido o return
 };
