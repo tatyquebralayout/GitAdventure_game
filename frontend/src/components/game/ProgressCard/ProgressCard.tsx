@@ -1,4 +1,5 @@
 import './ProgressCard.css';
+import DevTip from '../../ui/DevHelper/DevTip';
 
 export default function ProgressCard() {
   // Exemplo de mensagens de progresso (você pode substituir por dados reais)
@@ -13,15 +14,21 @@ export default function ProgressCard() {
   ];
 
   return (
-    <div className="progress-card card">
-      <h3>Progressão</h3>
-      <div className="progress-messages">
-        {progressMessages.map((message, index) => (
-          <div key={index} className="progress-message">
-            {message}
-          </div>
-        ))}
+    <DevTip
+      componentName="ProgressCard"
+      description="Exibe o progresso do jogador no jogo, incluindo conquistas e ações completadas."
+      integrationTip="Deve usar progressApi.getProgress() para buscar o progresso real do jogador do backend."
+    >
+      <div className="progress-card card">
+        <h3>Progressão</h3>
+        <div className="progress-messages">
+          {progressMessages.map((message, index) => (
+            <div key={index} className="progress-message">
+              {message}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </DevTip>
   );
 }

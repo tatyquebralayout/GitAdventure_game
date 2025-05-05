@@ -2,16 +2,16 @@ import { Router } from 'express';
 import { questController } from '../controllers/QuestController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
-const router = Router();
+const questRoutes = Router();
 
 // Rotas públicas
-router.get('/', questController.getAllQuests);
-router.get('/:id', questController.getQuestById);
+questRoutes.get('/quests/:id', questController.getById);
+questRoutes.get('/quests/:id/narratives', questController.getQuestNarratives);
+questRoutes.get('/quests/:id/steps', questController.getQuestCommandSteps);
 
-// Rotas protegidas (requerem autenticação)
-router.get('/user/progress', authMiddleware, questController.getUserProgress);
-router.get('/user/progress/:questId', authMiddleware, questController.getUserQuestProgress);
-router.post('/start', authMiddleware, questController.startQuest);
-router.get('/:questId/steps', authMiddleware, questController.getQuestSteps);
+// Rotas protegidas
+questRoutes.post('/quests/:id/start', authMiddleware, questController.startQuest);
+questRoutes.post('/quests/:id/steps/:stepId/complete', authMiddleware, questController.completeQuestStep);
+questRoutes.post('/quests/:id/complete', authMiddleware, questController.completeQuest);
 
-export default router;
+export { questRoutes };

@@ -1,37 +1,118 @@
-import { commands } from './index';
+const gitCommands = [
+  'git init',
+  'git status',
+  'git add',
+  'git commit',
+  'git branch',
+  'git checkout',
+  'git merge',
+  'git log',
+  'git diff',
+  'git remote',
+  'git push',
+  'git pull',
+  'git clone',
+  'git fetch',
+  'git stash',
+  'git stash list',
+  'git stash pop',
+  'git stash apply',
+  'git stash drop',
+  'git stash clear',
+  'git reset',
+  'git reset --hard',
+  'git reset --soft',
+  'git revert'
+];
 
-export function autocompleteCommand(partial: string): string {
-  if (!partial) return '';
+const shellCommands = [
+  'ls',
+  'cd',
+  'pwd',
+  'mkdir',
+  'touch',
+  'rm',
+  'cat',
+  'echo',
+  'clear',
+  'man',
+  'grep',
+  'find',
+  'diff',
+  'less',
+  'more',
+  'head',
+  'tail',
+  'vimdiff'
+];
+
+const gameCommands = [
+  'move',
+  'go',
+  'look',
+  'take',
+  'use',
+  'inventory',
+  'help'
+];
+
+// Todos os comandos agrupados
+const allCommands = [...gitCommands, ...shellCommands, ...gameCommands];
+
+/**
+ * Função que implementa autocomplete de comandos
+ * @param input Texto atual do comando
+ * @returns Comando completo ou null se não houver match
+ */
+export const autocompleteCommand = (input: string): string | null => {
+  // Se a entrada estiver vazia, não fazer nada
+  if (!input.trim()) {
+    return null;
+  }
   
-  // Available commands for autocomplete
-  const availableCommands = commands.map(cmd => cmd.name);
+  const inputLower = input.toLowerCase();
   
-  // Check if input matches the beginning of any command
-  const matchingCommands = availableCommands.filter(cmd => 
-    cmd.toLowerCase().startsWith(partial.toLowerCase())
+  // Verificar se algum comando começa com a entrada do usuário
+  const matches = allCommands.filter(cmd => 
+    cmd.toLowerCase().startsWith(inputLower)
   );
   
-  // If there's only one match, return it
-  if (matchingCommands.length === 1) {
-    return matchingCommands[0];
+  // Se encontrar exatamente um comando, retornar
+  if (matches.length === 1) {
+    return matches[0];
   }
   
-  // If there are multiple matches, return the common prefix
-  if (matchingCommands.length > 1) {
-    let commonPrefix = matchingCommands[0];
-    for (let i = 1; i < matchingCommands.length; i++) {
-      let j = 0;
-      while (
-        j < commonPrefix.length && 
-        j < matchingCommands[i].length && 
-        commonPrefix[j].toLowerCase() === matchingCommands[i][j].toLowerCase()
-      ) {
-        j++;
+  // Se encontrar múltiplos, buscar o prefixo comum mais longo
+  if (matches.length > 1) {
+    let result = '';
+    const minLength = Math.min(...matches.map(cmd => cmd.length));
+    
+    for (let i = 0; i < minLength; i++) {
+      const char = matches[0][i];
+      if (matches.every(cmd => cmd[i] === char)) {
+        result += char;
+      } else {
+        break;
       }
-      commonPrefix = commonPrefix.substring(0, j);
     }
-    return commonPrefix;
+    
+    // Se o resultado for maior que a entrada, retornar
+    if (result.length > input.length) {
+      return result;
+    }
   }
   
-  return partial; // No matches, return original input
-}
+  return null;
+};
+
+/**
+ * Função que retorna sugestões de comandos com base na entrada
+ * (útil para interfaces que exibem sugestões)
+ */
+export const getSuggestions = (input: string): string[] => {
+  const inputLower = input.toLowerCase();
+  
+  return allCommands.filter(cmd => 
+    cmd.toLowerCase().startsWith(inputLower)
+  );
+};

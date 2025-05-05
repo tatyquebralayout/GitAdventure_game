@@ -2,213 +2,125 @@ import { Request, Response } from 'express';
 import { questService } from '../services/QuestService';
 
 export class QuestController {
-  // Listar todas as quests disponíveis
-  public async getAllQuests(req: Request, res: Response): Promise<void> {
+  /**
+   * Obter quest por ID
+   */
+  async getById(req: Request, res: Response): Promise<Response> {
     try {
-      const quests = await questService.getAllQuests();
-      
-      res.status(200).json({
-        success: true,
-        data: quests
-      });
-    } catch (error) {
-      console.error('Erro ao buscar quests:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro ao buscar quests'
-      });
-    }
-  }
-
-  // Buscar uma quest específica por ID
-  public async getQuestById(req: Request, res: Response): Promise<void> {
-    try {
-      const questId = parseInt(req.params.id);
-      
-      if (isNaN(questId)) {
-        res.status(400).json({
-          success: false,
-          message: 'ID da quest inválido'
-        });
-        return;
-      }
-      
-      const quest = await questService.getQuestById(questId);
+      const { id } = req.params;
+      const quest = await questService.getQuestById(id);
       
       if (!quest) {
-        res.status(404).json({
-          success: false,
-          message: 'Quest não encontrada'
-        });
-        return;
+        return res.status(404).json({ success: false, message: 'Quest não encontrada' });
       }
-      
-      res.status(200).json({
-        success: true,
-        data: quest
-      });
+
+      return res.json({ success: true, quest });
     } catch (error) {
-      console.error('Erro ao buscar quest:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro ao buscar quest'
-      });
+      const message = error instanceof Error ? error.message : 'Erro interno do servidor';
+      return res.status(500).json({ success: false, message });
     }
   }
 
-  // Buscar progresso do usuário em todas as quests
-  public async getUserProgress(req: Request, res: Response): Promise<void> {
+  /**
+   * Obter narrativa da quest
+   */
+  async getQuestNarratives(req: Request, res: Response): Promise<Response> {
     try {
-      const userId = req.userId;
-      
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: 'Usuário não autenticado'
-        });
-        return;
-      }
-      
-      const progress = await questService.getUserProgress(userId);
-      
-      res.status(200).json({
-        success: true,
-        data: progress
-      });
+      const { id } = req.params;
+      const narratives = await questService.getQuestNarratives(id);
+      return res.json({ success: true, narratives });
     } catch (error) {
-      console.error('Erro ao buscar progresso do usuário:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro ao buscar progresso do usuário'
-      });
+      const message = error instanceof Error ? error.message : 'Erro interno do servidor';
+      return res.status(500).json({ success: false, message });
     }
   }
 
-  // Buscar progresso do usuário em uma quest específica
-  public async getUserQuestProgress(req: Request, res: Response): Promise<void> {
+  /**
+   * Obter passos de comando da quest
+   */
+  async getQuestCommandSteps(req: Request, res: Response): Promise<Response> {
     try {
-      const userId = req.userId;
-      const questId = parseInt(req.params.questId);
-      
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: 'Usuário não autenticado'
-        });
-        return;
-      }
-      
-      if (isNaN(questId)) {
-        res.status(400).json({
-          success: false,
-          message: 'ID da quest inválido'
-        });
-        return;
-      }
-      
-      const progress = await questService.getUserQuestProgress(userId, questId);
-      
-      if (!progress) {
-        res.status(404).json({
-          success: false,
-          message: 'Progresso não encontrado'
-        });
-        return;
-      }
-      
-      res.status(200).json({
-        success: true,
-        data: progress
-      });
+      const { id } = req.params;
+      const steps = await questService.getQuestCommandSteps(id);
+      return res.json({ success: true, steps });
     } catch (error) {
-      console.error('Erro ao buscar progresso na quest:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro ao buscar progresso na quest'
-      });
+      const message = error instanceof Error ? error.message : 'Erro interno do servidor';
+      return res.status(500).json({ success: false, message });
     }
   }
 
-  // Iniciar uma nova quest para o usuário
-  public async startQuest(req: Request, res: Response): Promise<void> {
+  /**
+   * Iniciar uma quest para o jogador
+   */
+  async startQuest(req: Request, res: Response): Promise<Response> {
     try {
-      const userId = req.userId;
-      const { questId } = req.body;
-      
+      const { id: questId } = req.params;
+      const { worldId } = req.body;
+      const userId = req.user?.id;
+
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: 'Usuário não autenticado'
-        });
-        return;
+        return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
       }
-      
-      if (!questId || isNaN(parseInt(questId))) {
-        res.status(400).json({
-          success: false,
-          message: 'ID da quest inválido'
-        });
-        return;
+
+      if (!worldId) {
+        return res.status(400).json({ success: false, message: 'ID do mundo é obrigatório' });
       }
-      
-      const progress = await questService.startQuest(userId, parseInt(questId));
-      
-      if (!progress) {
-        res.status(404).json({
-          success: false,
-          message: 'Quest não encontrada'
-        });
-        return;
-      }
-      
-      res.status(200).json({
-        success: true,
-        message: 'Quest iniciada com sucesso',
-        data: progress
-      });
+
+      const playerQuest = await questService.startQuest(userId, worldId, questId);
+      return res.json({ success: true, playerQuest });
     } catch (error) {
-      console.error('Erro ao iniciar quest:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro ao iniciar quest'
-      });
+      const message = error instanceof Error ? error.message : 'Erro interno do servidor';
+      return res.status(500).json({ success: false, message });
     }
   }
 
-  // Buscar os passos da quest atual do usuário
-  public async getQuestSteps(req: Request, res: Response): Promise<void> {
+  /**
+   * Completar um passo de quest
+   */
+  async completeQuestStep(req: Request, res: Response): Promise<Response> {
     try {
-      const userId = req.userId;
-      const questId = parseInt(req.params.questId);
-      
+      const { questId, stepId } = req.params;
+      const { command } = req.body;
+      const userId = req.user?.id;
+
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: 'Usuário não autenticado'
-        });
-        return;
+        return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
       }
-      
-      if (isNaN(questId)) {
-        res.status(400).json({
-          success: false,
-          message: 'ID da quest inválido'
-        });
-        return;
+
+      if (!command) {
+        return res.status(400).json({ success: false, message: 'Comando é obrigatório' });
       }
-      
-      const steps = await questService.getCurrentQuestSteps(userId, questId);
-      
-      res.status(200).json({
-        success: true,
-        data: steps
-      });
+
+      const result = await questService.completeQuestStep(userId, questId, stepId, command);
+      return res.json({ success: true, ...result });
     } catch (error) {
-      console.error('Erro ao buscar passos da quest:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erro ao buscar passos da quest'
-      });
+      const message = error instanceof Error ? error.message : 'Erro interno do servidor';
+      return res.status(500).json({ success: false, message });
+    }
+  }
+
+  /**
+   * Completar uma quest
+   */
+  async completeQuest(req: Request, res: Response): Promise<Response> {
+    try {
+      const { id: questId } = req.params;
+      const { worldId } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
+      }
+
+      if (!worldId) {
+        return res.status(400).json({ success: false, message: 'ID do mundo é obrigatório' });
+      }
+
+      const playerQuest = await questService.completeQuest(userId, worldId, questId);
+      return res.json({ success: true, playerQuest });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erro interno do servidor';
+      return res.status(500).json({ success: false, message });
     }
   }
 }

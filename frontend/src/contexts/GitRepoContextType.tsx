@@ -1,5 +1,3 @@
-import { createContext } from 'react';
-
 // Tipos para o contexto
 export interface GitCommit {
   hash: string;
@@ -21,9 +19,6 @@ export interface GitRepoContextType {
   status: GitStatus;
   executeCommand: (command: string) => Promise<{ success: boolean; message: string }>;
 }
-
-// Criar o contexto
-export const GitRepoContext = createContext<GitRepoContextType | null>(null);
 
 // Estado inicial
 export const initialGitRepoState: GitRepoContextType = {

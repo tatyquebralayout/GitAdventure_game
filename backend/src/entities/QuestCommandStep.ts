@@ -1,13 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from "typeorm";
 import { Quest } from "./Quest";
+import { PlayerQuestStep } from './PlayerQuestStep';
 
 @Entity("quest_command_steps")
 export class QuestCommandStep {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({ name: "quest_id" })
-  questId!: number;
+  questId!: string;
 
   @Column({ name: "step_number" })
   stepNumber!: number;
@@ -27,6 +28,12 @@ export class QuestCommandStep {
   @Column({ name: "is_optional", default: false })
   isOptional!: boolean;
 
+  @Column({ name: 'expected_pattern', type: 'text' })
+  expectedPattern!: string;
+
+  @Column({ name: 'success_message', type: 'text' })
+  successMessage!: string;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
@@ -36,4 +43,7 @@ export class QuestCommandStep {
   @ManyToOne(() => Quest, quest => quest.commandSteps)
   @JoinColumn({ name: "quest_id" })
   quest!: Quest;
+
+  @OneToMany(() => PlayerQuestStep, playerStep => playerStep.questCommandStep)
+  playerSteps!: PlayerQuestStep[];
 }

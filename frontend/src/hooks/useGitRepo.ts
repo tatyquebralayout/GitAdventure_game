@@ -1,8 +1,7 @@
-import { useContext } from 'react';
-import { GitRepoContext } from '../contexts/GitRepoContextType';
+import { useGitRepoContext } from '../contexts/GitRepoContext';
 
 /**
  * Hook para usar o GitRepoContext
  * @returns O contexto do repositório Git
  */
-export const useGitRepo = () => useContext(GitRepoContext);
+export const useGitRepo = () => useGitRepoContext();

@@ -1,17 +1,17 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, createContext } from 'react';
 import { useContext } from 'react';
 import { GitRepositoryContext } from './GitRepositoryContext';
-import { GitRepoContext, GitRepoContextType } from './GitRepoContextType';
-
-// Criar o contexto
-export const GitRepoContext = createContext<GitRepoContextType | null>(null);
-
-// Hook para usar o contexto
-export const useGitRepoContext = () => useContext(GitRepoContext);
+import { GitRepoContextType } from './GitRepoContextType';
 
 interface GitRepoProviderProps {
   children: ReactNode;
 }
+
+// Nós importamos o tipo mas criamos o contexto localmente
+const GitRepoContext = createContext<GitRepoContextType | null>(null);
+
+// Exportamos o hook para usar o contexto
+export const useGitRepoContext = () => useContext(GitRepoContext);
 
 export const GitRepoProvider: React.FC<GitRepoProviderProps> = ({ children }) => {
   // Usar o GitRepositoryContext internamente

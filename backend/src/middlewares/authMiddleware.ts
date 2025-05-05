@@ -1,45 +1,75 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { AppDataSource } from '../config/database';
+import { UserToken } from '../entities/UserToken';
 
 // Define a type for the decoded user payload
 interface UserPayload {
   id: string;
-  // Add other properties from your JWT payload if necessary
+  // Adicione outras propriedades conforme necessário
 }
 
-// Extend the Express Request interface to include the user property
+// Estenda a interface Request para incluir as propriedades de usuário
 declare global {
   namespace Express {
     interface Request {
       user?: UserPayload;
+      userId?: string;
     }
   }
 }
 
-export const protect = (req: Request, res: Response, next: NextFunction) => {
-  let token;
+/**
+ * Middleware de proteção para rotas que exigem autenticação
+ */
+export const protect = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let token;
 
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    try {
-      // Get token from header
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      // Obter token do header
       token = req.headers.authorization.split(' ')[1];
 
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as UserPayload;
+      // Verificar o token
+      const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+      const decoded = jwt.verify(token, JWT_SECRET) as UserPayload;
 
-      // Attach user to the request object
-      // Note: You might need to fetch the full user from DB here depending on your needs
-      req.user = decoded; // Assign the decoded payload
+      // Verificar se o token está no banco de dados
+      const tokenRepository = AppDataSource.getRepository(UserToken);
+      const userToken = await tokenRepository.findOne({
+        where: { accessToken: token },
+        relations: ['user']
+      });
+
+      if (!userToken) {
+        throw new Error('Token inválido ou expirado');
+      }
+
+      // Adicionar usuário à requisição
+      req.user = decoded;
+      req.userId = decoded.id;
+      
       next();
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      res.status(401).json({ message: 'Not authorized, token failed' });
+    } else {
+      res.status(401).json({ message: 'Não autorizado, token não fornecido' });
     }
+  } catch (error) {
+    console.error('Falha na verificação do token:', error);
+    res.status(401).json({ message: 'Não autorizado, token inválido' });
+  }
+};
+
+/**
+ * Middleware para verificar se o usuário é administrador
+ */
+export const admin = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user && (req.user as any).isAdmin) {
+    next();
   } else {
-    res.status(401).json({ message: 'Not authorized, no token' });
+    res.status(403).json({ message: 'Acesso negado. Requer privilégios de administrador.' });
   }
 };
 
