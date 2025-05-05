@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { World } from '../types/worlds';
+import { World } from '@shared/types/worlds'; // Updated import path
 import { worldApi } from '../api/worldApi';
 import { Link } from 'react-router-dom';
 import useAsyncState from '../hooks/useAsyncState';
-import { ApiResponse } from '../types/api';
+import { ApiResponse } from '@shared/types/api'; // Updated import path
 
 const WorldsPage = () => {
   const { 
@@ -81,4 +81,4 @@ const WorldsPage = () => {
   );
 };
 
-export default WorldsPage; 
+export default WorldsPage;

@@ -1,13 +1,14 @@
 import { AppDataSource } from '../config/database';
-import { World } from '../entities/World';
-import { PlayerWorld } from '../entities/PlayerWorld';
+import { World as WorldEntity } from '../entities/World'; // Rename import to avoid conflict
+import { PlayerWorld as PlayerWorldEntity } from '../entities/PlayerWorld'; // Rename import
 import { Quest } from '../entities/Quest';
 import { WorldQuest } from '../entities/WorldQuest';
 import { PlayerWorldsQuest } from '../entities/PlayerWorldsQuest';
+import { World, PlayerWorld } from '@shared/types/worlds'; // Import shared types
 
 export class WorldService {
-  private worldRepository = AppDataSource.getRepository(World);
-  private playerWorldRepository = AppDataSource.getRepository(PlayerWorld);
+  private worldRepository = AppDataSource.getRepository(WorldEntity);
+  private playerWorldRepository = AppDataSource.getRepository(PlayerWorldEntity);
   private questRepository = AppDataSource.getRepository(Quest);
   private worldQuestRepository = AppDataSource.getRepository(WorldQuest);
   private playerWorldQuestRepository = AppDataSource.getRepository(PlayerWorldsQuest);
@@ -56,7 +57,7 @@ export class WorldService {
     });
 
     if (existingPlayerWorld) {
-      return existingPlayerWorld;
+      return existingPlayerWorld as PlayerWorld;
     }
 
     // Criar novo progresso para o jogador
@@ -83,7 +84,7 @@ export class WorldService {
       await this.playerWorldQuestRepository.save(playerQuests);
     }
 
-    return playerWorld;
+    return playerWorld as PlayerWorld;
   }
 
   /**
@@ -103,8 +104,8 @@ export class WorldService {
     playerWorld.status = 'completed';
     await this.playerWorldRepository.save(playerWorld);
 
-    return playerWorld;
+    return playerWorld as PlayerWorld;
   }
 }
 
-export const worldService = new WorldService(); 
+export const worldService = new WorldService();

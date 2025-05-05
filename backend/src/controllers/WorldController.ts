@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import { worldService } from '../services/WorldService';
+import { ApiResponse } from '@shared/types/api';
+import { World } from '@shared/types/worlds';
+import { PlayerWorld } from '@shared/types/worlds';
 
 export class WorldController {
   /**
@@ -8,10 +11,12 @@ export class WorldController {
   async getAll(req: Request, res: Response): Promise<Response> {
     try {
       const worlds = await worldService.getAllWorlds();
-      return res.json({ success: true, worlds });
+      const response: ApiResponse<World[]> = { success: true, data: worlds };
+      return res.json(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro interno do servidor';
-      return res.status(500).json({ success: false, message });
+      const response: ApiResponse = { success: false, message };
+      return res.status(500).json(response);
     }
   }
 
@@ -22,15 +27,18 @@ export class WorldController {
     try {
       const { id } = req.params;
       const world = await worldService.getWorldById(id);
-      
+
       if (!world) {
-        return res.status(404).json({ success: false, message: 'Mundo não encontrado' });
+        const response: ApiResponse = { success: false, message: 'Mundo não encontrado' };
+        return res.status(404).json(response);
       }
 
-      return res.json({ success: true, world });
+      const response: ApiResponse<World> = { success: true, data: world };
+      return res.json(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro interno do servidor';
-      return res.status(500).json({ success: false, message });
+      const response: ApiResponse = { success: false, message };
+      return res.status(500).json(response);
     }
   }
 
@@ -41,10 +49,12 @@ export class WorldController {
     try {
       const { id } = req.params;
       const quests = await worldService.getWorldQuests(id);
-      return res.json({ success: true, quests });
+      const response: ApiResponse = { success: true, data: quests };
+      return res.json(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro interno do servidor';
-      return res.status(500).json({ success: false, message });
+      const response: ApiResponse = { success: false, message };
+      return res.status(500).json(response);
     }
   }
 
@@ -57,14 +67,17 @@ export class WorldController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
+        const response: ApiResponse = { success: false, message: 'Usuário não autenticado' };
+        return res.status(401).json(response);
       }
 
       const playerWorld = await worldService.startWorld(userId, worldId);
-      return res.json({ success: true, playerWorld });
+      const response: ApiResponse<PlayerWorld> = { success: true, data: playerWorld };
+      return res.json(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro interno do servidor';
-      return res.status(500).json({ success: false, message });
+      const response: ApiResponse = { success: false, message };
+      return res.status(500).json(response);
     }
   }
 
@@ -77,16 +90,19 @@ export class WorldController {
       const userId = req.user?.id;
 
       if (!userId) {
-        return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
+        const response: ApiResponse = { success: false, message: 'Usuário não autenticado' };
+        return res.status(401).json(response);
       }
 
       const playerWorld = await worldService.completeWorld(userId, worldId);
-      return res.json({ success: true, playerWorld });
+      const response: ApiResponse<PlayerWorld> = { success: true, data: playerWorld };
+      return res.json(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro interno do servidor';
-      return res.status(500).json({ success: false, message });
+      const response: ApiResponse = { success: false, message };
+      return res.status(500).json(response);
     }
   }
 }
 
-export const worldController = new WorldController(); 
+export const worldController = new WorldController();

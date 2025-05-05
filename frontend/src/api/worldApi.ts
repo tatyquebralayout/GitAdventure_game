@@ -1,6 +1,6 @@
 import apiClient from '../services/apiClient';
-import { ApiResponse } from '../types/api';
-import { World, PlayerWorld } from '../types/worlds';
+import { ApiResponse } from '@shared/types/api'; // Updated import path
+import { World, PlayerWorld } from '@shared/types/worlds'; // Updated import path
 import { Quest } from '../types/quests';
 
 export const worldApi = {

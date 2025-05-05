@@ -12,7 +12,8 @@
     "moduleResolution": "bundler",
     "paths": {
       "@frontend/*": ["frontend/src/*"],
-      "@backend/*": ["backend/src/*"]
+      "@backend/*": ["backend/src/*"],
+      "@shared/*": ["shared/*"] // Add path for shared types
     }
   }
 }
