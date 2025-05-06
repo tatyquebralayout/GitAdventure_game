@@ -13,14 +13,24 @@
     "migration:revert": "npm run typeorm -- migration:revert"
   },
   "dependencies": {
+    "@faker-js/faker": "^9.7.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "ioredis": "^5.6.1",
+    "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.15.6",
+    "rate-limit-redis": "^4.2.0",
     "reflect-metadata": "^0.2.2",
-    "typeorm": "^0.3.22"
+    "simple-git": "^3.27.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "tsyringe": "^4.10.0",
+    "typeorm": "^0.3.22",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

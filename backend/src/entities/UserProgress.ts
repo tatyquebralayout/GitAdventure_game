@@ -19,8 +19,20 @@ export class UserProgress {
   @Column({ name: "is_completed", default: false })
   isCompleted: boolean;
 
-  @Column({ name: "completed_at", nullable: true })
+  @Column({ name: "completed_at", type: "timestamptz", nullable: true })
   completedAt: Date | null;
+
+  @Column({ name: "start_time", type: "timestamptz" })
+  startTime: Date;
+
+  @Column({ name: "time_spent", type: "integer", default: 0 })
+  timeSpent: number;
+
+  @Column({ type: "integer", default: 0 })
+  attempts: number;
+
+  @Column({ type: "integer", default: 0 })
+  score: number;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;

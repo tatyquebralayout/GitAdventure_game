@@ -1,69 +1,61 @@
 // Entry point for the backend server
-import 'reflect-metadata'; // Necessário para TypeORM
-import express, { ErrorRequestHandler } from 'express';
+import 'reflect-metadata';
+import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
 import { AppDataSource } from './config/database';
-import { commandRoutes } from './routes/commandRoutes';
+import { container } from './config/container';
+import { swaggerSpec } from './config/swagger';
 import { authRoutes } from './routes/authRoutes';
+import { commandRoutes } from './routes/commandRoutes';
 import { worldRoutes } from './routes/worldRoutes';
 import { questRoutes } from './routes/questRoutes';
 import { progressRoutes } from './routes/progressRoutes';
 import { errorMiddleware } from './middlewares/errorMiddleware';
+import { loggingMiddleware } from './middlewares/loggingMiddleware';
+import { generalRateLimiter } from './middlewares/rateLimitMiddleware';
+import { LoggerService } from './services/LoggerService';
 
-// Carregar variáveis de ambiente
-dotenv.config();
-
-// Configure environment
-const isProduction = process.env.NODE_ENV === 'production';
-
-// Inicializar o aplicativo Express
 const app = express();
-const PORT = process.env.PORT || 3001;
+const logger = container.resolve(LoggerService);
 
-// Middleware
-app.use(cors({
-  origin: isProduction ? process.env.CORS_ORIGIN : 'http://localhost:5173',
-  credentials: true
-}));
+// Basic middleware
+app.use(cors());
 app.use(express.json());
+app.use(loggingMiddleware);
 
-// Log requests in development mode only
-if (!isProduction) {
-  app.use((req, res, next) => {
-    console.log('[Development Mode] Request received:', req.method, req.path);
-    next();
-  });
-}
+// API documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Rotas da API
-app.use('/api/commands', commandRoutes);
+// General rate limiting
+app.use('/api', generalRateLimiter);
+
+// Routes
 app.use('/api/auth', authRoutes);
-app.use('/api', worldRoutes);
-app.use('/api', questRoutes);
+app.use('/api/commands', commandRoutes);
+app.use('/api/worlds', worldRoutes);
+app.use('/api/quests', questRoutes);
 app.use('/api/progress', progressRoutes);
 
-// Rota raiz para verificação da API
-app.get('/', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'GitAdventure API - Development Mode Only' 
-  });
-});
+// Error handling
+app.use(errorMiddleware);
 
-// Middleware de erro global (deve ser o último middleware)
-app.use(errorMiddleware as ErrorRequestHandler);
-
-// Inicializar conexão com o banco de dados e iniciar o servidor
+// Initialize database connection
 AppDataSource.initialize()
   .then(() => {
-    console.log('Development database connection established');
+    logger.info('Database connection established');
     
-    app.listen(PORT, () => {
-      console.log(`Development server running on port ${PORT}`);
-    });
+    // Run migrations if needed
+    return AppDataSource.runMigrations();
+  })
+  .then(() => {
+    logger.info('Database migrations completed');
   })
   .catch((error) => {
-    console.error('Error connecting to development database:', error);
-    process.exit(1);
+    logger.error('Error during initialization:', { error });
   });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  logger.info(`Server is running on port ${PORT}`);
+});

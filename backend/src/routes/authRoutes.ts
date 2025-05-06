@@ -1,17 +1,41 @@
 import { Router } from 'express';
-import { AuthController } from '../controllers/AuthController';
+import { authController } from '../controllers/AuthController';
 import { AuthMiddleware } from '../middlewares/authMiddleware';
+import { validate } from '../middlewares/validationMiddleware';
+import { authRateLimiter } from '../middlewares/rateLimitMiddleware';
+import { authSchemas } from '../validators/schemas';
 
 const authRoutes = Router();
-const authController = new AuthController();
 
-// Public routes
-authRoutes.post('/register', (req, res, next) => authController.register(req, res, next));
-authRoutes.post('/login', (req, res, next) => authController.login(req, res, next));
-authRoutes.post('/refresh-token', (req, res, next) => authController.refreshToken(req, res, next));
+authRoutes.post(
+  '/register', 
+  validate(authSchemas.register),
+  authController.register
+);
 
-// Protected routes
-authRoutes.post('/logout', AuthMiddleware, (req, res, next) => authController.logout(req, res, next));
-authRoutes.get('/profile', AuthMiddleware, (req, res, next) => authController.getProfile(req, res, next));
+authRoutes.post(
+  '/login',
+  authRateLimiter,
+  validate(authSchemas.login),
+  authController.login
+);
+
+authRoutes.post(
+  '/refresh-token',
+  validate(authSchemas.refreshToken),
+  authController.refreshToken
+);
+
+authRoutes.post(
+  '/logout',
+  AuthMiddleware,
+  authController.logout
+);
+
+authRoutes.get(
+  '/profile',
+  AuthMiddleware,
+  authController.getProfile
+);
 
 export { authRoutes };

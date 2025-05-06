@@ -1,9 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { PlayerWorldsQuest } from './PlayerWorldsQuest';
 import { QuestCommandStep } from './QuestCommandStep';
-
-// Tipo para status do passo do comando
-export type PlayerStepStatus = 'pending' | 'completed';
+import { StepStatus } from '../../../shared/types/enums';
 
 @Entity('player_quest_steps')
 export class PlayerQuestStep {
@@ -18,10 +16,32 @@ export class PlayerQuestStep {
 
   @Column({ 
     type: 'text',
-    enum: ['pending', 'completed'],
-    default: 'pending'
+    enum: StepStatus,
+    default: StepStatus.PENDING
   })
-  status: PlayerStepStatus;
+  status: StepStatus;
+
+  @Column({ name: 'start_time', type: 'timestamptz', nullable: true })
+  startTime: Date | null;
+
+  @Column({ name: 'time_spent', type: 'integer', default: 0 })
+  timeSpent: number;
+
+  @Column({ type: 'integer', default: 0 })
+  attempts: number;
+
+  @Column({ name: 'failed_attempts', type: 'jsonb', default: '[]' })
+  failedAttempts: Array<{
+    command: string;
+    timestamp: Date;
+    error?: string;
+  }>;
+
+  @Column({ type: 'integer', default: 0 })
+  score: number;
+
+  @Column({ name: 'bonus_points', type: 'integer', default: 0 })
+  bonusPoints: number;
 
   @Column({ name: 'executed_at', type: 'timestamptz', nullable: true })
   executedAt: Date | null;

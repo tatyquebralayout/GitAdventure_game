@@ -2,9 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { PlayerWorld } from './PlayerWorld';
 import { Quest } from './Quest';
 import { PlayerQuestStep } from './PlayerQuestStep';
-
-// Tipo para status da quest do jogador
-export type PlayerQuestStatus = 'starting' | 'ongoing' | 'completed';
+import { QuestStatus } from '../../../shared/types/enums';
 
 @Entity('player_worlds_quests')
 export class PlayerWorldsQuest {
@@ -19,9 +17,19 @@ export class PlayerWorldsQuest {
 
   @Column({ 
     type: 'text',
-    enum: ['starting', 'ongoing', 'completed'] 
+    enum: QuestStatus,
+    default: QuestStatus.NOT_STARTED
   })
-  status: PlayerQuestStatus;
+  status: QuestStatus;
+
+  @Column({ name: 'total_time', type: 'integer', default: 0 })
+  totalTime: number;
+
+  @Column({ name: 'total_attempts', type: 'integer', default: 0 })
+  totalAttempts: number;
+
+  @Column({ name: 'total_score', type: 'integer', default: 0 })
+  totalScore: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

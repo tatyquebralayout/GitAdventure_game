@@ -3,6 +3,7 @@ import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import { AppDataSource } from '../config/database';
 import { User } from '../entities/User';
 import { UserToken } from '../entities/UserToken';
+import { AppError } from '../utils/AppError';
 
 interface TokenResponse {
   accessToken: string;
@@ -40,7 +41,7 @@ export class AuthService {
     });
 
     if (userExists) {
-      throw new Error('Usuário ou e-mail já existe');
+      throw new AppError('Usuário ou e-mail já existe', 400);
     }
 
     // Criar hash da senha
@@ -69,13 +70,13 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error('Credenciais inválidas');
+      throw new AppError('Credenciais inválidas', 401);
     }
 
     // Verificar senha
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      throw new Error('Credenciais inválidas');
+      throw new AppError('Credenciais inválidas', 401);
     }
 
     // Gerar tokens
@@ -95,26 +96,30 @@ export class AuthService {
   }
 
   async refreshToken(refreshToken: string): Promise<{ accessToken: string }> {
-    // Verificar se o refresh token é válido
-    const decoded = jwt.verify(refreshToken, this.jwtRefreshSecret) as { id: string };
-    
-    // Buscar token no banco
-    const userToken = await this.userTokenRepository.findOne({
-      where: { userId: decoded.id, refreshToken }
-    });
+    try {
+      // Verificar se o refresh token é válido
+      const decoded = jwt.verify(refreshToken, this.jwtRefreshSecret) as { id: string };
+      
+      // Buscar token no banco
+      const userToken = await this.userTokenRepository.findOne({
+        where: { userId: decoded.id, refreshToken }
+      });
 
-    if (!userToken) {
-      throw new Error('Invalid refresh token');
+      if (!userToken) {
+        throw new AppError('Invalid refresh token', 401);
+      }
+
+      // Gerar novo access token
+      const newAccessToken = this.generateAccessToken(decoded.id);
+
+      // Atualizar token no banco
+      userToken.accessToken = newAccessToken;
+      await this.userTokenRepository.save(userToken);
+
+      return { accessToken: newAccessToken };
+    } catch (error) {
+      throw new AppError('Invalid refresh token', 401);
     }
-
-    // Gerar novo access token
-    const newAccessToken = this.generateAccessToken(decoded.id);
-
-    // Atualizar token no banco
-    userToken.accessToken = newAccessToken;
-    await this.userTokenRepository.save(userToken);
-
-    return { accessToken: newAccessToken };
   }
 
   async logout(userId: string): Promise<void> {
