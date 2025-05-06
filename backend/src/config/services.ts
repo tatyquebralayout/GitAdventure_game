@@ -24,20 +24,18 @@ export function configureServices() {
   container.registerSingleton('CommandValidationService', CommandValidationService);
 
   // Register main business logic services - these can be mocked
-  container.register<IAuthService>(SERVICE_TOKENS.AUTH_SERVICE, {
-    useClass: useMocks ? MockAuthService : AuthService
-  });
-
-  container.register<IQuestService>(SERVICE_TOKENS.QUEST_SERVICE, {
-    useClass: useMocks ? MockQuestService : QuestService
-  });
-
-  container.register<IWorldService>(SERVICE_TOKENS.WORLD_SERVICE, {
-    useClass: useMocks ? MockWorldService : WorldService
-  });
-
+  // Use conditional registration instead of useClass
   if (useMocks) {
+    container.registerSingleton<IAuthService>(SERVICE_TOKENS.AUTH_SERVICE, MockAuthService);
+    container.registerSingleton<IQuestService>(SERVICE_TOKENS.QUEST_SERVICE, MockQuestService);
+    container.registerSingleton<IWorldService>(SERVICE_TOKENS.WORLD_SERVICE, MockWorldService);
+    
+    // Initialize mock services
     MockServiceRegistry.registerMockServices();
+  } else {
+    container.registerSingleton<IAuthService>(SERVICE_TOKENS.AUTH_SERVICE, AuthService);
+    container.registerSingleton<IQuestService>(SERVICE_TOKENS.QUEST_SERVICE, QuestService);
+    container.registerSingleton<IWorldService>(SERVICE_TOKENS.WORLD_SERVICE, WorldService);
   }
 }
 

@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { WorldQuest } from './WorldQuest';
 import { PlayerWorld } from './PlayerWorld';
+import { ModuleTheme } from '../../../shared/types/enums';
 
 // Tipo para dificuldade
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
@@ -33,6 +34,13 @@ export class World {
     enum: ['draft', 'review', 'published'] 
   })
   status: WorldStatus;
+
+  @Column({
+    type: 'text',
+    enum: Object.values(ModuleTheme),
+    default: ModuleTheme.GENERAL
+  })
+  theme: ModuleTheme;
 
   // Relacionamentos
   @OneToMany(() => WorldQuest, worldQuest => worldQuest.world)

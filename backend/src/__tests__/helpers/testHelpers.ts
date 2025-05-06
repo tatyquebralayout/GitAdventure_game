@@ -58,13 +58,12 @@ export const WorldTestHelpers = {
       name: 'Test World',
       description: 'A test world',
       difficulty: WorldDifficulty.BEGINNER,
-      theme: ModuleTheme.GIT_BASICS,
       ...props
     };
 
     const worlds = await worldService.getAllWorlds({
-      theme: defaultWorld.theme,
-      difficulty: defaultWorld.difficulty
+      difficulty: defaultWorld.difficulty,
+      searchTerm: 'Test'
     });
     return worlds[0];
   },
