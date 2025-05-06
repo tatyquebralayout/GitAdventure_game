@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { questService, QuestService } from '../services/QuestService';
+import { AppError } from '../utils/AppError';
 
 export class QuestController {
   constructor(private questService: QuestService = questService) {}
@@ -10,7 +11,7 @@ export class QuestController {
       const quest = await this.questService.getQuestById(id);
 
       if (!quest) {
-        throw new Error('Quest não encontrada');
+        throw new AppError('Quest not found', 404);
       }
 
       res.json({ success: true, quest });
@@ -46,11 +47,11 @@ export class QuestController {
       const userId = req.user?.id;
 
       if (!userId) {
-        throw new Error('Usuário não autenticado');
+        throw new AppError('Authentication required', 401);
       }
 
       if (!worldId) {
-        throw new Error('ID do mundo é obrigatório');
+        throw new AppError('World ID is required', 400);
       }
 
       const playerQuest = await this.questService.startQuest(userId, worldId, questId);
@@ -67,11 +68,11 @@ export class QuestController {
       const userId = req.user?.id;
 
       if (!userId) {
-        throw new Error('Usuário não autenticado');
+        throw new AppError('Authentication required', 401);
       }
 
       if (!command) {
-        throw new Error('Comando é obrigatório');
+        throw new AppError('Command is required', 400);
       }
 
       const result = await this.questService.completeQuestStep(userId, questId, stepId, command);
@@ -88,11 +89,11 @@ export class QuestController {
       const userId = req.user?.id;
 
       if (!userId) {
-        throw new Error('Usuário não autenticado');
+        throw new AppError('Authentication required', 401);
       }
 
       if (!worldId) {
-        throw new Error('ID do mundo é obrigatório');
+        throw new AppError('World ID is required', 400);
       }
 
       const playerQuest = await this.questService.completeQuest(userId, worldId, questId);

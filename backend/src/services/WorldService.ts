@@ -5,6 +5,7 @@ import { Quest } from '../entities/Quest';
 import { WorldQuest } from '../entities/WorldQuest';
 import { PlayerWorldsQuest } from '../entities/PlayerWorldsQuest';
 import { World, PlayerWorld } from '@shared/types/worlds';
+import { AppError } from '../utils/AppError';
 
 export class WorldService {
   private worldRepository = AppDataSource.getRepository(WorldEntity);
@@ -23,9 +24,15 @@ export class WorldService {
   }
 
   async getWorldById(id: string): Promise<World | null> {
-    return this.worldRepository.findOne({
+    const world = await this.worldRepository.findOne({
       where: { id }
     });
+    
+    if (!world) {
+      throw new AppError('World not found', 404);
+    }
+
+    return world;
   }
 
   async getWorldQuests(worldId: string): Promise<Quest[]> {
@@ -41,7 +48,7 @@ export class WorldService {
   async startWorld(userId: string, worldId: string): Promise<PlayerWorld> {
     const world = await this.worldRepository.findOne({ where: { id: worldId } });
     if (!world) {
-      throw new Error('World not found');
+      throw new AppError('World not found', 404);
     }
 
     // Check if player already started this world
@@ -57,7 +64,8 @@ export class WorldService {
     const playerWorld = this.playerWorldRepository.create({
       userId,
       worldId,
-      status: 'started'
+      status: 'started',
+      startedAt: new Date()
     });
 
     await this.playerWorldRepository.save(playerWorld);
@@ -80,7 +88,7 @@ export class WorldService {
       await this.playerWorldQuestRepository.save(playerQuests);
     }
 
-    return playerWorld as PlayerWorld;
+    return playerWorld;
   }
 
   async completeWorld(userId: string, worldId: string): Promise<PlayerWorld> {
@@ -89,11 +97,22 @@ export class WorldService {
     });
 
     if (!playerWorld) {
-      throw new Error('World progress not found');
+      throw new AppError('World progress not found', 404);
+    }
+
+    // Check if all quests are completed
+    const playerQuests = await this.playerWorldQuestRepository.find({
+      where: { playerWorldId: playerWorld.id }
+    });
+
+    const allCompleted = playerQuests.every(quest => quest.status === 'completed');
+    if (!allCompleted) {
+      throw new AppError('All quests must be completed to complete the world', 400);
     }
 
     playerWorld.status = 'completed';
-    return this.playerWorldRepository.save(playerWorld) as Promise<PlayerWorld>;
+    playerWorld.completedAt = new Date();
+    return this.playerWorldRepository.save(playerWorld);
   }
 }
 

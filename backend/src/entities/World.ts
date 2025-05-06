@@ -11,33 +11,33 @@ export type WorldStatus = 'draft' | 'review' | 'published';
 @Entity('worlds')
 export class World {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  id: string;
 
   @Column({ type: 'text' })
-  name!: string;
+  name: string;
 
   @Column({ type: 'text', nullable: true })
-  description!: string;
+  description: string;
 
   @Column({ type: 'text', unique: true })
-  slug!: string;
+  slug: string;
 
   @Column({ 
     type: 'text',
     enum: ['beginner', 'intermediate', 'advanced'] 
   })
-  difficulty!: Difficulty;
+  difficulty: Difficulty;
 
   @Column({ 
     type: 'text',
     enum: ['draft', 'review', 'published'] 
   })
-  status!: WorldStatus;
+  status: WorldStatus;
 
   // Relacionamentos
   @OneToMany(() => WorldQuest, worldQuest => worldQuest.world)
-  worldQuests!: WorldQuest[];
+  worldQuests: WorldQuest[];
 
   @OneToMany(() => PlayerWorld, playerWorld => playerWorld.world)
-  playerWorlds!: PlayerWorld[];
-} 
+  playerWorlds: PlayerWorld[];
+}

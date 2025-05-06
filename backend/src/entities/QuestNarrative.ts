@@ -7,22 +7,22 @@ export type NarrativeStatus = 'starting' | 'ongoing' | 'completed';
 @Entity('quest_narratives')
 export class QuestNarrative {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  id: string;
 
   @Column({ name: 'quest_id' })
-  questId!: string;
+  questId: string;
 
   @Column({ 
     type: 'text',
     enum: ['starting', 'ongoing', 'completed'] 
   })
-  status!: NarrativeStatus;
+  status: NarrativeStatus;
 
   @Column({ type: 'text' })
-  context!: string;
+  context: string;
 
   // Relacionamentos
   @ManyToOne(() => Quest, quest => quest.narratives)
   @JoinColumn({ name: 'quest_id' })
-  quest!: Quest;
-} 
+  quest: Quest;
+}

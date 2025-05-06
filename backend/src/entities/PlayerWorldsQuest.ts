@@ -9,35 +9,35 @@ export type PlayerQuestStatus = 'starting' | 'ongoing' | 'completed';
 @Entity('player_worlds_quests')
 export class PlayerWorldsQuest {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  id: string;
 
   @Column({ name: 'player_world_id' })
-  playerWorldId!: string;
+  playerWorldId: string;
 
   @Column({ name: 'quest_id' })
-  questId!: string;
+  questId: string;
 
   @Column({ 
     type: 'text',
     enum: ['starting', 'ongoing', 'completed'] 
   })
-  status!: PlayerQuestStatus;
+  status: PlayerQuestStatus;
 
   @CreateDateColumn({ name: 'created_at' })
-  createdAt!: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt!: Date;
+  updatedAt: Date;
 
   // Relacionamentos
   @ManyToOne(() => PlayerWorld, playerWorld => playerWorld.quests)
   @JoinColumn({ name: 'player_world_id' })
-  playerWorld!: PlayerWorld;
+  playerWorld: PlayerWorld;
 
   @ManyToOne(() => Quest, quest => quest.playerQuests)
   @JoinColumn({ name: 'quest_id' })
-  quest!: Quest;
+  quest: Quest;
 
   @OneToMany(() => PlayerQuestStep, step => step.playerWorldsQuest)
-  steps!: PlayerQuestStep[];
-} 
+  steps: PlayerQuestStep[];
+}

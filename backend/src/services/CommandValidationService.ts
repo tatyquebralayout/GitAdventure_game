@@ -1,7 +1,6 @@
 import { AppDataSource } from '../config/database';
 import { QuestCommandStep } from '../entities/QuestCommandStep';
 import { UserProgress } from '../entities/UserProgress';
-import { Quest } from '../entities/Quest';
 import { AppError } from '../utils/AppError';
 import { FindOperator, MoreThanOrEqual } from 'typeorm';
 import { BaseService } from './baseService';
@@ -58,35 +57,10 @@ export class CommandValidationService extends BaseService {
     return progress;
   }
 
-  private async updateQuestProgress(userId: string, questId: string, stepIndex: number): Promise<UserProgress> {
-    let progress = await this.userProgressRepository.findOneBy({ userId, questId });
-
-    if (!progress) {
-      if (stepIndex !== 0) {
-        throw new AppError('Quest not started or previous steps not completed.', 400);
-      }
-      progress = this.userProgressRepository.create({
-        userId,
-        questId,
-        currentStep: stepIndex,
-        isCompleted: false,
-        completedAt: null
-      });
-    } else {
-      if (stepIndex > progress.currentStep + 1) {
-        throw new AppError('Cannot skip quest steps.', 400);
-      }
-      if (stepIndex > progress.currentStep) {
-        progress.currentStep = stepIndex;
-      }
+  private async updateQuestProgress(userId: string, questId: string, currentStep: number, isCompleted: boolean): Promise<void> {
+    if (!userId) {
+      throw new AppError('User ID is required', 400);
     }
-
-    return this.userProgressRepository.save(progress);
-  }
-
-  // Atualizar o progresso do usuário após uma validação de comando
-  private async updateUserProgress(userId: string, questId: string, currentStep: number, isCompleted: boolean): Promise<void> {
-    if (!userId) return;
 
     try {
       const userProgressRepository = AppDataSource.getRepository(UserProgress);
@@ -118,7 +92,7 @@ export class CommandValidationService extends BaseService {
       
       await userProgressRepository.save(progress);
     } catch (error) {
-      console.error('Erro ao atualizar progresso do usuário:', error);
+      throw new AppError('Failed to update quest progress', 500, error);
     }
   }
 
@@ -130,19 +104,13 @@ export class CommandValidationService extends BaseService {
     const steps = await this.getQuestCommandSteps(questId);
     
     if (steps.length === 0) {
-      return {
-        valid: false,
-        message: 'Quest não encontrada'
-      };
+      throw new AppError('Quest not found', 404);
     }
     
     // Encontrar o passo atual
     const currentStepData = steps.find(step => step.stepNumber === currentStep);
     if (!currentStepData) {
-      return {
-        valid: false,
-        message: 'Passo inválido para esta quest'
-      };
+      throw new AppError('Invalid step for this quest', 400);
     }
     
     // Verificar se o comando corresponde ao padrão esperado
@@ -156,7 +124,7 @@ export class CommandValidationService extends BaseService {
       
       // Atualizar o progresso do usuário se o userId estiver presente
       if (userId) {
-        await this.updateUserProgress(
+        await this.updateQuestProgress(
           userId, 
           questId, 
           nextStep?.stepNumber || currentStep + 1, 

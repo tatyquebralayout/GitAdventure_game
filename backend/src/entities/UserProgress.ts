@@ -5,34 +5,34 @@ import { Quest } from "./Quest";
 @Entity("user_progress")
 export class UserProgress {
   @PrimaryGeneratedColumn("uuid")
-  id!: string;
+  id: string;
 
   @Column({ name: "user_id" })
-  userId!: string;
+  userId: string;
 
   @Column({ name: "quest_id" })
-  questId!: string;
+  questId: string;
 
   @Column({ name: "current_step", default: 1 })
-  currentStep!: number;
+  currentStep: number;
 
   @Column({ name: "is_completed", default: false })
-  isCompleted!: boolean;
+  isCompleted: boolean;
 
   @Column({ name: "completed_at", nullable: true })
-  completedAt!: Date | null;
+  completedAt: Date | null;
 
   @CreateDateColumn({ name: "created_at" })
-  createdAt!: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ name: "updated_at" })
-  updatedAt!: Date;
+  updatedAt: Date;
 
   @ManyToOne(() => User, user => user.progress)
   @JoinColumn({ name: "user_id" })
-  user!: User;
+  user: User;
 
   @ManyToOne(() => Quest)
   @JoinColumn({ name: "quest_id" })
-  quest!: Quest;
+  quest: Quest;
 }

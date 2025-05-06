@@ -4,15 +4,15 @@ import { QuestModule } from './QuestModule';
 @Entity('modules')
 export class Module {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  id: string;
 
   @Column({ type: 'text' })
-  name!: string;
+  name: string;
 
   @Column({ type: 'text', nullable: true })
-  description!: string;
+  description: string;
 
   // Relacionamentos
   @OneToMany(() => QuestModule, questModule => questModule.module)
-  questModules!: QuestModule[];
-} 
+  questModules: QuestModule[];
+}

@@ -5,6 +5,7 @@ import { QuestCommandStep } from '../entities/QuestCommandStep';
 import { PlayerWorld } from '../entities/PlayerWorld';
 import { PlayerWorldsQuest } from '../entities/PlayerWorldsQuest';
 import { PlayerQuestStep } from '../entities/PlayerQuestStep';
+import { AppError } from '../utils/AppError';
 
 export class QuestService {
   private questRepository = AppDataSource.getRepository(Quest);
@@ -46,7 +47,7 @@ export class QuestService {
     });
 
     if (!playerWorld) {
-      throw new Error('Player has not started this world');
+      throw new AppError('Player has not started this world', 400);
     }
 
     // Check if player already started this quest
@@ -180,7 +181,7 @@ export class QuestService {
     });
 
     if (!playerWorld) {
-      throw new Error('Progresso do mundo não encontrado');
+      throw new AppError('World progress not found', 404);
     }
 
     // Buscar o progresso da quest
@@ -192,7 +193,7 @@ export class QuestService {
     });
 
     if (!playerQuest) {
-      throw new Error('Progresso da quest não encontrado');
+      throw new AppError('Quest progress not found', 404);
     }
 
     // Verificar se todos os passos foram completados
@@ -202,7 +203,7 @@ export class QuestService {
 
     const allCompleted = playerSteps.every(step => step.status === 'completed');
     if (!allCompleted) {
-      throw new Error('Nem todos os passos da quest foram completados');
+      throw new AppError('Not all quest steps are completed', 400);
     }
 
     // Atualizar o status da quest

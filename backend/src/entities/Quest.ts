@@ -8,41 +8,41 @@ import { PlayerWorldsQuest } from './PlayerWorldsQuest';
 @Entity('quests')
 export class Quest {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  id: string;
 
   @Column({ type: 'text' })
-  name!: string;
+  name: string;
 
   @Column({ type: 'text', nullable: true })
-  description!: string;
+  description: string | null;
 
   @Column({ type: 'text' })
-  type!: string;
+  type: string;
 
   @Column({ name: 'parent_quest_id', nullable: true })
-  parentQuestId!: string | null;
+  parentQuestId: string | null;
 
   // Auto-relacionamento (sub-quests)
   @ManyToOne(() => Quest, quest => quest.childQuests)
   @JoinColumn({ name: 'parent_quest_id' })
-  parentQuest!: Quest | null;
+  parentQuest: Quest | null;
 
   @OneToMany(() => Quest, quest => quest.parentQuest)
-  childQuests!: Quest[];
+  childQuests: Quest[];
 
   // Outros relacionamentos
   @OneToMany(() => QuestModule, questModule => questModule.quest)
-  questModules!: QuestModule[];
+  questModules: QuestModule[];
 
   @OneToMany(() => QuestNarrative, narrative => narrative.quest)
-  narratives!: QuestNarrative[];
+  narratives: QuestNarrative[];
 
   @OneToMany(() => WorldQuest, worldQuest => worldQuest.quest)
-  worldQuests!: WorldQuest[];
+  worldQuests: WorldQuest[];
 
   @OneToMany(() => QuestCommandStep, step => step.quest)
-  commandSteps!: QuestCommandStep[];
+  commandSteps: QuestCommandStep[];
 
   @OneToMany(() => PlayerWorldsQuest, playerQuest => playerQuest.quest)
-  playerQuests!: PlayerWorldsQuest[];
+  playerQuests: PlayerWorldsQuest[];
 }

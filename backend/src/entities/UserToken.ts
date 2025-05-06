@@ -4,22 +4,22 @@ import { User } from './User';
 @Entity('user_tokens')
 export class UserToken {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  id: string;
 
   @Column({ name: 'user_id' })
-  userId!: string;
+  userId: string;
 
   @Column({ name: 'access_token', type: 'text' })
-  accessToken!: string;
+  accessToken: string;
 
   @Column({ name: 'refresh_token', type: 'text' })
-  refreshToken!: string;
+  refreshToken: string;
 
   @CreateDateColumn({ name: 'created_at' })
-  createdAt!: Date;
+  createdAt: Date;
 
   // Relacionamentos
   @ManyToOne(() => User, user => user.tokens)
   @JoinColumn({ name: 'user_id' })
-  user!: User;
-} 
+  user: User;
+}

@@ -1,10 +1,10 @@
 // Interface padrão para respostas da API
-export interface ApiResponse<T = unknown> {
+export interface ApiResponse {
   success: boolean;
   message?: string;
-  data?: T;
   error?: {
-    code?: string;
+    code: string;
     details?: unknown;
   };
-} 
+  data?: unknown;
+}

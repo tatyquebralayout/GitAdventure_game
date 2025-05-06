@@ -14,11 +14,8 @@ import { errorMiddleware } from './middlewares/errorMiddleware';
 // Carregar variáveis de ambiente
 dotenv.config();
 
-// Enforce development mode
-if (process.env.NODE_ENV === 'production') {
-  console.error('Production mode is disabled. Application can only run in development mode.');
-  process.exit(1);
-}
+// Configure environment
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Inicializar o aplicativo Express
 const app = express();
@@ -26,16 +23,18 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // Restrict to local development only
+  origin: isProduction ? process.env.CORS_ORIGIN : 'http://localhost:5173',
   credentials: true
 }));
 app.use(express.json());
 
-// Mensagem apenas para desenvolvimento
-app.use((req, res, next) => {
-  console.log('[Development Mode] Request received:', req.method, req.path);
-  next();
-});
+// Log requests in development mode only
+if (!isProduction) {
+  app.use((req, res, next) => {
+    console.log('[Development Mode] Request received:', req.method, req.path);
+    next();
+  });
+}
 
 // Rotas da API
 app.use('/api/commands', commandRoutes);

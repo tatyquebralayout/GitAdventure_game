@@ -8,30 +8,30 @@ export type PlayerStepStatus = 'pending' | 'completed';
 @Entity('player_quest_steps')
 export class PlayerQuestStep {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  id: string;
 
   @Column({ name: 'player_worlds_quests_id' })
-  playerWorldsQuestsId!: string;
+  playerWorldsQuestsId: string;
 
   @Column({ name: 'quest_command_step_id' })
-  questCommandStepId!: string;
+  questCommandStepId: string;
 
   @Column({ 
     type: 'text',
     enum: ['pending', 'completed'],
     default: 'pending'
   })
-  status!: PlayerStepStatus;
+  status: PlayerStepStatus;
 
   @Column({ name: 'executed_at', type: 'timestamptz', nullable: true })
-  executedAt!: Date | null;
+  executedAt: Date | null;
 
   // Relacionamentos
   @ManyToOne(() => PlayerWorldsQuest, playerQuest => playerQuest.steps)
   @JoinColumn({ name: 'player_worlds_quests_id' })
-  playerWorldsQuest!: PlayerWorldsQuest;
+  playerWorldsQuest: PlayerWorldsQuest;
 
   @ManyToOne(() => QuestCommandStep, commandStep => commandStep.playerSteps)
   @JoinColumn({ name: 'quest_command_step_id' })
-  questCommandStep!: QuestCommandStep;
-} 
+  questCommandStep: QuestCommandStep;
+}

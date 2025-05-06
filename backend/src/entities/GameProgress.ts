@@ -4,27 +4,27 @@ import { User } from "./User";
 @Entity("game_progress")
 export class GameProgress {
   @PrimaryGeneratedColumn("uuid")
-  id!: string;
+  id: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: "user_id" })
-  user!: User;
+  user: User;
 
   @Column({ name: "user_id" })
-  userId!: string;
+  userId: string;
   
   @Column({ name: "save_slot" })
-  saveSlot!: number;
+  saveSlot: number;
   
   @Column({ name: "save_name" })
-  saveName!: string;
+  saveName: string;
   
   @Column("jsonb")
-  gameState!: object;
+  gameState: object;
 
   @CreateDateColumn({ name: "created_at" })
-  createdAt!: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ name: "updated_at" })
-  updatedAt!: Date;
+  updatedAt: Date;
 }

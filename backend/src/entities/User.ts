@@ -1,40 +1,40 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
 import { UserToken } from './UserToken';
 import { PlayerWorld } from './PlayerWorld';
-import { UserProgress } from './UserProgress'; // Import UserProgress
+import { UserProgress } from './UserProgress';
 
 @Entity("users")
 export class User {
   @PrimaryGeneratedColumn("uuid")
-  id!: string;
+  id: string;
 
   @Column({ type: 'text', unique: true })
-  username!: string;
+  username: string;
 
   @Column({ type: 'text', unique: true })
-  email!: string;
+  email: string;
 
   @Column({ type: 'text', select: false })
-  password!: string;
+  password: string;
 
   @Column({ default: 0 })
-  experience!: number;
+  experience: number;
 
   @Column({ default: 1 })
-  level!: number;
+  level: number;
 
   @CreateDateColumn({ name: "created_at" })
-  createdAt!: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ name: "updated_at" })
-  updatedAt!: Date;
+  updatedAt: Date;
   
   @OneToMany(() => UserToken, token => token.user)
-  tokens!: UserToken[];
+  tokens: UserToken[];
 
   @OneToMany(() => PlayerWorld, playerWorld => playerWorld.user)
-  playerWorlds!: PlayerWorld[];
+  playerWorlds: PlayerWorld[];
 
   @OneToMany(() => UserProgress, progress => progress.user)
-  progress!: UserProgress[]; // This property was missing
+  progress: UserProgress[];
 }

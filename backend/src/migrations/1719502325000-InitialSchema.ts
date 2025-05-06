@@ -138,9 +138,15 @@ export class InitialSchema1719502325000 implements MigrationInterface {
                 "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                 "quest_id" UUID NOT NULL,
                 "step_number" INT NOT NULL,
+                "command_name" TEXT NOT NULL,
+                "command_regex" TEXT NOT NULL,
+                "description" TEXT NOT NULL,
+                "hint" TEXT,
+                "is_optional" BOOLEAN NOT NULL DEFAULT false,
                 "expected_pattern" TEXT NOT NULL,
                 "success_message" TEXT NOT NULL,
                 "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+                "updated_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
                 CONSTRAINT "UQ_quest_step_number" UNIQUE ("quest_id", "step_number"),
                 CONSTRAINT "FK_quest_command_steps_quest" FOREIGN KEY ("quest_id") 
                 REFERENCES "quests"("id") ON DELETE CASCADE
@@ -189,4 +195,4 @@ export class InitialSchema1719502325000 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "user_tokens"`);
         await queryRunner.query(`DROP TABLE "users"`);
     }
-} 
+}
