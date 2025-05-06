@@ -14,9 +14,9 @@ import { errorMiddleware } from './middlewares/errorMiddleware';
 // Carregar variáveis de ambiente
 dotenv.config();
 
-// Verificar se está em modo de produção
+// Enforce development mode
 if (process.env.NODE_ENV === 'production') {
-  console.error('Production mode is disabled. Please run in development mode only.');
+  console.error('Production mode is disabled. Application can only run in development mode.');
   process.exit(1);
 }
 
@@ -33,7 +33,7 @@ app.use(express.json());
 
 // Mensagem apenas para desenvolvimento
 app.use((req, res, next) => {
-  console.log('Development mode only - Not for production use');
+  console.log('[Development Mode] Request received:', req.method, req.path);
   next();
 });
 
