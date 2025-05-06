@@ -12,8 +12,8 @@ import { worldRoutes } from './routes/worldRoutes';
 import { questRoutes } from './routes/questRoutes';
 import { progressRoutes } from './routes/progressRoutes';
 import { errorMiddleware } from './middlewares/errorMiddleware';
-import { loggingMiddleware } from './middlewares/loggingMiddleware';
-import { generalRateLimiter } from './middlewares/rateLimitMiddleware';
+import { LoggingMiddleware } from './middlewares/loggingMiddleware';
+import { RateLimitMiddleware } from './middlewares/rateLimitMiddleware';
 import { LoggerService } from './services/LoggerService';
 
 const app = express();
@@ -22,12 +22,13 @@ const logger = container.resolve(LoggerService);
 // Basic middleware
 app.use(cors());
 app.use(express.json());
-app.use(loggingMiddleware);
+app.use(LoggingMiddleware);
 
 // API documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // General rate limiting
+const generalRateLimiter = RateLimitMiddleware({ points: 100, duration: 60 });
 app.use('/api', generalRateLimiter);
 
 // Routes
@@ -51,8 +52,8 @@ AppDataSource.initialize()
   .then(() => {
     logger.info('Database migrations completed');
   })
-  .catch((error) => {
-    logger.error('Error during initialization:', { error });
+  .catch((error: Error) => {
+    logger.error('Error during initialization:', error);
   });
 
 const PORT = process.env.PORT || 3000;
