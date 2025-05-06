@@ -1,5 +1,5 @@
 import { GitCommandParser } from '../../services/GitCommandParser';
-import { ParsedCommand } from '../../types/git';
+import { ParsedCommand, ValidationResult } from '../../types/git';
 
 describe('GitCommandParser', () => {
   let parser: GitCommandParser;
@@ -9,76 +9,83 @@ describe('GitCommandParser', () => {
   });
 
   describe('parseCommand', () => {
-    it('should parse valid git commands', async () => {
-      const command = 'git init';
-      const result = await parser.parseCommand(command);
+    const validCommands = [
+      {
+        input: 'git init',
+        expected: {
+          action: 'init',
+          args: [],
+          rawCommand: 'git init',
+          isValid: true
+        }
+      },
+      {
+        input: 'git add .',
+        expected: {
+          action: 'add',
+          args: ['.'],
+          rawCommand: 'git add .',
+          isValid: true
+        }
+      },
+      {
+        input: 'git commit -m "Initial commit"',
+        expected: {
+          action: 'commit',
+          args: ['-m', 'Initial commit'],
+          rawCommand: 'git commit -m "Initial commit"',
+          isValid: true
+        }
+      },
+      {
+        input: 'git branch feature',
+        expected: {
+          action: 'branch',
+          args: ['feature'],
+          rawCommand: 'git branch feature',
+          isValid: true
+        }
+      },
+      {
+        input: 'git checkout -b feature',
+        expected: {
+          action: 'checkout',
+          args: ['-b', 'feature'],
+          rawCommand: 'git checkout -b feature',
+          isValid: true
+        }
+      }
+    ];
+
+    validCommands.forEach(({ input, expected }) => {
+      it(`should correctly parse "${input}"`, async () => {
+        const result = await parser.parseCommand(input);
+        expect(result).toMatchObject(expected);
+      });
+    });
+
+    const invalidCommands = [
+      'git',
+      'git invalid',
+      'not-git command',
+      '',
+      'git commit -invalid-flag'
+    ];
+
+    invalidCommands.forEach(command => {
+      it(`should reject invalid command "${command}"`, async () => {
+        await expect(parser.parseCommand(command)).rejects.toThrow();
+      });
+    });
+
+    it('should handle commands with multiple arguments', async () => {
+      const result = await parser.parseCommand('git add file1.txt file2.txt');
       expect(result).toMatchObject({
-        action: 'init',
-        args: [],
-        rawCommand: command,
+        action: 'add',
+        args: ['file1.txt', 'file2.txt'],
         isValid: true
       });
     });
 
-    it('should reject non-git commands', async () => {
-      await expect(parser.parseCommand('npm install')).rejects.toThrow('Not a git command');
-    });
-
-    it('should parse commands with arguments', async () => {
-      const result = await parser.parseCommand('git add file.txt');
-      expect(result).toMatchObject({
-        action: 'add',
-        args: ['file.txt'],
-        isValid: true
-      });
-    });
-  });
-
-  describe('validateSemantics', () => {
-    const mockCommand: ParsedCommand = {
-      action: 'init',
-      args: [],
-      rawCommand: 'git init',
-      isValid: true
-    };
-
-    it('should validate git init command', async () => {
-      const result = await parser.validateSemantics(mockCommand);
-      expect(result.isValid).toBe(true);
-    });
-
-    it('should validate git add command', async () => {
-      const addCommand: ParsedCommand = {
-        action: 'add',
-        args: ['.'],
-        rawCommand: 'git add .',
-        isValid: true
-      };
-      const result = await parser.validateSemantics(addCommand);
-      expect(result.isValid).toBe(true);
-    });
-
-    it('should validate git commit command with message', async () => {
-      const commitCommand: ParsedCommand = {
-        action: 'commit',
-        args: ['-m', 'Initial commit'],
-        rawCommand: 'git commit -m "Initial commit"',
-        isValid: true
-      };
-      const result = await parser.validateSemantics(commitCommand);
-      expect(result.isValid).toBe(true);
-    });
-
-    it('should reject git commit without message', async () => {
-      const invalidCommand: ParsedCommand = {
-        action: 'commit',
-        args: [],
-        rawCommand: 'git commit',
-        isValid: true
-      };
-      const result = await parser.validateSemantics(invalidCommand);
-      expect(result.isValid).toBe(false);
-      expect(result.message).toContain('message is required');
-    });
-  });
-});
+    it('should handle commands with quoted arguments', async () => {
+      const result = await parser.parse
