@@ -1,5 +1,6 @@
 import React, { useState, ReactNode } from 'react';
 import { GitRepositoryContext, GitRepositoryContextType, initialRepositoryState } from './GitRepositoryContext';
+import { GitBranch, GitCommit } from '../types/git';
 
 interface GitRepositoryProviderProps {
   children: ReactNode;
@@ -51,10 +52,12 @@ export const GitRepositoryProvider: React.FC<GitRepositoryProviderProps> = ({ ch
   // Implementação de comandos Git
   
   const handleGitInit = () => {
-    setRepository((prev: typeof initialRepositoryState) => ({
+    const mainBranch: GitBranch = { name: 'main', isActive: true, isRemote: false };
+    
+    setRepository((prev) => ({
       ...prev,
       currentBranch: 'main',
-      branches: ['main'],
+      branches: [mainBranch],
       commits: [],
       status: {
         staged: [],
@@ -147,7 +150,7 @@ export const GitRepositoryProvider: React.FC<GitRepositoryProviderProps> = ({ ch
       });
     }
     
-    setRepository((prev: typeof initialRepositoryState) => ({
+    setRepository((prev) => ({
       ...prev,
       status: {
         staged: stagedFiles,
@@ -181,16 +184,18 @@ export const GitRepositoryProvider: React.FC<GitRepositoryProviderProps> = ({ ch
     
     const commitMessage = args[messageIndex + 1];
     
-    // Criar novo commit
-    const newCommit = {
-      hash: generateFakeHash(),
+    // Criar novo commit com a estrutura correta de GitCommit
+    const newCommit: GitCommit = {
+      id: generateFakeHash(),
       message: commitMessage,
       author: 'Git Adventure User <user@git-adventure.com>',
-      date: new Date()
+      date: new Date(),
+      parents: repository.commits.length > 0 ? [repository.commits[0].id] : [],
+      branch: repository.currentBranch
     };
     
     // Atualizar estado
-    setRepository((prev: typeof initialRepositoryState) => ({
+    setRepository((prev) => ({
       ...prev,
       commits: [newCommit, ...prev.commits],
       status: {
@@ -201,15 +206,15 @@ export const GitRepositoryProvider: React.FC<GitRepositoryProviderProps> = ({ ch
     
     return {
       success: true,
-      message: `[${repository.currentBranch} ${newCommit.hash.substring(0, 7)}] ${commitMessage}`
+      message: `[${repository.currentBranch} ${newCommit.id.substring(0, 7)}] ${commitMessage}`
     };
   };
   
   const handleGitBranch = (args: string[]) => {
     if (args.length === 0) {
       // Listar branches
-      const branchList = repository.branches.map((branch: string) => 
-        branch === repository.currentBranch ? `* ${branch}` : `  ${branch}`
+      const branchList = repository.branches.map((branch: GitBranch) => 
+        branch.name === repository.currentBranch ? `* ${branch.name}` : `  ${branch.name}`
       ).join('\n');
       
       return {
@@ -218,23 +223,31 @@ export const GitRepositoryProvider: React.FC<GitRepositoryProviderProps> = ({ ch
       };
     } else {
       // Criar nova branch
-      const newBranch = args[0];
+      const newBranchName = args[0];
       
-      if (repository.branches.includes(newBranch)) {
+      // Check if branch already exists
+      if (repository.branches.some(branch => branch.name === newBranchName)) {
         return {
           success: false,
-          message: `fatal: a branch named '${newBranch}' already exists`
+          message: `fatal: a branch named '${newBranchName}' already exists`
         };
       }
       
-      setRepository((prev: typeof initialRepositoryState) => ({
+      // Create new branch
+      const newBranch: GitBranch = {
+        name: newBranchName,
+        isActive: false,
+        isRemote: false
+      };
+      
+      setRepository((prev) => ({
         ...prev,
         branches: [...prev.branches, newBranch]
       }));
       
       return {
         success: true,
-        message: `Created branch ${newBranch}`
+        message: `Created branch ${newBranchName}`
       };
     }
   };
@@ -249,14 +262,25 @@ export const GitRepositoryProvider: React.FC<GitRepositoryProviderProps> = ({ ch
     
     const targetBranch = args[0];
     
-    // Verificar se a branch existe
-    if (!repository.branches.includes(targetBranch)) {
-      // Verificar se é para criar uma nova branch
+    // Check if the branch exists
+    const branchExists = repository.branches.some(branch => branch.name === targetBranch);
+    
+    if (!branchExists) {
+      // Create a new branch if -b flag is present
       if (args.includes('-b')) {
-        setRepository((prev: typeof initialRepositoryState) => ({
+        const newBranch: GitBranch = {
+          name: targetBranch,
+          isActive: true,
+          isRemote: false
+        };
+        
+        setRepository((prev) => ({
           ...prev,
           currentBranch: targetBranch,
-          branches: [...prev.branches, targetBranch]
+          branches: prev.branches.map(branch => ({
+            ...branch,
+            isActive: false
+          })).concat(newBranch)
         }));
         
         return {
@@ -271,10 +295,14 @@ export const GitRepositoryProvider: React.FC<GitRepositoryProviderProps> = ({ ch
       };
     }
     
-    // Mudar para a branch especificada
-    setRepository((prev: typeof initialRepositoryState) => ({
+    // Switch to the specified branch
+    setRepository((prev) => ({
       ...prev,
-      currentBranch: targetBranch
+      currentBranch: targetBranch,
+      branches: prev.branches.map(branch => ({
+        ...branch,
+        isActive: branch.name === targetBranch
+      }))
     }));
     
     return {
@@ -291,9 +319,9 @@ export const GitRepositoryProvider: React.FC<GitRepositoryProviderProps> = ({ ch
       };
     }
     
-    const logOutput = repository.commits.map((commit: {hash: string; author: string; date: Date; message: string}) => {
+    const logOutput = repository.commits.map((commit: GitCommit) => {
       const dateStr = commit.date.toISOString();
-      return `commit ${commit.hash}\nAuthor: ${commit.author}\nDate: ${dateStr}\n\n    ${commit.message}\n`;
+      return `commit ${commit.id}\nAuthor: ${commit.author}\nDate: ${dateStr}\n\n    ${commit.message}\n`;
     }).join('\n');
     
     return {
@@ -318,7 +346,8 @@ export const GitRepositoryProvider: React.FC<GitRepositoryProviderProps> = ({ ch
     currentBranch: repository.currentBranch,
     branches: repository.branches,
     commits: repository.commits,
-    status: repository.status
+    status: repository.status,
+    remotes: repository.remotes
   };
   
   return (
@@ -326,4 +355,4 @@ export const GitRepositoryProvider: React.FC<GitRepositoryProviderProps> = ({ ch
       {children}
     </GitRepositoryContext.Provider>
   );
-}; 
+};
