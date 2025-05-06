@@ -7,20 +7,21 @@ import { GitCommandParser } from './GitCommandParser';
 import { CacheService } from './CacheService';
 import { LoggerService } from './LoggerService';
 
-interface ValidationResult {
+// Export interfaces so they can be reused elsewhere if needed
+export interface ValidationResult {
   success: boolean;
   message: string;
   matches?: string[];
 }
 
-interface StepValidationInput {
+export interface StepValidationInput {
   questId: string;
   stepId: string;
   command: string;
   step: Partial<QuestCommandStep>;
 }
 
-interface StepValidationResult {
+export interface StepValidationResult {
   success: boolean;
   message: string;
   step: PlayerQuestStep | null;
@@ -29,13 +30,13 @@ interface StepValidationResult {
 @injectable()
 export class CommandValidationService {
   constructor(
-    @inject(GitCommandParser)
+    @inject('GitCommandParser') // String token instead of class reference
     private gitParser: GitCommandParser,
     
-    @inject(CacheService)
+    @inject('CacheService') // String token instead of class reference
     private cacheService: CacheService,
     
-    @inject(LoggerService)
+    @inject('LoggerService') // String token instead of class reference
     private logger: LoggerService
   ) {}
 

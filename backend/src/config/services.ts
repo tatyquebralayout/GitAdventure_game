@@ -9,22 +9,30 @@ import { MockAuthService } from '../mocks/services/MockAuthService';
 import { MockQuestService } from '../mocks/services/MockQuestService';
 import { MockWorldService } from '../mocks/services/MockWorldService';
 import { MockServiceRegistry } from '../mocks/services/MockServiceRegistry';
+import { GitCommandParser } from '../services/GitCommandParser';
+import { CacheService } from '../services/CacheService';
+import { LoggerService } from '../services/LoggerService';
+import { CommandValidationService } from '../services/CommandValidationService';
 
 export function configureServices() {
   const useMocks = MockServiceRegistry.shouldUseMocks();
 
-  // Auth Service
-  container.register<IAuthService>('IAuthService', {
+  // Register core utility services - these are always real implementations
+  container.registerSingleton('GitCommandParser', GitCommandParser);
+  container.registerSingleton('CacheService', CacheService);
+  container.registerSingleton('LoggerService', LoggerService);
+  container.registerSingleton('CommandValidationService', CommandValidationService);
+
+  // Register main business logic services - these can be mocked
+  container.register<IAuthService>(SERVICE_TOKENS.AUTH_SERVICE, {
     useClass: useMocks ? MockAuthService : AuthService
   });
 
-  // Quest Service
-  container.register<IQuestService>('IQuestService', {
+  container.register<IQuestService>(SERVICE_TOKENS.QUEST_SERVICE, {
     useClass: useMocks ? MockQuestService : QuestService
   });
 
-  // World Service
-  container.register<IWorldService>('IWorldService', {
+  container.register<IWorldService>(SERVICE_TOKENS.WORLD_SERVICE, {
     useClass: useMocks ? MockWorldService : WorldService
   });
 

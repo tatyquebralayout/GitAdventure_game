@@ -136,7 +136,7 @@ export class MockServiceRegistry {
       // Initialize mock data
       await registry.initializeMockData();
     } catch (error) {
-      logger.error('[MockRegistry] Failed to register mock services', error);
+      logger.error('[MockRegistry] Failed to register mock services', error as Error);
       throw error;
     }
   }
