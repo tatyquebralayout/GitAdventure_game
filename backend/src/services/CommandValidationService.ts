@@ -4,6 +4,8 @@ import { UserProgress } from '../entities/UserProgress';
 import { Quest } from '../entities/Quest';
 import { AppError } from '../utils/AppError';
 import { FindOperator, MoreThanOrEqual } from 'typeorm';
+import { BaseService } from './baseService';
+import { createMockQuestSteps } from '../mocks/questMocks';
 
 // Request DTO para validação de comando
 export interface ValidateCommandRequestDto {
@@ -22,119 +24,19 @@ export interface ValidateCommandResponseDto {
   isQuestCompleted?: boolean;
 }
 
-export class CommandValidationService {
+export class CommandValidationService extends BaseService {
   private readonly userProgressRepository = AppDataSource.getRepository(UserProgress);
   private readonly questStepRepository = AppDataSource.getRepository(QuestCommandStep);
 
   // Buscar os passos do comando de uma quest específica
   private async getQuestCommandSteps(questId: string): Promise<QuestCommandStep[]> {
-    try {
-      return await this.questStepRepository.find({
-        where: { questId: questId }, // Use string questId here
+    return this.getDataOrMock(
+      () => this.questStepRepository.find({
+        where: { questId },
         order: { stepNumber: 'ASC' }
-      });
-    } catch (error) {
-      console.error('Erro ao buscar passos da quest:', error);
-      // Fallback para os dados mockados se o banco de dados não estiver disponível
-      return this.getMockedQuestSteps();
-    }
-  }
-  
-  // Dados mockados para testes ou quando o banco de dados não estiver configurado
-  private getMockedQuestSteps(): QuestCommandStep[] {
-    // Create a minimal Quest object for the mock data
-    const dummyQuest: Quest = {
-      id: '1',
-      name: 'Git Basics',
-      description: 'Learn the basics of Git',
-      type: 'tutorial',
-      parentQuestId: null,
-      childQuests: [],
-      questModules: [],
-      narratives: [],
-      worldQuests: [],
-      commandSteps: [],
-      playerQuests: [],
-      parentQuest: null
-    };
-
-    return [
-      {
-        id: '1',
-        questId: '1',
-        stepNumber: 1,
-        commandName: 'git init',
-        commandRegex: '^git init$',
-        description: 'Initialize a git repository',
-        isOptional: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        quest: dummyQuest,
-        expectedPattern: 'git init',
-        successMessage: 'Repositório Git inicializado com sucesso!',
-        playerSteps: []
-      },
-      {
-        id: '2',
-        questId: '1',
-        stepNumber: 2,
-        commandName: 'git add',
-        commandRegex: '^git add (\\.|[\\w\\.\\-_]+)$',
-        description: 'Add files to staging area',
-        isOptional: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        quest: dummyQuest,
-        expectedPattern: 'git add .',
-        successMessage: 'Arquivos adicionados com sucesso!',
-        playerSteps: []
-      },
-      {
-        id: '3',
-        questId: '1',
-        stepNumber: 3,
-        commandName: 'git commit',
-        commandRegex: '^git commit -m "(.*)"$',
-        description: 'Commit changes to repository',
-        isOptional: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        quest: dummyQuest,
-        expectedPattern: 'git commit -m "mensagem"',
-        successMessage: 'Alterações commitadas com sucesso!',
-        playerSteps: []
-      },
-      {
-        id: '4',
-        questId: '1',
-        stepNumber: 4,
-        commandName: 'git branch',
-        commandRegex: '^git branch ([\\w\\-_]+)$',
-        description: 'Create a new branch',
-        isOptional: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        quest: dummyQuest,
-        expectedPattern: 'git branch feature',
-        successMessage: 'Branch criado com sucesso!',
-        playerSteps: []
-      },
-      {
-        id: '5',
-        questId: '1',
-        stepNumber: 5,
-        commandName: 'git checkout',
-        commandRegex: '^git checkout ([\\w\\-_]+)$',
-        description: 'Switch to another branch',
-        isOptional: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        quest: dummyQuest,
-        expectedPattern: 'git checkout feature',
-        successMessage: 'Mudou para o branch com sucesso!',
-        playerSteps: []
-      }
-    ];
+      }),
+      () => createMockQuestSteps(questId)
+    );
   }
 
   private async checkQuestProgress(userId: string, questId: string, requiredStepIndex?: number): Promise<UserProgress | null> {
