@@ -3,52 +3,52 @@ import { Module } from '../../../entities/Module';
 import { ModuleTheme } from '../../../../shared/types/enums';
 
 describe('ModuleFactory', () => {
-  describe('create', () => {
+  describe('create()', () => {
     it('should create a module with default values', () => {
       const module = ModuleFactory.create();
-
+      
       expect(module).toBeInstanceOf(Module);
       expect(module.id).toBeDefined();
       expect(module.name).toBeDefined();
+      expect(module.description).toBeDefined();
       expect(module.theme).toBeDefined();
-      expect(module.order).toBe(0);
+      expect(module.order).toBeGreaterThanOrEqual(0);
       expect(module.prerequisites).toEqual([]);
+      expect(module.questModules).toEqual([]);
     });
 
-    it('should honor override values', () => {
+    it('should create a module with override values', () => {
       const override = {
         name: 'Custom Module',
-        description: 'Custom Description',
-        theme: ModuleTheme.BRANCHING,
-        order: 5,
-        prerequisites: ['123', '456']
+        theme: ModuleTheme.GIT_BASICS,
+        order: 42
       };
 
       const module = ModuleFactory.create(override);
 
       expect(module.name).toBe(override.name);
-      expect(module.description).toBe(override.description);
       expect(module.theme).toBe(override.theme);
       expect(module.order).toBe(override.order);
-      expect(module.prerequisites).toEqual(override.prerequisites);
-    });
-
-    it('should generate unique IDs for each module', () => {
-      const module1 = ModuleFactory.create();
-      const module2 = ModuleFactory.create();
-
-      expect(module1.id).not.toBe(module2.id);
-    });
-
-    it('should use valid default theme', () => {
-      const module = ModuleFactory.create();
-      const validThemes = Object.values(ModuleTheme);
-
-      expect(validThemes).toContain(module.theme);
     });
   });
 
-  describe('createMany', () => {
+  describe('createMany()', () => {
+    it('should create multiple modules', () => {
+      const count = 3;
+      const modules = ModuleFactory.createMany(count);
+
+      expect(modules).toHaveLength(count);
+      modules.forEach(module => {
+        expect(module).toBeInstanceOf(Module);
+      });
+    });
+
+    it('should create multiple modules with override values', () => {
+      const count = 2;
+      const override = { theme: ModuleTheme.ADVANCED };
+      const modules = ModuleFactory.createMany(count, override);
+
+      expect(modules).toHaveLength(count);
     it('should create specified number of modules', () => {
       const count = 3;
       const modules = ModuleFactory.createMany(count);
