@@ -1,51 +1,43 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { container } from 'tsyringe';
+import { AuthService } from '../services/AuthService';
 import { AppError } from '../utils/AppError';
-import { User } from '../entities/User';
-import { AppDataSource } from '../config/database';
 
-// Define the structure of the JWT payload
-interface JwtPayload {
-  id: string;
-}
-
-// Extend the Express Request interface to include the user property
-import type { User } from '../entities/User';
-declare module 'express-serve-static-core' {
-  interface Request {
-    user?: User;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        username: string;
+      };
+    }
   }
 }
 
-// Ensure the function is exported with the name 'AuthMiddleware'
-export const AuthMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const AuthMiddleware = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next(new AppError('No token provided or token format is invalid', 401));
+  if (!authHeader) {
+    throw new AppError('Token não fornecido', 401);
   }
 
-  const token = authHeader.split(' ')[1];
+  const [, token] = authHeader.split(' ');
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret') as JwtPayload;
+    const authService = container.resolve(AuthService);
+    const user = await authService.validateToken(token);
+    
+    req.user = {
+      id: user.id,
+      username: user.username
+    };
 
-    const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOneBy({ id: decoded.id });
-
-    if (!user) {
-      return next(new AppError('User not found for the provided token', 401));
-    }
-
-    req.user = user; // Attach user to the request object
-    next();
+    return next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return next(new AppError('Invalid token', 401));
-    }
-     if (error instanceof jwt.TokenExpiredError) {
-       return next(new AppError('Token expired', 401));
-     }
-    next(new AppError('Failed to authenticate token', 500));
+    throw new AppError('Token inválido', 401);
   }
 };

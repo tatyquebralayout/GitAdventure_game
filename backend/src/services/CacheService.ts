@@ -1,51 +1,59 @@
+import { injectable } from 'tsyringe';
 import Redis from 'ioredis';
-import { singleton } from 'tsyringe';
 
-@singleton()
+@injectable()
 export class CacheService {
-  private redis: Redis;
+  private client: Redis;
 
   constructor() {
-    this.redis = new Redis({
+    this.client = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
+      port: Number(process.env.REDIS_PORT) || 6379,
       password: process.env.REDIS_PASSWORD,
-      enableOfflineQueue: false,
+      keyPrefix: 'gitadv:'
     });
   }
 
-  async get<T>(key: string): Promise<T | null> {
-    const data = await this.redis.get(key);
-    return data ? JSON.parse(data) : null;
+  async get(key: string): Promise<string | null> {
+    return this.client.get(key);
   }
 
-  async set<T>(key: string, value: T, expiration: number = 3600): Promise<void> {
-    await this.redis.set(key, JSON.stringify(value), 'EX', expiration);
-  }
-
-  async del(key: string): Promise<void> {
-    await this.redis.del(key);
-  }
-
-  async invalidatePattern(pattern: string): Promise<void> {
-    const keys = await this.redis.keys(pattern);
-    if (keys && keys.length > 0) {
-      await this.redis.del(...keys);
+  async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
+    if (ttlSeconds) {
+      await this.client.setex(key, ttlSeconds, value);
+    } else {
+      await this.client.set(key, value);
     }
   }
 
-  async getOrSet<T>(
-    key: string,
-    callback: () => Promise<T>,
-    expiration: number = 3600
-  ): Promise<T> {
-    const cached = await this.get<T>(key);
-    if (cached) {
-      return cached;
-    }
+  async delete(key: string): Promise<void> {
+    await this.client.del(key);
+  }
 
-    const value = await callback();
-    await this.set(key, value, expiration);
-    return value;
+  async clear(): Promise<void> {
+    await this.client.flushdb();
+  }
+
+  async getObject<T>(key: string): Promise<T | null> {
+    const data = await this.get(key);
+    if (!data) return null;
+    return JSON.parse(data) as T;
+  }
+
+  async setObject<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+    await this.set(key, JSON.stringify(value), ttlSeconds);
+  }
+
+  async exists(key: string): Promise<boolean> {
+    const result = await this.client.exists(key);
+    return result === 1;
+  }
+
+  async increment(key: string): Promise<number> {
+    return this.client.incr(key);
+  }
+
+  async decrement(key: string): Promise<number> {
+    return this.client.decr(key);
   }
 }

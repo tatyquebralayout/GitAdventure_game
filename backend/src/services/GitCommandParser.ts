@@ -1,19 +1,19 @@
-import { singleton } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import { AppError } from '../utils/AppError';
 
-interface ParsedCommand {
-  action: string;
+export interface ParsedCommand {
+  command: string;
   args: string[];
-  rawCommand: string;
-  isValid: boolean;
+  options: Record<string, string | boolean>;
 }
 
-interface ValidationResult {
+export interface ValidationResult {
   isValid: boolean;
-  message: string;
+  message?: string;
+  matches?: string[];
 }
 
-@singleton()
+@injectable()
 export class GitCommandParser {
   private readonly validCommands = new Set([
     'init',
@@ -26,28 +26,66 @@ export class GitCommandParser {
     'pull'
   ]);
 
-  async parseCommand(command: string): Promise<ParsedCommand> {
-    const parts = command.trim().split(' ');
+  parse(commandString: string): ParsedCommand {
+    const parts = commandString.trim().split(/\s+/);
+    const command = parts[0];
+    const args: string[] = [];
+    const options: Record<string, string | boolean> = {};
+
+    for (let i = 1; i < parts.length; i++) {
+      const part = parts[i];
+      if (part.startsWith('-')) {
+        if (part.startsWith('--')) {
+          const [key, value] = part.substring(2).split('=');
+          options[key] = value || true;
+        } else {
+          const flags = part.substring(1).split('');
+          flags.forEach(flag => options[flag] = true);
+        }
+      } else {
+        args.push(part);
+      }
+    }
+
+    return { command, args, options };
+  }
+
+  async validateCommandAgainstPattern(
+    command: string,
+    pattern: string,
+    ignoreFlags: boolean = false
+  ): Promise<ValidationResult> {
+    const normalizedCommand = command.trim();
+    const regexPattern = pattern
+      .replace(/\s+/g, '\\s+')
+      .replace(/\[([^\]]+)\]/g, '(?:$1)?')
+      .replace(/<([^>]+)>/g, '(.+)');
     
-    if (parts[0] !== 'git') {
-      throw new AppError('Command must start with "git"', 400);
+    const regex = new RegExp(`^${regexPattern}$`);
+    
+    if (ignoreFlags) {
+      const parsedCommand = this.parse(normalizedCommand);
+      const baseCommand = [parsedCommand.command, ...parsedCommand.args].join(' ');
+      const matches = baseCommand.match(regex);
+      
+      return {
+        isValid: !!matches,
+        matches: matches ? matches.slice(1) : undefined,
+        message: matches ? 'Comando válido' : 'Comando não corresponde ao padrão esperado'
+      };
     }
-
-    const action = parts[1];
-    if (!this.validCommands.has(action)) {
-      throw new AppError(`Invalid git command: ${action}`, 400);
-    }
-
+    
+    const matches = normalizedCommand.match(regex);
+    
     return {
-      action,
-      args: parts.slice(2),
-      rawCommand: command,
-      isValid: true
+      isValid: !!matches,
+      matches: matches ? matches.slice(1) : undefined,
+      message: matches ? 'Comando válido' : 'Comando não corresponde ao padrão esperado'
     };
   }
 
   async validateSemantics(command: ParsedCommand): Promise<ValidationResult> {
-    switch (command.action) {
+    switch (command.command) {
       case 'init':
         return { isValid: true, message: '' };
         
@@ -58,12 +96,8 @@ export class GitCommandParser {
         return { isValid: true, message: '' };
         
       case 'commit':
-        if (!command.args.includes('-m')) {
+        if (!command.options['m']) {
           return { isValid: false, message: 'Commit requires a message (-m)' };
-        }
-        const messageIndex = command.args.indexOf('-m') + 1;
-        if (messageIndex >= command.args.length) {
-          return { isValid: false, message: 'No commit message provided' };
         }
         return { isValid: true, message: '' };
         

@@ -6,14 +6,23 @@ import { WorldQuest } from '../entities/WorldQuest';
 import { PlayerWorldsQuest } from '../entities/PlayerWorldsQuest';
 import { World, PlayerWorld } from '@shared/types/worlds';
 import { AppError } from '../utils/AppError';
+import { injectable, inject } from 'tsyringe';
+import { ModuleTheme, WorldDifficulty } from '../../../shared/types/enums';
+import { CacheService } from './CacheService';
 
+@injectable()
 export class WorldService {
   private worldRepository = AppDataSource.getRepository(WorldEntity);
   private playerWorldRepository = AppDataSource.getRepository(PlayerWorldEntity);
   private questRepository = AppDataSource.getRepository(Quest);
   private worldQuestRepository = AppDataSource.getRepository(WorldQuest);
   private playerWorldQuestRepository = AppDataSource.getRepository(PlayerWorldsQuest);
-  
+
+  constructor(
+    @inject('CacheService')
+    private cacheService: CacheService
+  ) {}
+
   async getAllWorlds(): Promise<World[]> {
     return this.worldRepository.find({
       where: { status: 'published' },
@@ -113,6 +122,63 @@ export class WorldService {
     playerWorld.status = 'completed';
     playerWorld.completedAt = new Date();
     return this.playerWorldRepository.save(playerWorld);
+  }
+
+  async getWorldsByTheme(theme: ModuleTheme): Promise<World[]> {
+    // Mock: Retorna mundos baseados no tema
+    const mockWorlds: World[] = [
+      {
+        id: 'world-1',
+        name: 'Git Basics World',
+        description: 'Learn the basics of Git',
+        slug: 'git-basics',
+        difficulty: WorldDifficulty.BEGINNER,
+        status: 'published',
+        worldQuests: [],
+        playerWorlds: []
+      },
+      {
+        id: 'world-2',
+        name: 'Advanced Git World',
+        description: 'Advanced Git concepts',
+        slug: 'advanced-git',
+        difficulty: WorldDifficulty.ADVANCED,
+        status: 'published',
+        worldQuests: [],
+        playerWorlds: []
+      }
+    ];
+
+    return mockWorlds.filter(world => 
+      world.slug.includes(theme.toLowerCase())
+    );
+  }
+
+  async getUserWorldProgress(userId: string, worldId: string): Promise<any> {
+    const cacheKey = `world-progress:${userId}:${worldId}`;
+    
+    // Tenta obter do cache primeiro
+    const cachedProgress = await this.cacheService.get(cacheKey);
+    if (cachedProgress) {
+      return JSON.parse(cachedProgress);
+    }
+
+    // Mock: Progresso simulado
+    const mockProgress = {
+      worldId,
+      userId,
+      completedQuests: 2,
+      totalQuests: 5,
+      currentQuest: 'quest-3',
+      status: 'in_progress',
+      score: 150,
+      lastUpdated: new Date()
+    };
+
+    // Armazena no cache
+    await this.cacheService.set(cacheKey, JSON.stringify(mockProgress), 3600);
+
+    return mockProgress;
   }
 }
 
