@@ -1,7 +1,10 @@
 import { CacheService } from '../../services/CacheService';
 import Redis from 'ioredis';
+import { mockDeep } from 'jest-mock-extended';
 
-jest.mock('ioredis');
+jest.mock('ioredis', () => {
+  return jest.fn().mockImplementation(() => mockDeep<Redis>());
+});
 
 describe('CacheService', () => {
   let cacheService: CacheService;
@@ -11,6 +14,7 @@ describe('CacheService', () => {
     jest.clearAllMocks();
     cacheService = new CacheService();
     mockRedis = new Redis() as jest.Mocked<Redis>;
+    (cacheService as any).redis = mockRedis;
   });
 
   describe('get', () => {
