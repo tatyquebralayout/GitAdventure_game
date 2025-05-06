@@ -1,31 +1,26 @@
 import Redis from 'ioredis';
-import { injectable } from 'tsyringe';
+import { singleton } from 'tsyringe';
 
-@injectable()
+@singleton()
 export class CacheService {
   private redis: Redis;
-  private readonly DEFAULT_EXPIRATION = 3600; // 1 hour
 
   constructor() {
     this.redis = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
-      maxRetriesPerRequest: 3
-    });
-
-    this.redis.on('error', (err) => {
-      console.error('Redis error:', err);
+      password: process.env.REDIS_PASSWORD,
+      enableOfflineQueue: false,
     });
   }
 
   async get<T>(key: string): Promise<T | null> {
     const data = await this.redis.get(key);
-    if (!data) return null;
-    return JSON.parse(data);
+    return data ? JSON.parse(data) : null;
   }
 
-  async set(key: string, value: unknown, expireInSeconds = this.DEFAULT_EXPIRATION): Promise<void> {
-    await this.redis.set(key, JSON.stringify(value), 'EX', expireInSeconds);
+  async set<T>(key: string, value: T, expiration: number = 3600): Promise<void> {
+    await this.redis.set(key, JSON.stringify(value), 'EX', expiration);
   }
 
   async del(key: string): Promise<void> {
@@ -34,25 +29,23 @@ export class CacheService {
 
   async invalidatePattern(pattern: string): Promise<void> {
     const keys = await this.redis.keys(pattern);
-    if (keys.length > 0) {
+    if (keys && keys.length > 0) {
       await this.redis.del(...keys);
     }
-  }
-
-  generateKey(prefix: string, ...parts: string[]): string {
-    return `${prefix}:${parts.join(':')}`;
   }
 
   async getOrSet<T>(
     key: string,
     callback: () => Promise<T>,
-    expireInSeconds = this.DEFAULT_EXPIRATION
+    expiration: number = 3600
   ): Promise<T> {
-    const cachedData = await this.get<T>(key);
-    if (cachedData) return cachedData;
+    const cached = await this.get<T>(key);
+    if (cached) {
+      return cached;
+    }
 
-    const freshData = await callback();
-    await this.set(key, freshData, expireInSeconds);
-    return freshData;
+    const value = await callback();
+    await this.set(key, value, expiration);
+    return value;
   }
 }
