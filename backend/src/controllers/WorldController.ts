@@ -1,19 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
-import { worldService } from '../services/WorldService';
-import { ApiResponse } from '@shared/types/api';
-import { World } from '@shared/types/worlds';
-import { PlayerWorld } from '@shared/types/worlds';
+import { WorldService } from '../services/WorldService';
 import { AppError } from '../utils/AppError';
 
 export class WorldController {
+  constructor(private worldService = new WorldService()) {}
+
   /**
    * Obter todos os mundos
    */
-  async getAll(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  public async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const worlds = await worldService.getAllWorlds();
-      const response: ApiResponse<World[]> = { success: true, data: worlds };
-      return res.json(response);
+      const worlds = await this.worldService.getAllWorlds();
+      res.json(worlds);
     } catch (error) {
       next(error);
     }
@@ -22,17 +20,14 @@ export class WorldController {
   /**
    * Obter mundo por ID
    */
-  async getById(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  public async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const world = await worldService.getWorldById(id);
-
+      const world = await this.worldService.getWorldById(id);
       if (!world) {
-        throw new AppError('Mundo não encontrado', 404);
+        throw new AppError('World not found', 404);
       }
-
-      const response: ApiResponse<World> = { success: true, data: world };
-      return res.json(response);
+      res.json(world);
     } catch (error) {
       next(error);
     }
@@ -41,12 +36,11 @@ export class WorldController {
   /**
    * Obter todas as quests de um mundo
    */
-  async getWorldQuests(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  public async getWorldQuests(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const quests = await worldService.getWorldQuests(id);
-      const response: ApiResponse = { success: true, data: quests };
-      return res.json(response);
+      const quests = await this.worldService.getWorldQuests(id);
+      res.json(quests);
     } catch (error) {
       next(error);
     }
@@ -55,18 +49,15 @@ export class WorldController {
   /**
    * Iniciar um mundo para o jogador
    */
-  async startWorld(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  public async startWorld(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id: worldId } = req.params;
+      const { id } = req.params;
       const userId = req.user?.id;
-
       if (!userId) {
-        throw new AppError('Usuário não autenticado', 401);
+        throw new AppError('Authentication required', 401);
       }
-
-      const playerWorld = await worldService.startWorld(userId, worldId);
-      const response: ApiResponse<PlayerWorld> = { success: true, data: playerWorld };
-      return res.json(response);
+      const result = await this.worldService.startWorld(userId, id);
+      res.status(201).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }
@@ -75,18 +66,15 @@ export class WorldController {
   /**
    * Completar um mundo
    */
-  async completeWorld(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  public async completeWorld(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id: worldId } = req.params;
+      const { id } = req.params;
       const userId = req.user?.id;
-
       if (!userId) {
-        throw new AppError('Usuário não autenticado', 401);
+        throw new AppError('Authentication required', 401);
       }
-
-      const playerWorld = await worldService.completeWorld(userId, worldId);
-      const response: ApiResponse<PlayerWorld> = { success: true, data: playerWorld };
-      return res.json(response);
+      const result = await this.worldService.completeWorld(userId, id);
+      res.json({ success: true, data: result });
     } catch (error) {
       next(error);
     }

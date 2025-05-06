@@ -1,44 +1,33 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '../config/database';
 import { GameProgress } from '../entities/GameProgress';
+import { AppError } from '../utils/AppError';
 
 export class GameProgressController {
-  async saveProgress(req: Request, res: Response) {
+  async saveProgress(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { saveSlot, saveName, gameState } = req.body;
-      const userId = req.userId; // Vindo do middleware de autenticação
-      
+      const userId = req.user?.id;
+
       if (!userId) {
-        return res.status(401).json({ 
-          success: false,
-          message: 'Usuário não autenticado' 
-        });
+        throw new AppError('Usuário não autenticado', 401);
       }
 
       if (!saveSlot || !saveName || !gameState) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Dados incompletos. saveSlot, saveName e gameState são obrigatórios' 
-        });
+        throw new AppError('Dados incompletos. saveSlot, saveName e gameState são obrigatórios', 400);
       }
-      
+
       const progressRepository = AppDataSource.getRepository(GameProgress);
-      
-      // Verificar se já existe um save nesse slot
-      const existingProgress = await progressRepository.findOne({ 
-        where: { userId, saveSlot } 
-      });
-      
+      const existingProgress = await progressRepository.findOne({ where: { userId, saveSlot } });
+
       let progress: GameProgress;
       let isNewSave = false;
-      
+
       if (existingProgress) {
-        // Atualizar save existente
         existingProgress.saveName = saveName;
         existingProgress.gameState = gameState;
         progress = await progressRepository.save(existingProgress);
       } else {
-        // Criar novo save
         isNewSave = true;
         progress = progressRepository.create({
           userId,
@@ -48,8 +37,8 @@ export class GameProgressController {
         });
         progress = await progressRepository.save(progress);
       }
-      
-      return res.status(isNewSave ? 201 : 200).json({
+
+      res.status(isNewSave ? 201 : 200).json({
         success: true,
         message: 'Progresso salvo com sucesso',
         progress: {
@@ -60,40 +49,29 @@ export class GameProgressController {
         }
       });
     } catch (error) {
-      console.error('Erro ao salvar progresso:', error);
-      return res.status(500).json({ 
-        success: false,
-        message: 'Erro ao salvar progresso' 
-      });
+      next(error);
     }
   }
-  
-  async loadProgress(req: Request, res: Response) {
+
+  async loadProgress(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { saveSlot } = req.params;
-      const userId = req.userId;
-      
+      const userId = req.user?.id;
+
       if (!userId) {
-        return res.status(401).json({ 
-          success: false,
-          message: 'Usuário não autenticado' 
-        });
+        throw new AppError('Usuário não autenticado', 401);
       }
-      
+
       const progressRepository = AppDataSource.getRepository(GameProgress);
-      
       const progress = await progressRepository.findOne({
         where: { userId, saveSlot: parseInt(saveSlot) }
       });
-      
+
       if (!progress) {
-        return res.status(404).json({ 
-          success: false,
-          message: 'Save não encontrado' 
-        });
+        throw new AppError('Save não encontrado', 404);
       }
-      
-      return res.status(200).json({
+
+      res.status(200).json({
         success: true,
         message: 'Progresso carregado com sucesso',
         progress: {
@@ -105,90 +83,67 @@ export class GameProgressController {
         }
       });
     } catch (error) {
-      console.error('Erro ao carregar progresso:', error);
-      return res.status(500).json({ 
-        success: false,
-        message: 'Erro ao carregar progresso' 
-      });
+      next(error);
     }
   }
-  
-  async listSaves(req: Request, res: Response) {
+
+  async listSaves(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.userId;
-      
+      const userId = req.user?.id;
+
       if (!userId) {
-        return res.status(401).json({ 
-          success: false,
-          message: 'Usuário não autenticado' 
-        });
+        throw new AppError('Usuário não autenticado', 401);
       }
-      
+
       const progressRepository = AppDataSource.getRepository(GameProgress);
-      
       const saves = await progressRepository.find({
         where: { userId },
         order: { updatedAt: 'DESC' }
       });
-      
+
       const savesList = saves.map(save => ({
         id: save.id,
         saveSlot: save.saveSlot,
         saveName: save.saveName,
         updatedAt: save.updatedAt
       }));
-      
-      return res.status(200).json({
+
+      res.status(200).json({
         success: true,
         message: 'Saves listados com sucesso',
         saves: savesList
       });
     } catch (error) {
-      console.error('Erro ao listar saves:', error);
-      return res.status(500).json({ 
-        success: false,
-        message: 'Erro ao listar saves' 
-      });
+      next(error);
     }
   }
-  
-  async deleteProgress(req: Request, res: Response) {
+
+  async deleteProgress(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { saveSlot } = req.params;
-      const userId = req.userId;
-      
+      const userId = req.user?.id;
+
       if (!userId) {
-        return res.status(401).json({ 
-          success: false,
-          message: 'Usuário não autenticado' 
-        });
+        throw new AppError('Usuário não autenticado', 401);
       }
-      
+
       const progressRepository = AppDataSource.getRepository(GameProgress);
-      
       const progress = await progressRepository.findOne({
         where: { userId, saveSlot: parseInt(saveSlot) }
       });
-      
+
       if (!progress) {
-        return res.status(404).json({ 
-          success: false,
-          message: 'Save não encontrado' 
-        });
+        throw new AppError('Save não encontrado', 404);
       }
-      
+
       await progressRepository.remove(progress);
-      
-      return res.status(200).json({
+
+      res.status(200).json({
         success: true,
         message: 'Save excluído com sucesso'
       });
     } catch (error) {
-      console.error('Erro ao excluir save:', error);
-      return res.status(500).json({ 
-        success: false,
-        message: 'Erro ao excluir save' 
-      });
+      next(error);
     }
   }
 }

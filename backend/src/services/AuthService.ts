@@ -1,8 +1,8 @@
+import bcrypt from 'bcrypt';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken'; // Import Secret, SignOptions
 import { AppDataSource } from '../config/database';
 import { User } from '../entities/User';
 import { UserToken } from '../entities/UserToken';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 
 interface TokenResponse {
   accessToken: string;
@@ -11,13 +11,14 @@ interface TokenResponse {
 }
 
 export class AuthService {
-  private userRepository = AppDataSource.getRepository(User);
-  private tokenRepository = AppDataSource.getRepository(UserToken);
+  private readonly userRepository = AppDataSource.getRepository(User);
+  private readonly tokenRepository = AppDataSource.getRepository(UserToken);
   
-  private JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
-  private JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-  private JWT_REFRESH_SECRET = `${this.JWT_SECRET}_refresh`;
-  private JWT_REFRESH_EXPIRES_IN = '30d';
+  // Define secrets and expiration times with correct types
+  private readonly JWT_SECRET: Secret = process.env.JWT_SECRET || 'fallback_secret';
+  private readonly JWT_REFRESH_SECRET: Secret = `${this.JWT_SECRET}_refresh`;
+  private readonly JWT_EXPIRES_IN: SignOptions['expiresIn'] = process.env.JWT_EXPIRES_IN as SignOptions['expiresIn'] || '7d';
+  private readonly JWT_REFRESH_EXPIRES_IN: SignOptions['expiresIn'] = process.env.JWT_REFRESH_EXPIRES_IN as SignOptions['expiresIn'] || '30d';
 
   /**
    * Registra um novo usuário
@@ -154,18 +155,22 @@ export class AuthService {
    * Gerar token de acesso
    */
   private generateAccessToken(userId: string): string {
-    return jwt.sign({ id: userId }, this.JWT_SECRET as jwt.Secret, {
-      expiresIn: this.JWT_EXPIRES_IN
-    });
+    const payload = { id: userId };
+    const options: SignOptions = {
+      expiresIn: this.JWT_EXPIRES_IN,
+    };
+    return jwt.sign(payload, this.JWT_SECRET, options);
   }
 
   /**
    * Gerar refresh token
    */
   private generateRefreshToken(userId: string): string {
-    return jwt.sign({ id: userId }, this.JWT_REFRESH_SECRET as jwt.Secret, {
-      expiresIn: this.JWT_REFRESH_EXPIRES_IN
-    });
+    const payload = { id: userId };
+    const options: SignOptions = {
+      expiresIn: this.JWT_REFRESH_EXPIRES_IN,
+    };
+    return jwt.sign(payload, this.JWT_REFRESH_SECRET, options);
   }
 
   /**
@@ -186,4 +191,4 @@ export class AuthService {
   }
 }
 
-export const authService = new AuthService(); 
+export const authService = new AuthService();

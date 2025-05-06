@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
 import { UserToken } from './UserToken';
 import { PlayerWorld } from './PlayerWorld';
+import { UserProgress } from './UserProgress'; // Import UserProgress
 
 @Entity("users")
 export class User {
@@ -33,4 +34,7 @@ export class User {
 
   @OneToMany(() => PlayerWorld, playerWorld => playerWorld.user)
   playerWorlds!: PlayerWorld[];
+
+  @OneToMany(() => UserProgress, progress => progress.user)
+  progress!: UserProgress[]; // This property was missing
 }

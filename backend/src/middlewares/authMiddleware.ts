@@ -1,93 +1,52 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { AppError } from '../utils/AppError';
+import { User } from '../entities/User';
 import { AppDataSource } from '../config/database';
-import { UserToken } from '../entities/UserToken';
 
-// Define a type for the decoded user payload
-interface UserPayload {
+// Define the structure of the JWT payload
+interface JwtPayload {
   id: string;
-  isAdmin?: boolean;
-  // Adicione outras propriedades conforme necessário
 }
 
-// Estender a interface Request do Express
-// Usar module augmentation em vez de namespace global
-declare module 'express' {
-  interface Request {
-    user?: UserPayload;
-    userId?: string;
-  }
-}
-
-/**
- * Middleware de proteção para rotas que exigem autenticação
- */
-export const protect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    let token;
-
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith('Bearer')
-    ) {
-      // Obter token do header
-      token = req.headers.authorization.split(' ')[1];
-
-      // Verificar o token
-      const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
-      const decoded = jwt.verify(token, JWT_SECRET as jwt.Secret) as UserPayload;
-
-      // Verificar se o token está no banco de dados
-      const tokenRepository = AppDataSource.getRepository(UserToken);
-      const userToken = await tokenRepository.findOne({
-        where: { accessToken: token },
-        relations: ['user']
-      });
-
-      if (!userToken) {
-        throw new Error('Token inválido ou expirado');
-      }
-
-      // Adicionar usuário à requisição
-      req.user = decoded;
-      req.userId = decoded.id;
-      
-      next();
-    } else {
-      res.status(401).json({ message: 'Não autorizado, token não fornecido' });
+// Extend the Express Request interface to include the user property
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User;
     }
+  }
+}
+
+// Ensure the function is exported with the name 'AuthMiddleware'
+export const AuthMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next(new AppError('No token provided or token format is invalid', 401));
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret') as JwtPayload;
+
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOneBy({ id: decoded.id });
+
+    if (!user) {
+      return next(new AppError('User not found for the provided token', 401));
+    }
+
+    req.user = user; // Attach user to the request object
+    next();
   } catch (error) {
-    console.error('Falha na verificação do token:', error);
-    res.status(401).json({ message: 'Não autorizado, token inválido' });
+    if (error instanceof jwt.JsonWebTokenError) {
+      return next(new AppError('Invalid token', 401));
+    }
+     if (error instanceof jwt.TokenExpiredError) {
+       return next(new AppError('Token expired', 401));
+     }
+    next(new AppError('Failed to authenticate token', 500));
   }
 };
-
-/**
- * Middleware para verificar se o usuário é administrador
- */
-export const admin = (req: Request, res: Response, next: NextFunction): void => {
-  if (req.user && req.user.isAdmin) {
-    next();
-  } else {
-    res.status(403).json({ message: 'Acesso negado. Requer privilégios de administrador.' });
-  }
-};
-
-// Example of an admin check middleware (if needed)
-/*
-export const admin = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user && req.user.isAdmin) { // Assuming isAdmin property exists in payload
-    next();
-  } else {
-    res.status(403).json({ message: 'Not authorized as an admin' });
-  }
-};
-*/
-
-// Remove the unused error handler function
-/*
-export const errorHandler = (err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-};
-*/

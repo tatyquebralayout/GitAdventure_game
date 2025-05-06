@@ -1,150 +1,146 @@
 import { Request, Response, NextFunction } from 'express';
-import { authService } from '../services/AuthService';
+import { AuthService } from '../services/AuthService';
+import { AppError } from '../utils/AppError';
 
-export const register = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { username, email, password } = req.body;
+export class AuthController {
+  constructor(private authService = new AuthService()) {}
 
-    // Validar campos obrigatórios
-    if (!username || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Todos os campos são obrigatórios'
+  public async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { username, email, password } = req.body;
+
+      if (!username || !email || !password) {
+        res.status(400).json({
+          success: false,
+          message: 'Todos os campos são obrigatórios'
+        });
+        return;
+      }
+
+      const user = await this.authService.register(username, email, password);
+
+      res.status(201).json({
+        success: true,
+        message: 'Usuário cadastrado com sucesso',
+        user
       });
-    }
+    } catch (error) {
+      console.error('Erro ao registrar usuário:', error);
 
-    // Registrar usuário
-    const user = await authService.register(username, email, password);
+      if (error instanceof Error && error.message.includes('já existe')) {
+        res.status(400).json({
+          success: false,
+          message: error.message
+        });
+        return;
+      }
 
-    res.status(201).json({
-      success: true,
-      message: 'Usuário cadastrado com sucesso',
-      user
-    });
-  } catch (error) {
-    console.error('Erro ao registrar usuário:', error);
-    
-    // Verificar se é erro de usuário já existente
-    if (error instanceof Error && error.message.includes('já existe')) {
-      return res.status(400).json({
-        success: false,
-        message: error.message
-      });
+      next(error);
     }
-    
-    next(error);
   }
-};
 
-export const login = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { username, password } = req.body;
+  public async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { username, password } = req.body;
 
-    // Validar campos obrigatórios
-    if (!username || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Nome de usuário e senha são obrigatórios'
+      if (!username || !password) {
+        res.status(400).json({
+          success: false,
+          message: 'Nome de usuário e senha são obrigatórios'
+        });
+        return;
+      }
+
+      const { accessToken, refreshToken, user } = await this.authService.login(username, password);
+
+      res.status(200).json({
+        success: true,
+        message: 'Login realizado com sucesso',
+        accessToken,
+        refreshToken,
+        user
       });
-    }
+    } catch (error) {
+      console.error('Erro ao realizar login:', error);
 
-    // Realizar login
-    const { accessToken, refreshToken, user } = await authService.login(username, password);
+      if (error instanceof Error && error.message.includes('Credenciais inválidas')) {
+        res.status(401).json({
+          success: false,
+          message: 'Credenciais inválidas'
+        });
+        return;
+      }
 
-    res.status(200).json({
-      success: true,
-      message: 'Login realizado com sucesso',
-      accessToken,
-      refreshToken,
-      user
-    });
-  } catch (error) {
-    console.error('Erro ao realizar login:', error);
-    
-    // Verificar se é erro de credenciais inválidas
-    if (error instanceof Error && error.message.includes('Credenciais inválidas')) {
-      return res.status(401).json({
-        success: false,
-        message: 'Credenciais inválidas'
-      });
+      next(error);
     }
-    
-    next(error);
   }
-};
 
-export const refreshToken = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { refreshToken } = req.body;
-
-    if (!refreshToken) {
-      res.status(400).json({ success: false, message: 'Refresh token é necessário' });
-      return;
+  public async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        throw new AppError('Refresh token is required', 400);
+      }
+      const result = await this.authService.refreshToken(refreshToken);
+      res.json(result);
+    } catch (error) {
+      next(error);
     }
-
-    const result = await authService.refreshToken(refreshToken);
-
-    res.json({
-      success: true,
-      ...result
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erro ao renovar token';
-    res.status(401).json({ success: false, message });
   }
-};
 
-export const logout = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const userId = req.userId;
+  public async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Não autorizado'
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Não autorizado'
+        });
+        return;
+      }
+
+      await this.authService.logout(userId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Logout realizado com sucesso'
       });
+    } catch (error) {
+      console.error('Erro ao realizar logout:', error);
+      next(error);
     }
-
-    // Realizar logout
-    await authService.logout(userId);
-
-    res.status(200).json({ 
-      success: true,
-      message: 'Logout realizado com sucesso' 
-    });
-  } catch (error) {
-    console.error('Erro ao realizar logout:', error);
-    next(error);
   }
-};
 
-export const getProfile = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const userId = req.userId;
+  public async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Não autorizado'
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Não autorizado'
+        });
+        return;
+      }
+
+      const user = await this.authService.getUserProfile(userId);
+
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          message: 'Usuário não encontrado'
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        user
       });
+    } catch (error) {
+      console.error('Erro ao buscar perfil:', error);
+      next(error);
     }
-
-    // Buscar usuário
-    const user = await authService.getUserProfile(userId);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuário não encontrado'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      user
-    });
-  } catch (error) {
-    console.error('Erro ao buscar perfil:', error);
-    next(error);
   }
-};
+}

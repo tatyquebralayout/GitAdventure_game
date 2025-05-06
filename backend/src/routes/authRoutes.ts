@@ -1,29 +1,17 @@
-import { Router, Request, Response, NextFunction } from 'express';
-import * as authController from '../controllers/AuthController';
-import { protect } from '../middlewares/authMiddleware';
+import { Router } from 'express';
+import { AuthController } from '../controllers/AuthController';
+import { AuthMiddleware } from '../middlewares/authMiddleware';
 
-const router = Router();
+const authRoutes = Router();
+const authController = new AuthController();
 
-// Rotas públicas
-router.post('/register', (req: Request, res: Response, next: NextFunction) => {
-  authController.register(req, res, next);
-});
+// Public routes
+authRoutes.post('/register', (req, res, next) => authController.register(req, res, next));
+authRoutes.post('/login', (req, res, next) => authController.login(req, res, next));
+authRoutes.post('/refresh-token', (req, res, next) => authController.refreshToken(req, res, next));
 
-router.post('/login', (req: Request, res: Response, next: NextFunction) => {
-  authController.login(req, res, next);
-});
+// Protected routes
+authRoutes.post('/logout', AuthMiddleware, (req, res, next) => authController.logout(req, res, next));
+authRoutes.get('/profile', AuthMiddleware, (req, res, next) => authController.getProfile(req, res, next));
 
-router.post('/refresh-token', (req: Request, res: Response, next: NextFunction) => {
-  authController.refreshToken(req, res, next);
-});
-
-// Rotas protegidas
-router.post('/logout', protect, (req: Request, res: Response, next: NextFunction) => {
-  authController.logout(req, res, next);
-});
-
-router.get('/profile', protect, (req: Request, res: Response, next: NextFunction) => {
-  authController.getProfile(req, res, next);
-});
-
-export default router;
+export { authRoutes };

@@ -1,16 +1,13 @@
-import { Router, RequestHandler } from 'express';
+import { Router } from 'express';
 import { gameProgressController } from '../controllers/GameProgressController';
-import { protect } from '../middlewares/authMiddleware';
+import { AuthMiddleware } from '../middlewares/authMiddleware';
 
-const router = Router();
+const progressRoutes = Router();
 
-// Aplicar middleware de autenticação para todas as rotas
-router.use(protect);
+// Wrap controller methods in standard Express handlers
+progressRoutes.get('/saves', AuthMiddleware, (req, res, next) => gameProgressController.listSaves(req, res, next));
+progressRoutes.get('/saves/:saveSlot', AuthMiddleware, (req, res, next) => gameProgressController.loadProgress(req, res, next));
+progressRoutes.post('/saves', AuthMiddleware, (req, res, next) => gameProgressController.saveProgress(req, res, next));
+progressRoutes.delete('/saves/:saveSlot', AuthMiddleware, (req, res, next) => gameProgressController.deleteProgress(req, res, next));
 
-// Fix TypeScript errors by casting controller methods to RequestHandler type
-router.post('/save', gameProgressController.saveProgress as unknown as RequestHandler);
-router.get('/load/:saveSlot', gameProgressController.loadProgress as unknown as RequestHandler);
-router.get('/list', gameProgressController.listSaves as unknown as RequestHandler);
-router.delete('/delete/:saveSlot', gameProgressController.deleteProgress as unknown as RequestHandler);
-
-export default router;
+export { progressRoutes };

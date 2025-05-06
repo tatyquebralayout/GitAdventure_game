@@ -1,14 +1,14 @@
 // Entry point for the backend server
 import 'reflect-metadata'; // Necessário para TypeORM
 import express, { ErrorRequestHandler } from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import { AppDataSource } from './config/database';
 import { commandRoutes } from './routes/commandRoutes';
-import authRoutes from './routes/authRoutes';
+import { authRoutes } from './routes/authRoutes';
 import { worldRoutes } from './routes/worldRoutes';
 import { questRoutes } from './routes/questRoutes';
-import progressRoutes from './routes/progressRoutes';
+import { progressRoutes } from './routes/progressRoutes';
 import { errorMiddleware } from './middlewares/errorMiddleware';
 
 // Carregar variáveis de ambiente

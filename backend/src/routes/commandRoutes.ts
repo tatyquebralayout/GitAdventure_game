@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { commandController } from '../controllers/CommandController';
-import { protect } from '../middlewares/authMiddleware';
+// Fix: Import AuthMiddleware instead of protect
+import { AuthMiddleware } from '../middlewares/authMiddleware';
 
 const commandRoutes = Router();
 
-// Rota para validar comando - protegida por autenticação
-commandRoutes.post('/commands/validate', protect, commandController.validateCommand);
+// Fix: Use AuthMiddleware
+commandRoutes.post('/validate', AuthMiddleware, commandController.validateCommand);
 
 export { commandRoutes };

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { worldController } from '../controllers/WorldController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { AuthMiddleware } from '../middlewares/authMiddleware';
 
 const worldRoutes = Router();
 
@@ -10,7 +10,7 @@ worldRoutes.get('/worlds/:id', worldController.getById);
 worldRoutes.get('/worlds/:id/quests', worldController.getWorldQuests);
 
 // Rotas protegidas
-worldRoutes.post('/worlds/:id/start', authMiddleware, worldController.startWorld);
-worldRoutes.post('/worlds/:id/complete', authMiddleware, worldController.completeWorld);
+worldRoutes.post('/worlds/:id/start', AuthMiddleware, worldController.startWorld);
+worldRoutes.post('/worlds/:id/complete', AuthMiddleware, worldController.completeWorld);
 
 export { worldRoutes };

@@ -2,6 +2,8 @@ import { AppDataSource } from '../config/database';
 import { QuestCommandStep } from '../entities/QuestCommandStep';
 import { UserProgress } from '../entities/UserProgress';
 import { Quest } from '../entities/Quest';
+import { AppError } from '../utils/AppError';
+import { FindOperator, MoreThanOrEqual } from 'typeorm';
 
 // Request DTO para validação de comando
 export interface ValidateCommandRequestDto {
@@ -21,12 +23,14 @@ export interface ValidateCommandResponseDto {
 }
 
 export class CommandValidationService {
+  private readonly userProgressRepository = AppDataSource.getRepository(UserProgress);
+  private readonly questStepRepository = AppDataSource.getRepository(QuestCommandStep);
+
   // Buscar os passos do comando de uma quest específica
   private async getQuestCommandSteps(questId: string): Promise<QuestCommandStep[]> {
     try {
-      const repository = AppDataSource.getRepository(QuestCommandStep);
-      return await repository.find({
-        where: { questId },
+      return await this.questStepRepository.find({
+        where: { questId: questId }, // Use string questId here
         order: { stepNumber: 'ASC' }
       });
     } catch (error) {
@@ -133,18 +137,84 @@ export class CommandValidationService {
     ];
   }
 
+  private async checkQuestProgress(userId: string, questId: string, requiredStepIndex?: number): Promise<UserProgress | null> {
+    const numericQuestId = parseInt(questId, 10); // Convert questId to number
+    if (isNaN(numericQuestId)) {
+      throw new AppError('Invalid quest ID format', 400);
+    }
+
+    const whereClause: { userId: string; questId: number; currentStep?: FindOperator<number> } = {
+      userId: userId,
+      questId: numericQuestId, // Use numeric questId
+    };
+
+    if (requiredStepIndex !== undefined) {
+      // If a specific step is required, check if the user has reached or passed it
+      whereClause.currentStep = MoreThanOrEqual(requiredStepIndex);
+    }
+
+    const progress = await this.userProgressRepository.findOne({ where: whereClause });
+
+    if (!progress && requiredStepIndex !== undefined && requiredStepIndex > 0) {
+      // If a specific step is required (and it's not the first step), but no progress exists,
+      // it means the quest hasn't been started or the required step hasn't been reached.
+      return null;
+    }
+
+    return progress;
+  }
+
+  private async updateQuestProgress(userId: string, questId: string, stepIndex: number): Promise<UserProgress> {
+    const numericQuestId = parseInt(questId, 10); // Convert questId to number
+    if (isNaN(numericQuestId)) {
+      throw new AppError('Invalid quest ID format', 400);
+    }
+
+    let progress = await this.userProgressRepository.findOneBy({ userId, questId: numericQuestId }); // Use numeric questId
+
+    if (!progress) {
+      if (stepIndex !== 0) {
+        // Prevent jumping steps if progress doesn't exist
+        throw new AppError('Quest not started or previous steps not completed.', 400);
+      }
+      progress = this.userProgressRepository.create({
+        userId: userId,
+        questId: numericQuestId, // Use numeric questId
+        currentStep: stepIndex, // Use currentStep instead of currentStepIndex
+        isCompleted: false, // Assuming isCompleted exists and should be false initially
+        completedAt: null // Assuming completedAt exists
+      });
+    } else {
+      // Ensure steps are completed sequentially (optional, based on game logic)
+      if (stepIndex > progress.currentStep + 1) { // Use currentStep instead of currentStepIndex
+        throw new AppError('Cannot skip quest steps.', 400);
+      }
+      if (stepIndex > progress.currentStep) { // Use currentStep instead of currentStepIndex
+        progress.currentStep = stepIndex; // Use currentStep instead of currentStepIndex
+        // Optionally update status if this step completes the quest based on total steps
+      }
+    }
+
+    return this.userProgressRepository.save(progress);
+  }
+
   // Atualizar o progresso do usuário após uma validação de comando
   private async updateUserProgress(userId: string, questId: string, currentStep: number, isCompleted: boolean): Promise<void> {
     if (!userId) return;
 
     try {
+      const numericQuestId = parseInt(questId, 10); // Convert questId to number
+      if (isNaN(numericQuestId)) {
+        throw new AppError('Invalid quest ID format', 400);
+      }
+
       const userProgressRepository = AppDataSource.getRepository(UserProgress);
       
       // Buscar progresso existente
       let progress = await userProgressRepository.findOne({
         where: {
           userId,
-          questId
+          questId: numericQuestId // Use numeric questId
         }
       });
       
@@ -154,7 +224,7 @@ export class CommandValidationService {
       if (!progress) {
         progress = userProgressRepository.create({
           userId,
-          questId,
+          questId: numericQuestId, // Use numeric questId
           currentStep,
           isCompleted,
           completedAt: isCompleted ? now : undefined
