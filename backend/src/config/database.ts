@@ -10,9 +10,9 @@ export const AppDataSource = new DataSource({
   port: parseInt(process.env.DB_PORT || '5432'),
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
-  database: process.env.DB_DATABASE || 'gitadventure',
-  synchronize: process.env.NODE_ENV !== 'production',
-  logging: process.env.NODE_ENV !== 'production',
+  database: process.env.DB_DATABASE || 'gitadventure_dev',
+  synchronize: true, // Force development mode
+  logging: true,
   entities: [path.join(__dirname, '../entities/**/*.{js,ts}')],
   migrations: [path.join(__dirname, '../migrations/**/*.{js,ts}')],
   subscribers: [path.join(__dirname, '../subscribers/**/*.{js,ts}')],

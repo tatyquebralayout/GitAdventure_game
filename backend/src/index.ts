@@ -14,13 +14,28 @@ import { errorMiddleware } from './middlewares/errorMiddleware';
 // Carregar variáveis de ambiente
 dotenv.config();
 
+// Verificar se está em modo de produção
+if (process.env.NODE_ENV === 'production') {
+  console.error('Production mode is disabled. Please run in development mode only.');
+  process.exit(1);
+}
+
 // Inicializar o aplicativo Express
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // Restrict to local development only
+  credentials: true
+}));
 app.use(express.json());
+
+// Mensagem apenas para desenvolvimento
+app.use((req, res, next) => {
+  console.log('Development mode only - Not for production use');
+  next();
+});
 
 // Rotas da API
 app.use('/api/commands', commandRoutes);
@@ -33,7 +48,7 @@ app.use('/api/progress', progressRoutes);
 app.get('/', (req, res) => {
   res.json({ 
     success: true, 
-    message: 'GitAdventure API está funcionando!' 
+    message: 'GitAdventure API - Development Mode Only' 
   });
 });
 
@@ -43,22 +58,13 @@ app.use(errorMiddleware as ErrorRequestHandler);
 // Inicializar conexão com o banco de dados e iniciar o servidor
 AppDataSource.initialize()
   .then(() => {
-    console.log('Conexão com o banco de dados estabelecida');
+    console.log('Development database connection established');
     
     app.listen(PORT, () => {
-      console.log(`Servidor rodando na porta ${PORT}`);
+      console.log(`Development server running on port ${PORT}`);
     });
   })
   .catch((error) => {
-    console.error('Erro ao conectar ao banco de dados:', error);
-    
-    // Iniciar servidor mesmo sem banco de dados (modo de fallback)
-    console.log('Iniciando servidor em modo de fallback (sem persistência de dados)');
-    
-    // A configuração do app (middleware, rotas) já foi feita antes.
-    // Apenas iniciamos o servidor.
-    
-    app.listen(PORT, () => {
-      console.log(`Servidor rodando na porta ${PORT} em modo de fallback`);
-    });
+    console.error('Error connecting to development database:', error);
+    process.exit(1);
   });

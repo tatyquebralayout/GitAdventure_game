@@ -1,73 +1,77 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
-export interface GameState {
-  currentLocation: string;
+interface GameState {
+  location: string;
   inventory: string[];
-  visitedLocations: string[];
-  gameFlags: Record<string, boolean>;
+  visitedLocations: Set<string>;
+  flags: { [key: string]: boolean };
+  
+  move: (newLocation: string) => void;
+  pickupItem: (item: string) => void;
+  removeItem: (item: string) => void;
+  hasItem: (item: string) => boolean;
+  hasVisited: (location: string) => boolean;
+  setFlag: (flag: string, value: boolean) => void;
+  hasFlag: (flag: string) => boolean;
+  reset: () => void;
 }
 
-interface GameActions {
-  moveToLocation: (location: string) => void;
-  addToInventory: (item: string) => void;
-  removeFromInventory: (item: string) => void;
-  setGameFlag: (flag: string, value: boolean) => void;
-  resetGame: () => void;
-}
-
-export type GameStore = GameState & GameActions;
-
-const initialState: GameState = {
-  currentLocation: 'start',
+export const useGame = create<GameState>((set, get) => ({
+  location: 'start',
   inventory: [],
-  visitedLocations: ['start'],
-  gameFlags: {}
-};
-
-export const useGameStore = create<GameStore>()(
-  persist(
-    (set) => ({
-      ...initialState,
-      
-      moveToLocation: (location) => set((state) => {
-        const newVisitedLocations = state.visitedLocations.includes(location)
-          ? state.visitedLocations
-          : [...state.visitedLocations, location];
-        
-        return {
-          currentLocation: location,
-          visitedLocations: newVisitedLocations
-        };
-      }),
-      
-      addToInventory: (item) => set((state) => ({
-        inventory: state.inventory.includes(item)
-          ? state.inventory
-          : [...state.inventory, item]
-      })),
-      
-      removeFromInventory: (item) => set((state) => ({
-        inventory: state.inventory.filter(i => i !== item)
-      })),
-      
-      setGameFlag: (flag, value) => set((state) => ({
-        gameFlags: {
-          ...state.gameFlags,
-          [flag]: value
-        }
-      })),
-      
-      resetGame: () => set(initialState)
-    }),
-    {
-      name: 'git-adventure-game-state',
-      partialize: (state) => ({
-        currentLocation: state.currentLocation,
-        inventory: state.inventory,
-        visitedLocations: state.visitedLocations,
-        gameFlags: state.gameFlags
-      })
-    }
-  )
-);
+  visitedLocations: new Set(['start']),
+  flags: {},
+  
+  move: (newLocation: string) => {
+    set((state) => {
+      const newVisited = new Set(state.visitedLocations);
+      newVisited.add(newLocation);
+      return {
+        location: newLocation,
+        visitedLocations: newVisited
+      };
+    });
+  },
+  
+  pickupItem: (item: string) => {
+    set((state) => ({
+      inventory: [...state.inventory, item]
+    }));
+  },
+  
+  removeItem: (item: string) => {
+    set((state) => ({
+      inventory: state.inventory.filter(i => i !== item)
+    }));
+  },
+  
+  hasItem: (item: string) => {
+    return get().inventory.includes(item);
+  },
+  
+  hasVisited: (location: string) => {
+    return get().visitedLocations.has(location);
+  },
+  
+  setFlag: (flag: string, value: boolean) => {
+    set((state) => ({
+      flags: {
+        ...state.flags,
+        [flag]: value
+      }
+    }));
+  },
+  
+  hasFlag: (flag: string) => {
+    return Boolean(get().flags[flag]);
+  },
+  
+  reset: () => {
+    set({
+      location: 'start',
+      inventory: [],
+      visitedLocations: new Set(['start']),
+      flags: {}
+    });
+  },
+}));

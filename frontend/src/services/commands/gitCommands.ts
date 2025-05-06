@@ -1,481 +1,447 @@
+import { CommandResult, CommandEffect } from '../../types/commands';
 import { GameState } from '../../stores/gameStore';
-import { CommandResult } from '../../types/commands';
 
-// Interface para funções de comando Git
-export interface GitCommandHandler {
-  (args: string[], state: GameState): Promise<CommandResult>;
+interface GitCommandHandler {
+  (args: string[], gameState: GameState): Promise<CommandResult>;
 }
 
-// Comandos Git implementados
-/* eslint-disable @typescript-eslint/no-unused-vars */
-export const gitCommandHandlers: Record<string, GitCommandHandler> = {
-  // Initialize a git repository
-  init: async (_args, _state) => {
+export async function processGitCommand(command: string, gameState: GameState): Promise<CommandResult> {
+  const [, ...parts] = command.split(' ');
+  const subcommand = parts[0];
+  const args = parts.slice(1);
+
+  const handlers: Record<string, GitCommandHandler> = {
+    init: handleInit,
+    status: handleStatus,
+    add: handleAdd,
+    commit: handleCommit,
+    branch: handleBranch,
+    checkout: handleCheckout,
+    log: handleLog,
+    diff: handleDiff,
+    merge: handleMerge,
+    remote: handleRemote,
+    push: handlePush,
+    pull: handlePull,
+    clone: handleClone,
+    fetch: handleFetch,
+    stash: handleStash,
+    reset: handleReset,
+    revert: handleRevert,
+  };
+
+  const handler = handlers[subcommand];
+  
+  if (!handler) {
+    return {
+      success: false,
+      message: `Unknown git subcommand: ${subcommand}`
+    };
+  }
+
+  return handler(args, gameState);
+}
+
+async function handleInit(_args: string[], gameState: GameState): Promise<CommandResult> {
+  return {
+    success: true,
+    message: 'Initialized empty Git repository',
+    effects: {
+      setFlag: {
+        repo_initialized: true
+      }
+    }
+  };
+}
+
+async function handleStatus(_args: string[], gameState: GameState): Promise<CommandResult> {
+  return {
+    success: true,
+    message: 'Your branch is up to date with \'origin/main\'.\nnothing to commit, working tree clean',
+  };
+}
+
+async function handleAdd(args: string[], gameState: GameState): Promise<CommandResult> {
+  if (!args.length) {
+    return {
+      success: false,
+      message: 'Nothing specified, nothing added.'
+    };
+  }
+
+  return {
+    success: true,
+    message: `Changes to be committed:\n  ${args.join('\n  ')}`,
+    effects: {
+      setFlag: {
+        files_staged: true
+      }
+    }
+  };
+}
+
+async function handleCommit(args: string[], gameState: GameState): Promise<CommandResult> {
+  let message = '';
+  let messageIndex = args.indexOf('-m');
+  
+  if (messageIndex === -1) {
+    return {
+      success: false,
+      message: 'Please provide a commit message with -m flag'
+    };
+  }
+
+  if (messageIndex + 1 < args.length) {
+    message = args[messageIndex + 1];
+  } else {
+    return {
+      success: false,
+      message: 'Please provide a commit message after -m flag'
+    };
+  }
+
+  return {
+    success: true,
+    message: `[main ${Math.random().toString(16).slice(2, 8)}] ${message}\n 1 file changed`,
+    effects: {
+      setFlag: {
+        created_commit: true
+      }
+    }
+  };
+}
+
+async function handleBranch(args: string[], gameState: GameState): Promise<CommandResult> {
+  if (!args.length) {
     return {
       success: true,
-      message: 'Initialized empty Git repository in .git/',
-      effects: {
-        setFlag: {
-          'git_initialized': true
-        }
+      message: '* main'
+    };
+  }
+
+  const branchName = args[0];
+  return {
+    success: true,
+    message: `Created branch ${branchName}`,
+    effects: {
+      setFlag: {
+        created_branch: true
+      }
+    }
+  };
+}
+
+async function handleCheckout(args: string[], gameState: GameState): Promise<CommandResult> {
+  if (!args.length) {
+    return {
+      success: false,
+      message: 'Please specify which branch to checkout'
+    };
+  }
+
+  const branchName = args[0];
+  let message = `Switched to branch '${branchName}'`;
+  let effects: CommandEffect = {};
+
+  // Handle branch creation with -b flag
+  if (args.includes('-b')) {
+    message = `Created and switched to branch '${branchName}'`;
+    effects = {
+      setFlag: {
+        created_branch: true
       }
     };
-  },
+  }
 
-  // Show repository status
-  status: async (_args, _state) => {
-    // A implementação real virá do hook useGitRepository
+  return {
+    success: true,
+    message,
+    effects
+  };
+}
+
+async function handleLog(_args: string[], gameState: GameState): Promise<CommandResult> {
+  return {
+    success: true,
+    message: 'commit abc123\nAuthor: Player\nDate: Now\n\n    Initial commit'
+  };
+}
+
+async function handleDiff(_args: string[], gameState: GameState): Promise<CommandResult> {
+  return {
+    success: true,
+    message: 'diff --git a/file.txt b/file.txt\nindex abc..def\n--- a/file.txt\n+++ b/file.txt'
+  };
+}
+
+async function handleMerge(args: string[], gameState: GameState): Promise<CommandResult> {
+  if (!args.length) {
+    return {
+      success: false,
+      message: 'Please specify which branch to merge'
+    };
+  }
+
+  const branchName = args[0];
+  return {
+    success: true,
+    message: `Merged branch '${branchName}' into current branch`,
+    effects: {
+      setFlag: {
+        merged_branch: true
+      }
+    }
+  };
+}
+
+async function handleRemote(args: string[], gameState: GameState): Promise<CommandResult> {
+  if (!args.length) {
     return {
       success: true,
-      message: 'On branch main\nNothing to commit, working tree clean'
+      message: 'origin'
     };
-  },
+  }
 
-  // Stage changes
-  add: async (args, _state) => {
-    if (args.length === 0) {
+  if (args[0] === 'add') {
+    if (args.length < 3) {
       return {
         success: false,
-        message: 'Nothing specified, nothing added.'
+        message: 'Please specify a name and URL for the remote'
       };
     }
 
-    // Versão simplificada
-    const files = args.join(', ');
-    const message = args[0] === '.' 
-      ? 'Added all changes to staging area'
-      : `Added changes: ${files} to staging area`;
-
     return {
       success: true,
-      message,
+      message: `Added remote '${args[1]}' with URL '${args[2]}'`,
       effects: {
         setFlag: {
-          'staged_changes': true
+          added_remote: true
         }
       }
     };
-  },
+  }
 
-  // Commit changes
-  commit: async (args, _state) => {
-    if (args.indexOf('-m') === -1) {
-      return {
-        success: false,
-        message: 'Please provide a commit message with -m'
-      };
-    }
+  return {
+    success: false,
+    message: 'Unknown remote subcommand'
+  };
+}
 
-    const messageIndex = args.indexOf('-m') + 1;
-    
-    if (messageIndex >= args.length) {
-      return {
-        success: false,
-        message: 'Please provide a commit message after -m'
-      };
-    }
-
-    const commitMessage = args[messageIndex];
-
+async function handlePush(args: string[], gameState: GameState): Promise<CommandResult> {
+  if (args.length < 2) {
     return {
-      success: true,
-      message: `[main (root-commit)] ${commitMessage}`,
-      effects: {
-        setFlag: {
-          'created_commit': true
-        }
-      }
+      success: false,
+      message: 'Please specify remote and branch names'
     };
-  },
+  }
 
-  // Create branch
-  branch: async (args, _state) => {
-    if (args.length === 0) {
-      // Listar branches (isso seria buscado do estado do repositório)
+  return {
+    success: true,
+    message: `Pushed to ${args[0]}/${args[1]}`,
+    effects: {
+      setFlag: {
+        pushed_changes: true
+      }
+    }
+  };
+}
+
+async function handlePull(args: string[], gameState: GameState): Promise<CommandResult> {
+  if (args.length < 2) {
+    return {
+      success: false,
+      message: 'Please specify remote and branch names'
+    };
+  }
+
+  return {
+    success: true,
+    message: `Pulled from ${args[0]}/${args[1]}`,
+    effects: {
+      setFlag: {
+        pulled_changes: true
+      }
+    }
+  };
+}
+
+async function handleClone(args: string[], gameState: GameState): Promise<CommandResult> {
+  if (!args.length) {
+    return {
+      success: false,
+      message: 'Please specify repository URL'
+    };
+  }
+
+  const repoUrl = args[0];
+  const targetDir = args[1] || repoUrl.split('/').pop()?.replace(/\.git$/, '') || 'repo';
+
+  return {
+    success: true,
+    message: `Cloning into '${targetDir}'...`,
+    effects: {
+      setFlag: {
+        cloned_repo: true
+      }
+    }
+  };
+}
+
+async function handleFetch(_args: string[], gameState: GameState): Promise<CommandResult> {
+  return {
+    success: true,
+    message: 'Fetching origin...',
+    effects: {
+      setFlag: {
+        fetched_changes: true
+      }
+    }
+  };
+}
+
+async function handleStash(args: string[], gameState: GameState): Promise<CommandResult> {
+  const subCommand = args[0] || 'save';
+  
+  switch (subCommand) {
+    case 'save':
       return {
         success: true,
-        message: '* main'
-      };
-    }
-
-    // Criar novo branch
-    const branchName = args[0];
-    
-    return {
-      success: true,
-      message: `Created branch: ${branchName}`,
-      effects: {
-        setFlag: {
-          'created_branch': true
-        }
-      }
-    };
-  },
-
-  // Checkout branch
-  checkout: async (args, _state) => {
-    if (args.length === 0) {
-      return {
-        success: false,
-        message: 'Please specify a branch name'
-      };
-    }
-
-    const isBranchCreation = args[0] === '-b';
-    const branchName = isBranchCreation ? args[1] : args[0];
-
-    if (!branchName) {
-      return {
-        success: false,
-        message: 'Branch name not specified'
-      };
-    }
-
-    if (isBranchCreation) {
-      return {
-        success: true,
-        message: `Switched to a new branch '${branchName}'`,
+        message: 'Saved working directory and index state',
         effects: {
           setFlag: {
-            'created_branch': true,
-            'checkout_branch': true
+            stashed_changes: true
           }
         }
       };
-    }
-
-    return {
-      success: true,
-      message: `Switched to branch '${branchName}'`,
-      effects: {
-        setFlag: {
-          'checkout_branch': true,
-          'created_branch': false
+      
+    case 'pop':
+      return {
+        success: true,
+        message: 'Applied stashed changes',
+        effects: {
+          setFlag: {
+            stashed_changes: false
+          }
         }
-      }
-    };
-  },
-
-  // Show commit history
-  log: async (_args, _state) => {
-    // Exemplo simplificado de log
-    return {
-      success: true,
-      message: 'commit abc1234 (HEAD -> main)\nAuthor: Jogador <player@gitadventure.com>\nDate: ' + 
-        new Date().toISOString() + '\n\n    Commit inicial\n'
-    };
-  },
-
-  // Show commit differences
-  diff: async (_args, _state) => {
-    return {
-      success: true,
-      message: 'diff --git a/README.md b/README.md\nindex 1234567..abcdefg 100644\n' +
-        '--- a/README.md\n+++ b/README.md\n@@ -1 +1,2 @@\n # Projeto Git Adventure\n+Nova linha adicionada'
-    };
-  },
-
-  // Merge branches
-  merge: async (args, _state) => {
-    if (args.length === 0) {
+      };
+      
+    case 'list':
+      return {
+        success: true,
+        message: 'stash@{0}: WIP on main: abc123 Last commit message'
+      };
+      
+    case 'apply':
+      return {
+        success: true,
+        message: 'Applied stash',
+        effects: {
+          setFlag: {
+            stashed_changes: true
+          }
+        }
+      };
+      
+    case 'drop':
+      return {
+        success: true,
+        message: 'Dropped stash'
+      };
+      
+    case 'clear':
+      return {
+        success: true,
+        message: 'Cleared all stashes'
+      };
+      
+    default:
       return {
         success: false,
-        message: 'error: deve especificar uma branch para merge'
+        message: `Unknown stash subcommand: ${subCommand}`
       };
-    }
-
-    const branchName = args[0];
-    return {
-      success: true,
-      message: `Merging branch '${branchName}' into main`,
-      effects: { 
-        setFlag: { 
-          'merged_branch': true 
-        }
-      }
-    };
-  },
-
-  // Remote repositories
-  remote: async (args, _state) => {
-    if (args.length === 0) {
-      return {
-        success: true,
-        message: 'origin'
-      };
-    }
-
-    if (args[0] === 'add' && args.length >= 3) {
-      const remoteName = args[1];
-      const remoteUrl = args[2];
-      return {
-        success: true,
-        message: `Remote '${remoteName}' adicionado (${remoteUrl})`,
-        effects: { 
-          setFlag: { 
-            'added_remote': true 
-          }
-        }
-      };
-    }
-
-    return {
-      success: false,
-      message: 'Uso: git remote add <name> <url>'
-    };
-  },
-
-  // Push changes
-  push: async (args, _state) => {
-    let remoteName = 'origin';
-    let branchName = 'main';
-    
-    if (args.length >= 2) {
-      remoteName = args[0];
-      branchName = args[1];
-    }
-
-    return {
-      success: true,
-      message: `Pushing to ${remoteName}/${branchName}...\nEverything up-to-date`,
-      effects: { 
-        setFlag: { 
-          'pushed_changes': true 
-        }
-      }
-    };
-  },
-
-  // Pull changes
-  pull: async (args, _state) => {
-    let remoteName = 'origin';
-    let branchName = 'main';
-    
-    if (args.length >= 2) {
-      remoteName = args[0];
-      branchName = args[1];
-    }
-
-    return {
-      success: true,
-      message: `Pulling from ${remoteName}/${branchName}...\nAlready up-to-date`,
-      effects: { 
-        setFlag: { 
-          'pulled_changes': true 
-        }
-      }
-    };
-  },
-
-  // Clone repository
-  clone: async (args, _state) => {
-    if (args.length === 0) {
-      return {
-        success: false,
-        message: 'Você deve especificar uma URL para clonar'
-      };
-    }
-
-    const repoUrl = args[0];
-    return {
-      success: true,
-      message: `Cloning into '${repoUrl.split('/').pop()?.replace('.git', '')}'...\nComplete.`,
-      effects: { 
-        setFlag: { 
-          'cloned_repo': true 
-        }
-      }
-    };
-  },
-
-  // Fetch changes from remote
-  fetch: async (args, _state) => {
-    let remoteName = 'origin';
-    
-    if (args.length >= 1) {
-      remoteName = args[0];
-    }
-
-    return {
-      success: true,
-      message: `From ${remoteName}\n* branch            main       -> FETCH_HEAD`,
-      effects: { 
-        setFlag: { 
-          'fetched_changes': true 
-        }
-      }
-    };
-  },
-
-  // Stash changes
-  stash: async (args, _state) => {
-    // Verificar se é um comando "stash list", "stash pop", "stash apply" ou apenas "stash"
-    if (args.length >= 1) {
-      const subCommand = args[0];
-      
-      if (subCommand === 'list') {
-        return {
-          success: true,
-          message: 'stash@{0}: WIP on main: abc1234 último commit\nstash@{1}: WIP on feature: def5678 alterações anteriores'
-        };
-      }
-      
-      if (subCommand === 'pop') {
-        return {
-          success: true,
-          message: 'On branch main\nChanges not staged for commit:\n  modified: README.md\nDropped refs/stash@{0}',
-          effects: { 
-            setFlag: { 
-              'stashed_changes': false 
-            }
-          }
-        };
-      }
-      
-      if (subCommand === 'apply') {
-        return {
-          success: true,
-          message: 'On branch main\nChanges not staged for commit:\n  modified: README.md'
-        };
-      }
-
-      if (subCommand === 'drop') {
-        return {
-          success: true,
-          message: 'Dropped refs/stash@{0}'
-        };
-      }
-
-      if (subCommand === 'clear') {
-        return {
-          success: true,
-          message: 'Cleared all stashes'
-        };
-      }
-    }
-    
-    // Comando stash padrão
-    return {
-      success: true,
-      message: 'Saved working directory and index state WIP on main: abc1234 último commit',
-      effects: { 
-        setFlag: { 
-          'stashed_changes': true 
-        }
-      }
-    };
-  },
-
-  // Reset changes
-  reset: async (args, _state) => {
-    // Verificar as opções: --hard, --soft, ou arquivo específico
-    let resetType = '';
-    let target = 'HEAD';
-    
-    if (args.length >= 1) {
-      if (args[0] === '--hard') {
-        resetType = 'hard';
-        if (args.length >= 2) {
-          target = args[1];
-        }
-      } else if (args[0] === '--soft') {
-        resetType = 'soft';
-        if (args.length >= 2) {
-          target = args[1];
-        }
-      } else {
-        // Caso seja um arquivo específico ou outro target
-        target = args[0];
-      }
-    }
-    
-    if (resetType === 'hard') {
-      return {
-        success: true,
-        message: `HEAD is now at ${target.substring(0, 7)} commit message`,
-        effects: { 
-          setFlag: { 
-            'reset_hard': true,
-            'reset_soft': false,
-            'reset_changes': false
-          }
-        }
-      };
-    } else if (resetType === 'soft') {
-      return {
-        success: true,
-        message: `Soft reset to ${target}`,
-        effects: { 
-          setFlag: { 
-            'reset_soft': true,
-            'reset_hard': false,
-            'reset_changes': false
-          }
-        }
-      };
-    } else {
-      // Reset para arquivo ou staging area
-      return {
-        success: true,
-        message: 'Unstaged changes after reset:',
-        effects: { 
-          setFlag: { 
-            'reset_changes': true,
-            'reset_hard': false,
-            'reset_soft': false
-          }
-        }
-      };
-    }
-  },
-
-  // Revert changes
-  revert: async (args, _state) => {
-    if (args.length === 0) {
-      return {
-        success: false,
-        message: 'error: você deve especificar um commit para reverter'
-      };
-    }
-    
-    const commitHash = args[0];
-    
-    return {
-      success: true,
-      message: `[main abc1234] Revert "${commitHash}"\n1 file changed, 1 insertion(+), 1 deletion(-)`,
-      effects: { 
-        setFlag: { 
-          'reverted_commit': true 
-        }
-      }
-    };
   }
-};
-/* eslint-enable @typescript-eslint/no-unused-vars */
+}
 
-// Função para processar comandos Git
-export const processGitCommand = async (commandLine: string, state: GameState): Promise<CommandResult> => {
-  const parts = commandLine.split(' ').filter(p => p.trim() !== '');
+async function handleReset(args: string[], gameState: GameState): Promise<CommandResult> {
+  let mode = 'mixed'; // Default reset mode
+  let target = 'HEAD';
   
-  // Verificar se é comando git
-  if (parts[0] !== 'git') {
+  // Parse arguments
+  args.forEach(arg => {
+    if (arg.startsWith('--')) {
+      switch (arg) {
+        case '--soft':
+          mode = 'soft';
+          break;
+        case '--hard':
+          mode = 'hard';
+          break;
+        case '--mixed':
+          mode = 'mixed';
+          break;
+      }
+    } else {
+      target = arg;
+    }
+  });
+  
+  let effects: CommandEffect = {};
+  
+  switch (mode) {
+    case 'soft':
+      effects = {
+        setFlag: {
+          reset_soft: true
+        }
+      };
+      return {
+        success: true,
+        message: `Reset to ${target} (soft)`,
+        effects
+      };
+      
+    case 'hard':
+      effects = {
+        setFlag: {
+          reset_hard: true
+        }
+      };
+      return {
+        success: true,
+        message: `Reset to ${target} (hard)`,
+        effects
+      };
+      
+    default:
+      effects = {
+        setFlag: {
+          reset_changes: true
+        }
+      };
+      return {
+        success: true,
+        message: `Reset to ${target} (mixed)`,
+        effects
+      };
+  }
+}
+
+async function handleRevert(args: string[], gameState: GameState): Promise<CommandResult> {
+  if (!args.length) {
     return {
       success: false,
-      message: 'Not a git command'
+      message: 'Please specify commit to revert'
     };
   }
 
-  const subCommand = parts[1] || '';
-  const args = parts.slice(2);
-
-  // Verificar se o comando existe
-  if (!gitCommandHandlers[subCommand]) {
-    return {
-      success: false,
-      message: `git: '${subCommand}' não é um comando git. Veja 'git --help'.`
-    };
-  }
-
-  // Executar o comando
-  return await gitCommandHandlers[subCommand](args, state);
-};
+  const commitId = args[0];
+  return {
+    success: true,
+    message: `Reverted commit ${commitId}`,
+    effects: {
+      setFlag: {
+        reverted_commit: true
+      }
+    }
+  };
+}
