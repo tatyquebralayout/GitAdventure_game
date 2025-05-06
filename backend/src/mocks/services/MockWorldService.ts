@@ -7,6 +7,7 @@ import { PlayerWorld } from '../../entities/PlayerWorld';
 import { ServiceError, ServiceErrorCode } from '../../errors/ServiceError';
 import { ModuleTheme, WorldDifficulty } from '../../../../shared/types/enums';
 import { WorldFactory } from '../factories/WorldFactory';
+import { MockValidators, MockDataGenerators, MockTimingUtils } from './mockUtils';
 
 @injectable()
 export class MockWorldService extends BaseMockService implements IWorldService {
@@ -20,6 +21,14 @@ export class MockWorldService extends BaseMockService implements IWorldService {
     this.playerWorlds = new MockDataStore<PlayerWorld>('playerWorlds');
     this.worldProgress = new MockDataStore<WorldProgress>('worldProgress');
     this.setupInitialData();
+    this.registerStores();
+  }
+
+  private registerStores() {
+    const registry = this.registry;
+    registry.registerStore('worlds', this.worlds);
+    registry.registerStore('playerWorlds', this.playerWorlds);
+    registry.registerStore('worldProgress', this.worldProgress);
   }
 
   private async setupInitialData() {
@@ -57,47 +66,40 @@ export class MockWorldService extends BaseMockService implements IWorldService {
 
   async getWorldById(worldId: string): Promise<World | null> {
     await this.simulateDelay();
-    
     const world = this.worlds.get(worldId);
     return this.createMockResponse(world || null, 'getWorldById');
   }
 
   async getWorldsByTheme(theme: ModuleTheme): Promise<World[]> {
     await this.simulateDelay();
-
     const worlds = this.worlds.find(world => world.theme === theme);
     return this.createMockResponse(worlds, 'getWorldsByTheme');
   }
 
   async getUserWorldProgress(userId: string, worldId: string): Promise<PlayerWorld | null> {
     await this.simulateDelay();
-
-    const playerWorld = this.playerWorlds.get(`${userId}:${worldId}`);
+    const key = `${userId}:${worldId}`;
+    const playerWorld = this.playerWorlds.get(key);
     return this.createMockResponse(playerWorld || null, 'getUserWorldProgress');
   }
 
   async startWorld(userId: string, worldId: string): Promise<PlayerWorld> {
     await this.simulateDelay();
 
-    const world = this.worlds.get(worldId);
-    if (!world) {
-      throw new ServiceError(
-        ServiceErrorCode.RESOURCE_NOT_FOUND,
-        'World not found',
-        { worldId },
-        true
-      );
-    }
+    const world = MockValidators.validateResourceExists(
+      this.worlds.get(worldId),
+      'World',
+      worldId,
+      true
+    );
 
-    const existingProgress = this.playerWorlds.get(`${userId}:${worldId}`);
-    if (existingProgress) {
-      throw new ServiceError(
-        ServiceErrorCode.OPERATION_NOT_ALLOWED,
-        'World already started',
-        { worldId, userId },
-        true
-      );
-    }
+    const key = `${userId}:${worldId}`;
+    MockValidators.validateResourceNotExists(
+      this.playerWorlds.get(key),
+      'Player world',
+      { worldId, userId },
+      true
+    );
 
     // Check prerequisites
     const canStart = await this.checkWorldPrerequisites(userId, worldId);
@@ -111,7 +113,7 @@ export class MockWorldService extends BaseMockService implements IWorldService {
     }
 
     const playerWorld: PlayerWorld = {
-      id: `player-world-${Date.now()}`,
+      id: MockDataGenerators.generateId('player-world'),
       userId,
       worldId,
       startedAt: new Date(),
@@ -125,7 +127,7 @@ export class MockWorldService extends BaseMockService implements IWorldService {
       playerQuests: []
     };
 
-    this.playerWorlds.set(`${userId}:${worldId}`, playerWorld);
+    this.playerWorlds.set(key, playerWorld);
     return this.createMockResponse(playerWorld, 'startWorld');
   }
 
@@ -142,21 +144,18 @@ export class MockWorldService extends BaseMockService implements IWorldService {
   async calculateWorldProgress(worldId: string, userId: string): Promise<WorldProgress> {
     await this.simulateDelay();
 
-    const progress = this.worldProgress.get(`${userId}:${worldId}`);
+    const key = `${userId}:${worldId}`;
+    const progress = this.worldProgress.get(key);
     if (progress) {
       return this.createMockResponse(progress, 'calculateWorldProgress');
     }
 
-    // Create initial progress
-    const world = this.worlds.get(worldId);
-    if (!world) {
-      throw new ServiceError(
-        ServiceErrorCode.RESOURCE_NOT_FOUND,
-        'World not found',
-        { worldId },
-        true
-      );
-    }
+    const world = MockValidators.validateResourceExists(
+      this.worlds.get(worldId),
+      'World',
+      worldId,
+      true
+    );
 
     const newProgress: WorldProgress = {
       completedQuests: 0,
@@ -165,7 +164,7 @@ export class MockWorldService extends BaseMockService implements IWorldService {
       isComplete: false
     };
 
-    this.worldProgress.set(`${userId}:${worldId}`, newProgress);
+    this.worldProgress.set(key, newProgress);
     return this.createMockResponse(newProgress, 'calculateWorldProgress');
   }
 
@@ -197,15 +196,12 @@ export class MockWorldService extends BaseMockService implements IWorldService {
   }> {
     await this.simulateDelay();
 
-    const world = this.worlds.get(worldId);
-    if (!world) {
-      throw new ServiceError(
-        ServiceErrorCode.RESOURCE_NOT_FOUND,
-        'World not found',
-        { worldId },
-        true
-      );
-    }
+    const world = MockValidators.validateResourceExists(
+      this.worlds.get(worldId),
+      'World',
+      worldId,
+      true
+    );
 
     // Get required worlds
     const requiredWorlds = world.requiredWorlds || [];

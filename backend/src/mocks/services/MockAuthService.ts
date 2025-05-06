@@ -6,13 +6,10 @@ import { TokenResponse, TokenPayload } from '../../types/auth';
 import { IAuthService } from '../../services/interfaces/IAuthService';
 import { ServiceError, ServiceErrorCode } from '../../errors/ServiceError';
 import { MockDataStore } from './MockDataStore';
+import { MockValidators, MockDataGenerators, MockTypeUtils } from './mockUtils';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-/**
- * Mock implementation of AuthService
- * Simulates authentication operations with in-memory storage
- */
 @injectable()
 export class MockAuthService extends BaseMockService implements IAuthService {
   private readonly users: MockDataStore<User>;
@@ -24,11 +21,18 @@ export class MockAuthService extends BaseMockService implements IAuthService {
     this.users = new MockDataStore<User>('users');
     this.tokens = new MockDataStore<UserToken>('tokens');
     this.setupTestUser();
+    this.registerStores();
+  }
+
+  private registerStores() {
+    const registry = this.registry;
+    registry.registerStore('users', this.users);
+    registry.registerStore('tokens', this.tokens);
   }
 
   private async setupTestUser() {
     const testUser: User = {
-      id: 'test-user-id',
+      id: MockDataGenerators.generateId('user'),
       username: 'test_user',
       email: 'test@example.com',
       password: await bcrypt.hash('password123', 10),
@@ -47,18 +51,16 @@ export class MockAuthService extends BaseMockService implements IAuthService {
   async register(username: string, email: string, password: string): Promise<Omit<User, 'password'>> {
     await this.simulateDelay();
 
-    if (this.users.findOne(u => u.username === username || u.email === email)) {
-      throw new ServiceError(
-        ServiceErrorCode.USER_EXISTS,
-        'Username or email already exists',
-        { username, email },
-        true
-      );
-    }
+    MockValidators.validateResourceNotExists(
+      this.users.findOne(u => u.username === username || u.email === email),
+      'User',
+      { username, email },
+      true
+    );
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser: User = {
-      id: `user-${Date.now()}`,
+      id: MockDataGenerators.generateId('user'),
       username,
       email,
       password: hashedPassword,
@@ -72,15 +74,23 @@ export class MockAuthService extends BaseMockService implements IAuthService {
     };
 
     this.users.set(newUser.id, newUser);
-    const { password: _, ...userWithoutPassword } = newUser;
-    return this.createMockResponse(userWithoutPassword, 'register');
+    return this.createMockResponse(
+      MockTypeUtils.removeSensitiveFields(newUser, ['password']),
+      'register'
+    );
   }
 
   async login(username: string, password: string): Promise<TokenResponse> {
     await this.simulateDelay();
 
-    const user = this.users.findOne(u => u.username === username);
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    const user = MockValidators.validateResourceExists(
+      this.users.findOne(u => u.username === username),
+      'User',
+      username,
+      true
+    );
+
+    if (!(await bcrypt.compare(password, user.password))) {
       throw new ServiceError(
         ServiceErrorCode.INVALID_CREDENTIALS,
         'Invalid credentials',
@@ -93,7 +103,7 @@ export class MockAuthService extends BaseMockService implements IAuthService {
     const refreshToken = jwt.sign({ userId: user.id }, this.jwtSecret, { expiresIn: '7d' });
 
     const userToken: UserToken = {
-      id: `token-${Date.now()}`,
+      id: MockDataGenerators.generateId('token'),
       userId: user.id,
       accessToken,
       refreshToken,
@@ -103,7 +113,7 @@ export class MockAuthService extends BaseMockService implements IAuthService {
     };
 
     this.tokens.set(refreshToken, userToken);
-    const { password: _, ...userWithoutPassword } = user;
+    const userWithoutPassword = MockTypeUtils.removeSensitiveFields(user, ['password']);
 
     return this.createMockResponse({
       accessToken,
@@ -117,16 +127,12 @@ export class MockAuthService extends BaseMockService implements IAuthService {
 
     try {
       const decoded = jwt.verify(token, this.jwtSecret) as TokenPayload;
-      const user = this.users.get(decoded.userId);
-      
-      if (!user) {
-        throw new ServiceError(
-          ServiceErrorCode.USER_NOT_FOUND,
-          'User not found',
-          { userId: decoded.userId },
-          true
-        );
-      }
+      MockValidators.validateResourceExists(
+        this.users.get(decoded.userId),
+        'User',
+        decoded.userId,
+        true
+      );
 
       return this.createMockResponse(decoded, 'validateToken');
     } catch (error) {
@@ -142,25 +148,19 @@ export class MockAuthService extends BaseMockService implements IAuthService {
   async refreshToken(refreshToken: string): Promise<TokenResponse> {
     await this.simulateDelay();
 
-    const userToken = this.tokens.get(refreshToken);
-    if (!userToken) {
-      throw new ServiceError(
-        ServiceErrorCode.TOKEN_INVALID,
-        'Invalid refresh token',
-        undefined,
-        true
-      );
-    }
+    const userToken = MockValidators.validateResourceExists(
+      this.tokens.get(refreshToken),
+      'Refresh token',
+      refreshToken,
+      true
+    );
 
-    const user = this.users.get(userToken.userId);
-    if (!user) {
-      throw new ServiceError(
-        ServiceErrorCode.USER_NOT_FOUND,
-        'User not found',
-        { userId: userToken.userId },
-        true
-      );
-    }
+    const user = MockValidators.validateResourceExists(
+      this.users.get(userToken.userId),
+      'User',
+      userToken.userId,
+      true
+    );
 
     const newAccessToken = jwt.sign({ userId: user.id }, this.jwtSecret, { expiresIn: '1h' });
     const newRefreshToken = jwt.sign({ userId: user.id }, this.jwtSecret, { expiresIn: '7d' });
@@ -175,7 +175,7 @@ export class MockAuthService extends BaseMockService implements IAuthService {
     };
     this.tokens.set(newRefreshToken, newUserToken);
 
-    const { password: _, ...userWithoutPassword } = user;
+    const userWithoutPassword = MockTypeUtils.removeSensitiveFields(user, ['password']);
     return this.createMockResponse({
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,

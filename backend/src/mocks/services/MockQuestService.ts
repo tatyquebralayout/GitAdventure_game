@@ -8,6 +8,7 @@ import { PlayerQuestStep } from '../../entities/PlayerQuestStep';
 import { ServiceError, ServiceErrorCode } from '../../errors/ServiceError';
 import { QuestStatus, StepStatus } from '../../../../shared/types/enums';
 import { QuestFactory } from '../factories/QuestFactory';
+import { MockValidators, MockDataGenerators, MockTimingUtils } from './mockUtils';
 
 @injectable()
 export class MockQuestService extends BaseMockService implements IQuestService {
@@ -40,27 +41,20 @@ export class MockQuestService extends BaseMockService implements IQuestService {
 
   async getQuestById(questId: string): Promise<Quest | null> {
     await this.simulateDelay();
-    
     const quest = this.quests.get(questId);
-    if (!quest) {
-      return null;
-    }
-    
-    return this.createMockResponse(quest, 'getQuestById');
+    return this.createMockResponse(quest || null, 'getQuestById');
   }
 
   async getQuestCommandSteps(questId: string): Promise<QuestCommandStep[]> {
     await this.simulateDelay();
 
     const steps = this.questSteps.find(step => step.questId === questId);
-    if (!steps.length) {
-      throw new ServiceError(
-        ServiceErrorCode.RESOURCE_NOT_FOUND,
-        'Quest steps not found',
-        { questId },
-        true
-      );
-    }
+    MockValidators.validateResourceExists(
+      steps.length > 0,
+      'Quest steps',
+      questId,
+      true
+    );
 
     // Sort by step number
     steps.sort((a, b) => a.stepNumber - b.stepNumber);
@@ -70,26 +64,21 @@ export class MockQuestService extends BaseMockService implements IQuestService {
   async startQuest(userId: string, questId: string, playerWorldId: string): Promise<QuestProgressUpdate> {
     await this.simulateDelay();
 
-    const quest = this.quests.get(questId);
-    if (!quest) {
-      throw new ServiceError(
-        ServiceErrorCode.RESOURCE_NOT_FOUND,
-        'Quest not found',
-        { questId },
-        true
-      );
-    }
+    const quest = MockValidators.validateResourceExists(
+      this.quests.get(questId),
+      'Quest',
+      questId,
+      true
+    );
 
     // Check if quest is already started
-    const existingProgress = this.questProgress.get(`${userId}:${questId}`);
-    if (existingProgress) {
-      throw new ServiceError(
-        ServiceErrorCode.OPERATION_NOT_ALLOWED,
-        'Quest already started',
-        { questId, userId },
-        true
-      );
-    }
+    const progressKey = `${userId}:${questId}`;
+    MockValidators.validateResourceNotExists(
+      this.questProgress.get(progressKey),
+      'Quest progress',
+      { questId, userId },
+      true
+    );
 
     const progress: QuestProgressUpdate = {
       isComplete: false,
@@ -99,7 +88,7 @@ export class MockQuestService extends BaseMockService implements IQuestService {
       totalSteps: quest.commandSteps.length
     };
 
-    this.questProgress.set(`${userId}:${questId}`, progress);
+    this.questProgress.set(progressKey, progress);
     return this.createMockResponse(progress, 'startQuest');
   }
 
@@ -112,32 +101,31 @@ export class MockQuestService extends BaseMockService implements IQuestService {
     await this.simulateDelay();
 
     const { questId, stepId, userId, command } = data;
-    const step = this.questSteps.get(stepId);
+    const step = MockValidators.validateResourceExists(
+      this.questSteps.get(stepId),
+      'Quest step',
+      stepId,
+      true
+    );
 
-    if (!step) {
-      throw new ServiceError(
-        ServiceErrorCode.RESOURCE_NOT_FOUND,
-        'Quest step not found',
-        { stepId },
-        true
-      );
-    }
-
-    // Simulate command validation
-    const isValid = command.match(new RegExp(step.commandRegex));
+    // Validate command
+    const isValid = MockValidators.validateCommand(command, step.commandRegex, true);
+    const startTime = MockDataGenerators.generateDate(0, 5); // Random start time in last 5 minutes
+    const executedAt = new Date();
+    const timeSpent = MockTimingUtils.calculateTimeSpentSeconds(startTime, executedAt);
     
     const stepResult: PlayerQuestStep = {
-      id: `step-progress-${Date.now()}`,
+      id: MockDataGenerators.generateId('step-progress'),
       playerWorldsQuestsId: `${userId}:${questId}`,
       questCommandStepId: stepId,
       status: isValid ? StepStatus.COMPLETED : StepStatus.FAILED,
-      startTime: new Date(),
-      executedAt: new Date(),
-      timeSpent: 0,
+      startTime,
+      executedAt,
+      timeSpent,
       attempts: 1,
       score: isValid ? 100 : 0,
-      bonusPoints: isValid ? 50 : 0,
-      failedAttempts: !isValid ? [{ command, timestamp: new Date() }] : []
+      bonusPoints: isValid ? MockTimingUtils.calculateTimeBonus(timeSpent) : 0,
+      failedAttempts: !isValid ? [{ command, timestamp: executedAt }] : []
     };
 
     // Update progress if step is completed
@@ -163,25 +151,20 @@ export class MockQuestService extends BaseMockService implements IQuestService {
   async checkQuestCompletion(questId: string, userId: string): Promise<QuestProgressUpdate> {
     await this.simulateDelay();
 
-    const progress = this.questProgress.get(`${userId}:${questId}`);
-    if (!progress) {
-      throw new ServiceError(
-        ServiceErrorCode.RESOURCE_NOT_FOUND,
-        'Quest progress not found',
-        { questId, userId },
-        true
-      );
-    }
+    const progressKey = `${userId}:${questId}`;
+    const progress = MockValidators.validateResourceExists(
+      this.questProgress.get(progressKey),
+      'Quest progress',
+      progressKey,
+      true
+    );
 
-    const quest = this.quests.get(questId);
-    if (!quest) {
-      throw new ServiceError(
-        ServiceErrorCode.RESOURCE_NOT_FOUND,
-        'Quest not found',
-        { questId },
-        true
-      );
-    }
+    const quest = MockValidators.validateResourceExists(
+      this.quests.get(questId),
+      'Quest',
+      questId,
+      true
+    );
 
     // Update completion status
     progress.isComplete = progress.completedSteps === progress.totalSteps;
@@ -189,22 +172,20 @@ export class MockQuestService extends BaseMockService implements IQuestService {
       progress.status = QuestStatus.COMPLETED;
     }
 
-    this.questProgress.set(`${userId}:${questId}`, progress);
+    this.questProgress.set(progressKey, progress);
     return this.createMockResponse(progress, 'checkQuestCompletion');
   }
 
   async getQuestProgress(questId: string, userId: string): Promise<QuestProgressUpdate> {
     await this.simulateDelay();
 
-    const progress = this.questProgress.get(`${userId}:${questId}`);
-    if (!progress) {
-      throw new ServiceError(
-        ServiceErrorCode.RESOURCE_NOT_FOUND,
-        'Quest progress not found',
-        { questId, userId },
-        true
-      );
-    }
+    const progressKey = `${userId}:${questId}`;
+    const progress = MockValidators.validateResourceExists(
+      this.questProgress.get(progressKey),
+      'Quest progress',
+      progressKey,
+      true
+    );
 
     return this.createMockResponse(progress, 'getQuestProgress');
   }
