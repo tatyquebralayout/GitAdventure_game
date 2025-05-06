@@ -15,136 +15,179 @@ describe('errorMiddleware', () => {
     mockRequest = {};
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis()
+      json: jest.fn()
     };
     mockNext = jest.fn();
     mockLoggerService = {
       error: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      debug: jest.fn()
+      warn: jest.fn()
     } as any;
+
+    jest.clearAllMocks();
   });
 
-  it('should handle AppError correctly', () => {
-    const error = new AppError('Test error', 400);
-    
-    errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+  describe('AppError handling', () => {
+    it('should handle AppError with custom status code', () => {
+      const error = new AppError('Custom error', 422);
 
-    expect(mockResponse.status).toHaveBeenCalledWith(400);
-    expect(mockResponse.json).toHaveBeenCalledWith({
-      status: 'error',
-      message: 'Test error'
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(422);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Custom error'
+      });
+      expect(mockLoggerService.warn).toHaveBeenCalled();
     });
-    expect(mockLoggerService.error).toHaveBeenCalled();
-  });
 
-  it('should handle validation errors', () => {
-    const error = new Error('Validation failed');
-    error.name = 'ValidationError';
-    
-    errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+    it('should include error details in development mode', () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
 
-    expect(mockResponse.status).toHaveBeenCalledWith(400);
-    expect(mockResponse.json).toHaveBeenCalledWith({
-      status: 'error',
-      message: 'Validation failed'
-    });
-  });
+      const error = new AppError('Validation failed', 400, {
+        field: 'username',
+        constraint: 'required'
+      });
 
-  it('should handle TypeORM errors', () => {
-    const error = new Error('Database error');
-    error.name = 'QueryFailedError';
-    
-    errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
 
-    expect(mockResponse.status).toHaveBeenCalledWith(500);
-    expect(mockResponse.json).toHaveBeenCalledWith({
-      status: 'error',
-      message: 'Internal server error'
-    });
-  });
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Validation failed',
+        details: {
+          field: 'username',
+          constraint: 'required'
+        }
+      });
 
-  it('should handle JWT errors', () => {
-    const error = new Error('Invalid token');
-    error.name = 'JsonWebTokenError';
-    
-    errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
-
-    expect(mockResponse.status).toHaveBeenCalledWith(401);
-    expect(mockResponse.json).toHaveBeenCalledWith({
-      status: 'error',
-      message: 'Invalid token'
+      process.env.NODE_ENV = originalEnv;
     });
   });
 
-  it('should handle unknown errors in production', () => {
-    const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = 'production';
-    
-    const error = new Error('Unknown error');
-    
-    errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+  describe('TypeORM error handling', () => {
+    it('should handle TypeORM unique constraint errors', () => {
+      const error = new Error('duplicate key value violates unique constraint');
+      (error as any).code = '23505';
 
-    expect(mockResponse.status).toHaveBeenCalledWith(500);
-    expect(mockResponse.json).toHaveBeenCalledWith({
-      status: 'error',
-      message: 'Internal server error'
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(409);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Resource already exists'
+      });
     });
 
-    process.env.NODE_ENV = originalEnv;
-  });
+    it('should handle TypeORM foreign key errors', () => {
+      const error = new Error('foreign key violation');
+      (error as any).code = '23503';
 
-  it('should include error details in development', () => {
-    const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = 'development';
-    
-    const error = new Error('Development error');
-    error.stack = 'Error stack trace';
-    
-    errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
 
-    expect(mockResponse.status).toHaveBeenCalledWith(500);
-    expect(mockResponse.json).toHaveBeenCalledWith({
-      status: 'error',
-      message: 'Development error',
-      stack: 'Error stack trace'
-    });
-
-    process.env.NODE_ENV = originalEnv;
-  });
-
-  it('should handle errors with custom status codes', () => {
-    const error = new AppError('Resource not found', 404);
-    
-    errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
-
-    expect(mockResponse.status).toHaveBeenCalledWith(404);
-    expect(mockResponse.json).toHaveBeenCalledWith({
-      status: 'error',
-      message: 'Resource not found'
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Invalid reference to related resource'
+      });
     });
   });
 
-  it('should log errors with context', () => {
-    const error = new AppError('Test error', 500);
-    const req = {
-      method: 'GET',
-      url: '/api/test',
-      headers: {
-        'user-agent': 'test-agent'
-      }
-    };
-    
-    errorMiddleware(error, req as Request, mockResponse as Response, mockNext);
+  describe('JWT error handling', () => {
+    it('should handle JWT expired error', () => {
+      const error = new Error('jwt expired');
+      error.name = 'TokenExpiredError';
 
-    expect(mockLoggerService.error).toHaveBeenCalledWith(
-      'Test error',
-      error,
-      expect.objectContaining({
-        method: 'GET',
-        url: '/api/test'
-      })
-    );
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Token has expired'
+      });
+    });
+
+    it('should handle invalid JWT', () => {
+      const error = new Error('invalid token');
+      error.name = 'JsonWebTokenError';
+
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Invalid token'
+      });
+    });
+  });
+
+  describe('Default error handling', () => {
+    it('should handle unknown errors with 500 status code', () => {
+      const error = new Error('Unknown error');
+
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Internal server error'
+      });
+      expect(mockLoggerService.error).toHaveBeenCalled();
+    });
+
+    it('should mask error details in production', () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+
+      const error = new Error('Database connection failed');
+
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Internal server error'
+      });
+
+      process.env.NODE_ENV = originalEnv;
+    });
+  });
+
+  describe('Validation error handling', () => {
+    it('should handle Joi validation errors', () => {
+      const error = new Error('Validation error');
+      (error as any).isJoi = true;
+      (error as any).details = [
+        { message: 'Field is required', path: ['username'] }
+      ];
+
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Validation error',
+        details: [{ message: 'Field is required', path: ['username'] }]
+      });
+    });
+
+    it('should handle class-validator errors', () => {
+      const error = new Error('Validation failed');
+      (error as any).name = 'ValidationError';
+      (error as any).constraints = {
+        isNotEmpty: 'username should not be empty',
+        minLength: 'username is too short'
+      };
+
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Validation failed',
+        details: {
+          isNotEmpty: 'username should not be empty',
+          minLength: 'username is too short'
+        }
+      });
+    });
   });
 });
