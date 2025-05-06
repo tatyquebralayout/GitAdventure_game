@@ -1,22 +1,36 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Location } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import './Header.css';
 import { authApi } from '../../../api/authApi';
 
 export default function Header() {
-  const location = useLocation();
+  const location: Location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showHero, setShowHero] = useState(true);
 
-  // Verificar autenticação
+  // Check authentication
   useEffect(() => {
     setIsAuthenticated(authApi.isAuthenticated());
   }, []);
 
-  // Mostrar seção hero apenas na página inicial
+  // Only show hero section on home and worlds pages
   useEffect(() => {
-    setShowHero(location.pathname === '/' || location.pathname === '/worlds');
+    const path = location.pathname;
+    setShowHero(path === '/' || path === '/worlds');
   }, [location]);
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+      setIsAuthenticated(false);
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Still clear authentication state on error
+      setIsAuthenticated(false);
+      window.location.href = '/';
+    }
+  };
 
   return (
     <>
@@ -57,9 +71,7 @@ export default function Header() {
                 <span className="text-sm hidden md:inline-block">Olá, Aventureiro!</span>
                 <button 
                   onClick={() => {
-                    authApi.logout();
-                    setIsAuthenticated(false);
-                    window.location.href = '/';
+                    void handleLogout();
                   }}
                   className="px-3 py-1 rounded border border-red-400 text-red-400 hover:bg-red-400 hover:text-white text-sm transition-colors"
                 >

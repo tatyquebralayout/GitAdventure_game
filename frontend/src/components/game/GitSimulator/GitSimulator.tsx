@@ -3,7 +3,7 @@ import './GitSimulator.css';
 import { useGitRepository } from '../../../hooks/useGitRepository';
 import VisualizationToggle, { ViewMode } from './VisualizationToggle';
 import DevTip from '../../ui/DevHelper/DevTip';
-import { GitCommit, GitBranch, GitStatus } from '../../../types/git';
+import { GitCommit, GitBranch } from '../../../types/git';
 
 // Lazy load visualization components to reduce initial bundle size
 const MermaidViewer = lazy(() => import('./MermaidViewer'));
@@ -198,19 +198,25 @@ export default function GitSimulator() {
           <div className="git-tabs">
             <button 
               className={`git-tab-button ${repositoryView === 'working' ? 'active' : ''}`}
-              onClick={() => setRepositoryView('working')}
+              onClick={() => {
+                setRepositoryView('working');
+              }}
             >
               Working Directory
             </button>
             <button 
               className={`git-tab-button ${repositoryView === 'staged' ? 'active' : ''}`}
-              onClick={() => setRepositoryView('staged')}
+              onClick={() => {
+                setRepositoryView('staged');
+              }}
             >
               Staging Area
             </button>
             <button 
               className={`git-tab-button ${repositoryView === 'committed' ? 'active' : ''}`}
-              onClick={() => setRepositoryView('committed')}
+              onClick={() => {
+                setRepositoryView('committed');
+              }}
             >
               Local Repository (History)
             </button>

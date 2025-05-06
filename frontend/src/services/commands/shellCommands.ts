@@ -248,9 +248,87 @@ export const shellCommandHandlers: Record<string, ShellCommandHandler> = {
     };
   },
 
-  grep: (args) => ({ success: false, message: 'TODO: Implement grep with useFileSystemStore'}),
-  find: (args) => ({ success: false, message: 'TODO: Implement find with useFileSystemStore'}),
-  diff: (args) => ({ success: false, message: 'TODO: Implement diff with useFileSystemStore'}),
+  grep: (args) => {
+    if (args.length < 2) {
+      return { success: false, message: 'Usage: grep PATTERN FILE' };
+    }
+    const pattern = args[0];
+    const fileName = args[1];
+    const { currentDir, files } = useFileSystemStore.getState();
+    const targetPath = normalizePath(fileName, currentDir);
+
+    if (!files[targetPath]) {
+      return { success: false, message: `grep: ${fileName}: No such file or directory` };
+    }
+    if (files[targetPath].type !== 'file') {
+      return { success: false, message: `grep: ${fileName}: Is a directory` };
+    }
+
+    const matches = (files[targetPath].content || '').split('\n')
+      .filter(line => line.includes(pattern));
+
+    return { success: true, message: matches.join('\n') };
+  },
+
+  find: (args) => {
+    const { currentDir, files } = useFileSystemStore.getState();
+    const searchPath = args.length > 0 ? normalizePath(args[0], currentDir) : currentDir;
+
+    if (!files[searchPath]) {
+      return { success: false, message: `find: '${args[0]}': No such file or directory` };
+    }
+
+    // Get all paths that start with searchPath
+    const results = Object.keys(files)
+      .filter(path => path.startsWith(searchPath))
+      .map(path => path.substring(searchPath.length + 1))
+      .filter(Boolean);
+
+    return { success: true, message: results.join('\n') };
+  },
+
+  diff: (args) => {
+    if (args.length < 2) {
+      return { success: false, message: 'Usage: diff FILE1 FILE2' };
+    }
+    const { currentDir, files } = useFileSystemStore.getState();
+    const file1Path = normalizePath(args[0], currentDir);
+    const file2Path = normalizePath(args[1], currentDir);
+
+    // Check both files exist and are files
+    if (!files[file1Path]) {
+      return { success: false, message: `diff: ${args[0]}: No such file or directory` };
+    }
+    if (!files[file2Path]) {
+      return { success: false, message: `diff: ${args[1]}: No such file or directory` };
+    }
+    if (files[file1Path].type !== 'file') {
+      return { success: false, message: `diff: ${args[0]}: Is a directory` };
+    }
+    if (files[file2Path].type !== 'file') {
+      return { success: false, message: `diff: ${args[1]}: Is a directory` };
+    }
+
+    const file1Lines = (files[file1Path].content || '').split('\n');
+    const file2Lines = (files[file2Path].content || '').split('\n');
+
+    // Simple diff implementation
+    let diffOutput = '';
+    let i = 0;
+    while (i < Math.max(file1Lines.length, file2Lines.length)) {
+      if (i >= file1Lines.length) {
+        diffOutput += `> ${file2Lines[i]}\n`;
+      } else if (i >= file2Lines.length) {
+        diffOutput += `< ${file1Lines[i]}\n`;
+      } else if (file1Lines[i] !== file2Lines[i]) {
+        diffOutput += `< ${file1Lines[i]}\n> ${file2Lines[i]}\n`;
+      }
+      i++;
+    }
+
+    return { success: true, message: diffOutput || 'Files are identical' };
+  },
+
   less: (args) => {
     if (args.length === 0) {
       return { success: false, message: 'less: missing file operand' };

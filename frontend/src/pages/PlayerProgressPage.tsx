@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PlayerWorld, worldApi } from '../api/worldApi';
+import { PlayerWorld } from '../api/worldApi';
 import { authApi } from '../api/authApi';
 
+interface PlayerWorldSafe extends Omit<PlayerWorld, 'createdAt' | 'updatedAt'> {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const PlayerProgressPage = () => {
-  const [playerWorlds, setPlayerWorlds] = useState<PlayerWorld[]>([]);
+  const [playerWorlds, setPlayerWorlds] = useState<PlayerWorldSafe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Verificar se o usuário está autenticado
     const checkAuth = async () => {
       const isLoggedIn = authApi.isAuthenticated();
       setIsAuthenticated(isLoggedIn);
@@ -20,16 +24,11 @@ const PlayerProgressPage = () => {
         return;
       }
 
-      // Se estiver autenticado, carregar o progresso
       try {
         setLoading(true);
         
-        // Aqui precisaríamos de um endpoint para obter todos os mundos do jogador
-        // Como exemplo, vamos simular isso com dados fixos
-        // Em uma implementação real, você teria algo como:
-        // const response = await playerProgressApi.getPlayerWorlds();
-        
-        const mockPlayerWorlds: PlayerWorld[] = [
+        // Example mock data with proper type safety
+        const mockPlayerWorlds: PlayerWorldSafe[] = [
           {
             id: '1',
             userId: 'user-1',
@@ -49,15 +48,16 @@ const PlayerProgressPage = () => {
         ];
         
         setPlayerWorlds(mockPlayerWorlds);
-      } catch (err) {
-        setError('Erro ao carregar seu progresso');
-        console.error(err);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Erro ao carregar seu progresso';
+        setError(message);
+        console.error(error);
       } finally {
         setLoading(false);
       }
     };
 
-    checkAuth();
+    void checkAuth();
   }, []);
 
   if (loading) {
@@ -169,4 +169,4 @@ const PlayerProgressPage = () => {
   );
 };
 
-export default PlayerProgressPage; 
+export default PlayerProgressPage;

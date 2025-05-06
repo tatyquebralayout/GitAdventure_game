@@ -10,11 +10,10 @@ interface JwtPayload {
 }
 
 // Extend the Express Request interface to include the user property
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User;
-    }
+import type { User } from '../entities/User';
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: User;
   }
 }
 

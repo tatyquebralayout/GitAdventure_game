@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { GitCommit, GitBranch, GitStatus, GitRepositoryState } from '../types/git'; // Importar tipos unificados
+import { GitRepositoryState } from '../types/git';
 
 // Use GitRepositoryState for the context type structure, adding executeCommand
 export interface GitRepositoryContextType extends GitRepositoryState {

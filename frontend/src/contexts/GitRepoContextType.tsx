@@ -1,5 +1,5 @@
 // Tipos para o contexto
-import { GitCommit, GitStatus, GitRepositoryState } from '../types/git';
+import { GitRepositoryState } from '../types/git';
 
 export interface GitRepoContextType extends Omit<GitRepositoryState, 'remotes'> { // Omit remotes if not directly managed here
   executeCommand: (command: string) => Promise<{ success: boolean; message: string }>;

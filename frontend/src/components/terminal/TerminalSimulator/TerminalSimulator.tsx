@@ -94,112 +94,114 @@ export default function TerminalSimulator() {
     };
   };
 
+  const executeGitCommand = async (commandText: string) => {
+    try {
+      // Execute Git command using the single context
+      const result = await gitRepo.executeCommand(commandText);
+      
+      // Process for game effects using our own handler
+      const gameState = buildGameState();
+      const gitResult = await processGitCommand(commandText, gameState);
+      
+      // Apply effects if successful
+      if (gitResult.success && gitResult.effects) {
+        applyEffectsToGameState(gitResult.effects);
+      }
+      
+      // Add result to command history
+      setCommandHistory(prev => [
+        ...prev, 
+        { 
+          text: result.message || gitResult.message, // Use message from the hook result
+          isOutput: true
+        }
+      ]);
+    } catch (error) {
+      // Handle Git command errors
+      setCommandHistory(prev => [
+        ...prev, 
+        { 
+          text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+          isOutput: true
+        }
+      ]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (currentCommand.trim()) {
-      // Add the command to history
-      const commandText = currentCommand.trim();
-      setCommandHistory(prev => [...prev, { text: `$ ${commandText}`, isOutput: false }]);
-      setCurrentCommand("");
-      setIsProcessing(true);
-      
-      // Add to command history for navigation
-      addToHistory(commandText);
-      
-      try {
-        // Determinar o tipo de comando (Git, Shell ou Adventure)
-        if (commandText.startsWith('git ')) {
-          // Processa comando Git
-          try {
-            // Execute Git command using the single context
-            const result = await gitRepo.executeCommand(commandText);
-            
-            // Processa também usando nosso próprio handler para efeitos no jogo
-            const gameState = buildGameState();
-            const gitResult = await processGitCommand(commandText, gameState);
-            
-            // Aplicar efeitos no estado do jogo se houver
-            if (gitResult.success && gitResult.effects) {
-              applyEffectsToGameState(gitResult.effects);
-            }
-            
-            // Add result to command history (using the result from the repository hook)
-            setCommandHistory(prev => [
-              ...prev, 
-              { 
-                text: result.message || gitResult.message, // Use message from the hook result
-                isOutput: true
-              }
-            ]);
-          } catch (error) {
-            // Handle Git command errors
-            setCommandHistory(prev => [
-              ...prev, 
-              { 
-                text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
-                isOutput: true
-              }
-            ]);
+    const commandText = currentCommand.trim();
+    if (!commandText) return;
+    
+    // Add the command to history
+    setCommandHistory(prev => [...prev, { text: `$ ${commandText}`, isOutput: false }]);
+    setCurrentCommand("");
+    setIsProcessing(true);
+    
+    // Add to command history for navigation
+    addToHistory(commandText);
+    
+    try {
+      // Determine command type (Git, Shell, or Adventure)
+      if (commandText.startsWith('git ')) {
+        await executeGitCommand(commandText);
+      } else if (isShellCommand(commandText)) {
+        // Process Shell command
+        const shellResult = processShellCommand(commandText);
+        
+        // Update visual Git state if needed
+        if (shellResult.success) {
+          // Commands that might affect GitSimulator
+          if (commandText.startsWith('cd ') || 
+              commandText.startsWith('mkdir ') || 
+              commandText.startsWith('touch ') || 
+              commandText.startsWith('rm ')) {
+            await gitRepo.executeCommand('git status');
           }
-        } else if (isShellCommand(commandText)) {
-          // Processa comando Shell
-          const shellResult = processShellCommand(commandText);
-          
-          // Verifica se o comando shell deveria afetar a visualização Git
-          if (shellResult.success) {
-            // Comandos que podem afetar o GitSimulator
-            if (commandText.startsWith('cd ') || 
-                commandText.startsWith('mkdir ') || 
-                commandText.startsWith('touch ') || 
-                commandText.startsWith('rm ')) {
-              // Atualizar visualização Git se necessário using the single context
-              await gitRepo.executeCommand('git status');
-            }
-          }
-          
-          // Adiciona resultado ao histórico
-          setCommandHistory(prev => [
-            ...prev,
-            {
-              text: shellResult.message || '',
-              isOutput: true
-            }
-          ]);
-        } else {
-          // Process adventure command with our pattern matching system
-          // Get the complete current state from the game store
-          const currentState = buildGameState();
-          
-          // Process the command
-          const result = processCommand(commandText, currentState);
-          
-          // Apply command effects if successful
-          if (result.success && result.effects) {
-            applyEffectsToGameState(result.effects);
-          }
-          
-          // Add result to command history
-          setCommandHistory(prev => [
-            ...prev,
-            {
-              text: result.message,
-              isOutput: true
-            }
-          ]);
         }
-      } catch (error) {
-        // Handle any errors
+        
+        // Add result to history
         setCommandHistory(prev => [
           ...prev,
           {
-            text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+            text: shellResult.message || '',
             isOutput: true
           }
         ]);
-      } finally {
-        setIsProcessing(false);
+      } else {
+        // Process adventure command with our pattern matching system
+        // Get the complete current state from the game store
+        const gameState = buildGameState();
+        
+        // Process the command
+        const result = processCommand(commandText, gameState);
+        
+        // Apply command effects if successful
+        if (result.success && result.effects) {
+          applyEffectsToGameState(result.effects);
+        }
+        
+        // Add result to command history
+        setCommandHistory(prev => [
+          ...prev,
+          {
+            text: result.message,
+            isOutput: true
+          }
+        ]);
       }
+    } catch (error) {
+      // Handle any errors
+      setCommandHistory(prev => [
+        ...prev,
+        {
+          text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+          isOutput: true
+        }
+      ]);
+    } finally {
+      setIsProcessing(false);
     }
   };
 

@@ -42,139 +42,80 @@ const GitGraphViewer: React.FC<GitGraphViewerProps> = ({ repoState, gitgraphRef 
   const localGitgraphRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Carrega o script GitgraphJS dinamicamente
-    const loadGitgraphJS = async () => {
+    const loadGitgraphJS = () => {
       if (!window.GitgraphJS) {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/@gitgraph/js';
-        script.async = true;
-        script.onload = () => {
-          renderGitGraph();
-        };
-        document.body.appendChild(script);
-      } else {
-        renderGitGraph();
+        return new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/@gitgraph/js';
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load GitgraphJS'));
+          document.body.appendChild(script);
+        });
       }
+      return Promise.resolve();
     };
 
-    // Renderiza o gráfico Git usando a biblioteca Gitgraph.js
-    const renderGitGraph = () => {
-      if (!window.GitgraphJS) {
-        console.error('Gitgraph.js não está carregado');
-        return;
-      }
-
-      // Usar a referência fornecida ou a referência local
-      const element = (gitgraphRef?.current || localGitgraphRef.current);
-      
-      if (!element) {
-        console.error('Elemento para renderizar Gitgraph não encontrado');
-        return;
-      }
-
-      // Limpar conteúdo antes de renderizar
-      element.innerHTML = '';
-
+    const initializeGraph = async () => {
       try {
-        // Criar gráfico Git com opções personalizadas
+        await loadGitgraphJS();
+        if (!containerRef.current) return;
+        const element = localGitgraphRef.current;
+        if (!element) return;
+
+        // Clear previous content
+        element.innerHTML = '';
+
+        if (repoState.commits.length === 0) {
+          element.innerHTML = `<div class="gitgraph-empty">Repositório vazio</div>`;
+          return;
+        }
+
         const gitgraph = window.GitgraphJS.createGitgraph(element, {
-          author: 'Jogador <player@gitadventure.com>',
+          author: 'Player <player@gitadventure.com>',
           template: {
-            colors: ['#6963FF', '#47E8D4', '#6BDB52', '#E84BA5', '#FFA657'],
+            colors: ['#979797'],
             branch: {
-              lineWidth: 3,
-              spacing: 40,
+              lineWidth: 2,
+              spacing: 20,
               label: {
-                font: 'normal 12pt Arial',
-                color: '#333'
+                font: 'normal 10px sans-serif',
+                bgColor: '#f1f8ff'
               }
             },
             commit: {
-              spacing: 50,
-              dot: {
-                size: 8,
-                strokeWidth: 2
-              },
+              spacing: 30,
               message: {
-                font: 'normal 11pt Arial',
-                color: '#444'
+                font: 'normal 10px sans-serif'
               }
             }
           }
         });
 
-        // Se não houver commits, mostrar um commit inicial exemplo
-        if (repoState.commits.length === 0) {
-          const mainBranch = gitgraph.branch('main');
-          mainBranch.commit('Commit inicial será mostrado aqui');
-          return;
-        }
+        // Create branches and commits
+        const branches = new Map();
 
-        // Mapear branches para objetos Gitgraph
-        const gitgraphBranches: Record<string, GitgraphBranch> = {};
-        
-        // Criar todos os branches primeiro
-        repoState.branches.forEach((branch: GitBranch) => {
-          gitgraphBranches[branch.name] = gitgraph.branch(branch.name);
+        repoState.branches.forEach(branch => {
+          branches.set(branch.name, gitgraph.branch(branch.name));
         });
 
-        // Cria o branch main se não existir
-        if (!gitgraphBranches['main']) {
-          gitgraphBranches['main'] = gitgraph.branch('main');
-        }
-
-        // Ordenar commits por data para exibir na ordem correta
-        const sortedCommits = [...repoState.commits].sort(
-          (a: GitCommit, b: GitCommit) => new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
-        
-        // Renderizar commits
-        sortedCommits.forEach((commit: GitCommit) => {
-          // Obter ou criar o branch correto para o commit
-          const branch = gitgraphBranches[commit.branch] || gitgraphBranches['main'];
-          
-          // Verificar se é um merge commit (mais de um parent)
-          if (commit.parents.length > 1) {
-            // Identificar o branch de origem do merge
-            const sourceCommit = repoState.commits.find(c => c.id === commit.parents[1]);
-            const sourceBranchName = sourceCommit?.branch;
-
-            if (sourceBranchName && gitgraphBranches[sourceBranchName]) {
-              // Realizar o merge
-              branch.merge({
-                branch: gitgraphBranches[sourceBranchName],
-                commitOptions: {
-                  subject: commit.message,
-                  author: commit.author,
-                  hash: commit.id.substring(0, 7)
-                }
-              });
-            } else {
-              // Fallback para commit normal se não encontrar o branch de origem
-              branch.commit({
-                subject: `${commit.message} (merge)`,
-                author: commit.author,
-                hash: commit.id.substring(0, 7)
-              });
-            }
-          } else {
-            // Commit normal
+        repoState.commits.forEach(commit => {
+          const branch = branches.get(commit.branch);
+          if (branch) {
             branch.commit({
-              subject: commit.message,
-              author: commit.author,
               hash: commit.id.substring(0, 7)
             });
           }
         });
       } catch (error) {
-        console.error('Erro ao renderizar GitGraph:', error);
-        if (element) {
-          element.innerHTML = `<div class="gitgraph-error">Erro ao renderizar o gráfico: ${error}</div>`;
+        console.error('Error rendering GitGraph:', error);
+        if (localGitgraphRef.current) {
+          localGitgraphRef.current.innerHTML = `<div class="gitgraph-error">Error rendering graph: ${error instanceof Error ? error.message : 'Unknown error'}</div>`;
         }
       }
     };
 
-    loadGitgraphJS();
+    void initializeGraph();
   }, [repoState, gitgraphRef]);
 
   return (

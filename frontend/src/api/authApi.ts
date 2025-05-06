@@ -1,5 +1,4 @@
 import apiClient from '../services/apiClient';
-import axios from 'axios'; // Keep for isAxiosError if needed, or remove if interceptor handles all
 import { ApiResponse } from '../types/api'; // Assuming ApiResponse is defined in types/api
 
 // Interface para o usuário

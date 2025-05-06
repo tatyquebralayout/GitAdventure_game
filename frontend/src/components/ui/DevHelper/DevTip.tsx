@@ -22,7 +22,12 @@ const DevTip: React.FC<DevTipProps> = ({
 
   return (
     <div className="dev-tip-container">
-      <div className="dev-tip-badge" onClick={() => setShowTip(!showTip)}>
+      <div 
+        className="dev-tip-badge" 
+        onClick={() => {
+          setShowTip(!showTip);
+        }}
+      >
         ?
       </div>
       
@@ -35,7 +40,9 @@ const DevTip: React.FC<DevTipProps> = ({
           </div>
           <button 
             className="dev-tip-close" 
-            onClick={() => setShowTip(false)}
+            onClick={() => {
+              setShowTip(false);
+            }}
           >
             Fechar
           </button>
@@ -47,4 +54,4 @@ const DevTip: React.FC<DevTipProps> = ({
   );
 };
 
-export default DevTip; 
+export default DevTip;

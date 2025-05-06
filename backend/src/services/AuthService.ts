@@ -79,7 +79,7 @@ export class AuthService {
     await this.saveUserTokens(user.id, accessToken, refreshToken);
 
     // Retornar resposta sem a senha
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _unused, ...userWithoutPassword } = user;
     return {
       accessToken,
       refreshToken,
@@ -115,14 +115,14 @@ export class AuthService {
       await this.tokenRepository.save(userToken);
 
       // Retornar resposta
-      const { password: _password, ...userWithoutPassword } = userToken.user;
+      const { password: _unused, ...userWithoutPassword } = userToken.user;
       
       return {
         accessToken,
         refreshToken: newRefreshToken,
         user: userWithoutPassword
       };
-    } catch (_error) {
+    } catch {
       throw new Error('Erro ao renovar token');
     }
   }
@@ -147,7 +147,7 @@ export class AuthService {
     }
 
     // Retornar usuário sem a senha
-    const { password, ...userWithoutPassword } = user;
+    const { password: _unused, ...userWithoutPassword } = user;
     return userWithoutPassword as Omit<User, 'password'>;
   }
 

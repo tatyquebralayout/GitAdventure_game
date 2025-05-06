@@ -17,14 +17,18 @@ const VisualizationToggle: React.FC<VisualizationToggleProps> = ({
       <div className="toggle-container">
         <button
           className={`toggle-button ${viewMode === 'gitgraph' ? 'active' : ''}`}
-          onClick={() => onToggle('gitgraph')}
+          onClick={() => {
+            onToggle('gitgraph');
+          }}
           title="Visualização em gráfico"
         >
           Gráfico
         </button>
         <button
           className={`toggle-button ${viewMode === 'mermaid' ? 'active' : ''}`}
-          onClick={() => onToggle('mermaid')}
+          onClick={() => {
+            onToggle('mermaid');
+          }}
           title="Visualização em diagrama"
         >
           Diagrama
