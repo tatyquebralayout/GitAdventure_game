@@ -1,168 +1,139 @@
 import { AppDataSource } from '../config/database';
 import { QuestCommandStep } from '../entities/QuestCommandStep';
-import { UserProgress } from '../entities/UserProgress';
-import { AppError } from '../utils/AppError';
-import { FindOperator, MoreThanOrEqual } from 'typeorm';
-import { BaseService } from './baseService';
+import { PlayerQuestStep } from '../entities/PlayerQuestStep';
+import { StepStatus } from '../../../shared/types/enums';
 import { inject, injectable } from 'tsyringe';
 import { GitCommandParser } from './GitCommandParser';
-import { StepStatus } from '../../../shared/types/enums';
+import { CacheService } from './CacheService';
+import { LoggerService } from './LoggerService';
 
-// Request DTO para validação de comando
-export interface ValidateCommandRequestDto {
-  command: string;
-  questId: string;
-  currentStep?: number;
-  userId?: string;
+interface ValidationResult {
+  success: boolean;
+  message: string;
+  matches?: string[];
 }
 
-// Response DTO para validação de comando
-export interface ValidateCommandResponseDto {
-  valid: boolean;
+interface StepValidationInput {
+  questId: string;
+  stepId: string;
+  command: string;
+  step: Partial<QuestCommandStep>;
+}
+
+interface StepValidationResult {
+  success: boolean;
   message: string;
-  nextStep?: number;
-  commandName?: string;
-  isQuestCompleted?: boolean;
-  details?: {
-    score?: number;
-    timeSpent?: number;
-    attempts?: number;
-  };
+  step: PlayerQuestStep | null;
 }
 
 @injectable()
-export class CommandValidationService extends BaseService {
+export class CommandValidationService {
   constructor(
-    @inject(GitCommandParser) private gitParser: GitCommandParser
-  ) {
-    super();
-  }
-
-  private readonly userProgressRepository = AppDataSource.getRepository(UserProgress);
-  private readonly questStepRepository = AppDataSource.getRepository(QuestCommandStep);
-
-  // Validar um comando de Git
-  public async validateCommand(data: ValidateCommandRequestDto): Promise<ValidateCommandResponseDto> {
-    const { command, questId, currentStep = 1, userId } = data;
+    @inject(GitCommandParser)
+    private gitParser: GitCommandParser,
     
+    @inject(CacheService)
+    private cacheService: CacheService,
+    
+    @inject(LoggerService)
+    private logger: LoggerService
+  ) {}
+
+  async validateCommand(
+    command: string, 
+    expectedPattern: string,
+    ignoreFlags: boolean = false
+  ): Promise<ValidationResult> {
     try {
-      // Parse e validação sintática do comando
-      const parsedCommand = await this.gitParser.parseCommand(command);
-      if (!parsedCommand.isValid) {
-        return {
-          valid: false,
-          message: 'Invalid Git command syntax'
-        };
-      }
-
-      // Buscar o passo atual
-      const currentStepData = await this.questStepRepository.findOneOrFail({
-        where: { questId, stepNumber: currentStep }
-      });
-
-      // Validar se o comando corresponde ao esperado
-      const commandRegex = new RegExp(currentStepData.commandRegex);
-      if (!commandRegex.test(command)) {
-        return {
-          valid: false,
-          message: `Invalid command. Expected: ${currentStepData.description}`,
-          commandName: currentStepData.commandName
-        };
-      }
-
-      // Validação semântica do comando Git
-      const semanticResult = await this.gitParser.validateSemantics(parsedCommand);
-      if (!semanticResult.isValid) {
-        return {
-          valid: false,
-          message: semanticResult.message || 'Invalid command semantics',
-          commandName: currentStepData.commandName
-        };
-      }
-
-      // Buscar próximo passo
-      const nextStep = await this.questStepRepository.findOne({
-        where: { questId, stepNumber: currentStep + 1 }
-      });
-
-      // Atualizar progresso se houver userId
-      if (userId) {
-        const progress = await this.updateProgress(userId, questId, currentStep, !nextStep);
-        
-        return {
-          valid: true,
-          message: currentStepData.successMessage,
-          nextStep: nextStep?.stepNumber,
-          commandName: currentStepData.commandName,
-          isQuestCompleted: !nextStep,
-          details: {
-            score: progress.score,
-            timeSpent: progress.timeSpent,
-            attempts: progress.attempts
-          }
-        };
-      }
+      const validationResult = await this.gitParser.validateCommandAgainstPattern(
+        command,
+        expectedPattern,
+        ignoreFlags
+      );
 
       return {
-        valid: true,
-        message: currentStepData.successMessage,
-        nextStep: nextStep?.stepNumber,
-        commandName: currentStepData.commandName,
-        isQuestCompleted: !nextStep
+        success: validationResult.isValid,
+        message: validationResult.message || 
+          (validationResult.isValid ? 'Comando válido' : 'Comando inválido'),
+        matches: validationResult.matches
+      };
+    } catch (error) {
+      this.logger.error('Erro ao validar comando', error);
+      return {
+        success: false,
+        message: 'Ocorreu um erro ao validar o comando'
+      };
+    }
+  }
+
+  async validateQuestStep(input: StepValidationInput): Promise<StepValidationResult> {
+    const { questId, stepId, command, step } = input;
+
+    // Cria o progresso do passo
+    const stepProgress = new PlayerQuestStep();
+    stepProgress.id = `${questId}-${stepId}-${Date.now()}`;
+    stepProgress.startTime = new Date();
+    stepProgress.attempts = 1;
+    stepProgress.timeSpent = 0;
+    stepProgress.score = 0;
+    stepProgress.bonusPoints = 0;
+
+    try {
+      const validationResult = await this.gitParser.validateCommandAgainstPattern(
+        command,
+        step.expectedPattern || ''
+      );
+
+      if (validationResult.isValid) {
+        stepProgress.status = StepStatus.COMPLETED;
+        stepProgress.score = 100;
+        stepProgress.executedAt = new Date();
+        
+        // Bônus se o comando for exatamente igual ao esperado
+        if (command === step.commandName) {
+          stepProgress.bonusPoints = 50;
+        }
+
+        return {
+          success: true,
+          message: 'Passo completado com sucesso!',
+          step: stepProgress
+        };
+      }
+
+      // Se o passo for opcional, marca como pulado
+      if (step.isOptional) {
+        stepProgress.status = StepStatus.SKIPPED;
+        return {
+          success: true,
+          message: 'Passo opcional pulado',
+          step: stepProgress
+        };
+      }
+
+      // Caso o comando seja inválido
+      stepProgress.status = StepStatus.FAILED;
+      stepProgress.failedAttempts = [{
+        command,
+        timestamp: new Date(),
+        error: validationResult.message
+      }];
+
+      return {
+        success: false,
+        message: validationResult.message || 'Comando inválido',
+        step: stepProgress
       };
 
     } catch (error) {
-      throw new AppError(
-        error instanceof Error ? error.message : 'Failed to validate command',
-        400
-      );
+      this.logger.error('Erro ao validar passo da quest', error);
+      
+      stepProgress.status = StepStatus.FAILED;
+      return {
+        success: false,
+        message: 'Erro ao validar o comando',
+        step: stepProgress
+      };
     }
-  }
-
-  private async updateProgress(
-    userId: string,
-    questId: string,
-    currentStep: number,
-    isCompleted: boolean
-  ): Promise<{ score: number; timeSpent: number; attempts: number }> {
-    const progress = await this.userProgressRepository.findOne({
-      where: { userId, questId }
-    });
-
-    const now = new Date();
-    const timeSpent = progress?.startTime 
-      ? Math.floor((now.getTime() - progress.startTime.getTime()) / 1000)
-      : 0;
-
-    const attempts = (progress?.attempts || 0) + 1;
-    const baseScore = 100;
-    const timeBonus = Math.max(0, 50 - Math.floor(timeSpent / 60)); // Bônus por completar rápido
-    const attemptsBonus = Math.max(0, 50 - (attempts - 1) * 10); // Bônus por menos tentativas
-    const score = baseScore + timeBonus + attemptsBonus;
-
-    const newProgress = progress || this.userProgressRepository.create({
-      userId,
-      questId,
-      currentStep: 1,
-      startTime: now
-    });
-
-    newProgress.currentStep = currentStep;
-    newProgress.isCompleted = isCompleted;
-    newProgress.timeSpent = (newProgress.timeSpent || 0) + timeSpent;
-    newProgress.attempts = attempts;
-    newProgress.score = (newProgress.score || 0) + score;
-    
-    if (isCompleted) {
-      newProgress.completedAt = now;
-    }
-
-    await this.userProgressRepository.save(newProgress);
-
-    return {
-      score,
-      timeSpent,
-      attempts
-    };
   }
 }

@@ -1,158 +1,150 @@
 import { CommandValidationService } from '../../services/CommandValidationService';
 import { GitCommandParser } from '../../services/GitCommandParser';
-import { QuestService } from '../../services/QuestService';
-import { container } from '../../config/container';
-import { AppError } from '../../utils/AppError';
-import { Quest } from '../../entities/Quest';
-import { QuestCommandStep } from '../../entities/QuestCommandStep';
-import { StepStatus } from '../../types/enums';
+import { CacheService } from '../../services/CacheService';
+import { LoggerService } from '../../services/LoggerService';
+import { StepStatus } from '../../../shared/types/enums';
+import { mock } from 'jest-mock-extended';
 
 jest.mock('../../services/GitCommandParser');
-jest.mock('../../services/QuestService');
+jest.mock('../../services/CacheService');
+jest.mock('../../services/LoggerService');
 
 describe('CommandValidationService', () => {
   let service: CommandValidationService;
   let mockGitParser: jest.Mocked<GitCommandParser>;
-  let mockQuestService: jest.Mocked<QuestService>;
+  let mockCache: jest.Mocked<CacheService>;
+  let mockLogger: jest.Mocked<LoggerService>;
 
   beforeEach(() => {
-    mockGitParser = {
-      parseCommand: jest.fn(),
-      validateSemantics: jest.fn()
-    } as any;
+    mockGitParser = mock<GitCommandParser>();
+    mockCache = mock<CacheService>();
+    mockLogger = mock<LoggerService>();
 
-    mockQuestService = {
-      getQuestById: jest.fn(),
-      getQuestCommandSteps: jest.fn(),
-      completeQuestStep: jest.fn()
-    } as any;
+    service = new CommandValidationService(
+      mockGitParser,
+      mockCache,
+      mockLogger
+    );
+  });
 
-    container.registerInstance('GitCommandParser', mockGitParser);
-    container.registerInstance('QuestService', mockQuestService);
-
-    service = container.resolve(CommandValidationService);
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('validateCommand', () => {
-    const mockRequest = {
-      command: 'git init',
-      questId: '123',
-      currentStep: 1,
-      userId: 'user123'
+    it('should validate a correct command', async () => {
+      const command = 'git init';
+      const expectedPattern = '^git init$';
+      
+      mockGitParser.validateCommandAgainstPattern.mockResolvedValue({
+        isValid: true,
+        message: 'Comando válido',
+        matches: []
+      });
+
+      const result = await service.validateCommand(command, expectedPattern);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('válido');
+      expect(mockGitParser.validateCommandAgainstPattern)
+        .toHaveBeenCalledWith(command, expectedPattern, expect.any(Boolean));
+    });
+
+    it('should reject an invalid command', async () => {
+      const command = 'git wrong';
+      const expectedPattern = '^git init$';
+
+      mockGitParser.validateCommandAgainstPattern.mockResolvedValue({
+        isValid: false,
+        message: 'Comando não corresponde ao padrão esperado'
+      });
+
+      const result = await service.validateCommand(command, expectedPattern);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('não corresponde');
+    });
+
+    it('should handle validation errors', async () => {
+      const command = 'git init';
+      const expectedPattern = '^git init$';
+
+      mockGitParser.validateCommandAgainstPattern.mockRejectedValue(
+        new Error('Validation error')
+      );
+
+      const result = await service.validateCommand(command, expectedPattern);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('erro');
+      expect(mockLogger.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('validateQuestStep', () => {
+    const mockStep = {
+      id: 'step1',
+      commandName: 'git init',
+      expectedPattern: '^git init$',
+      description: 'Initialize repository',
+      isOptional: false,
+      hint: 'Use git init to start'
     };
 
-    it('should validate a correct command for current step', async () => {
-      mockGitParser.parseCommand.mockResolvedValue({
-        action: 'init',
-        args: [],
-        rawCommand: 'git init',
-        isValid: true
-      });
-
-      mockGitParser.validateSemantics.mockResolvedValue({
+    it('should validate correct step completion', async () => {
+      mockGitParser.validateCommandAgainstPattern.mockResolvedValue({
         isValid: true,
-        message: ''
+        message: 'Comando válido'
       });
 
-      const mockQuest = new Quest();
-      mockQuest.id = '123';
-      mockQuest.title = 'Test Quest';
-      mockQuestService.getQuestById.mockResolvedValue(mockQuest);
-
-      const mockStep = new QuestCommandStep();
-      mockStep.id = 'step1';
-      mockStep.stepNumber = 1;
-      mockStep.expectedCommand = 'init';
-      mockStep.commandRegex = '^git init$';
-      mockStep.successMessage = 'Great job!';
-      
-      mockQuestService.getQuestCommandSteps.mockResolvedValue([mockStep]);
-
-      mockQuestService.completeQuestStep.mockResolvedValue({
-        isComplete: true,
-        message: 'Step completed',
-        stepResult: {
-          status: StepStatus.COMPLETED,
-          score: 100
-        }
+      const result = await service.validateQuestStep({
+        questId: 'quest1',
+        stepId: 'step1',
+        command: 'git init',
+        step: mockStep
       });
 
-      const result = await service.validateCommand(mockRequest);
-
-      expect(result.isComplete).toBe(true);
-      expect(result.message).toBe('Step completed');
-      expect(mockQuestService.completeQuestStep).toHaveBeenCalled();
+      expect(result.success).toBe(true);
+      expect(result.step?.status).toBe(StepStatus.COMPLETED);
     });
 
-    it('should reject invalid git commands', async () => {
-      mockGitParser.parseCommand.mockRejectedValue(new Error('Not a git command'));
-
-      await expect(service.validateCommand(mockRequest))
-        .rejects
-        .toThrow(AppError);
-    });
-
-    it('should reject commands that fail semantic validation', async () => {
-      mockGitParser.parseCommand.mockResolvedValue({
-        action: 'commit',
-        args: [],
-        rawCommand: 'git commit',
-        isValid: true
-      });
-
-      mockGitParser.validateSemantics.mockResolvedValue({
+    it('should handle failed step validation', async () => {
+      mockGitParser.validateCommandAgainstPattern.mockResolvedValue({
         isValid: false,
-        message: 'Commit message required'
+        message: 'Comando inválido'
       });
 
-      await expect(service.validateCommand(mockRequest))
-        .rejects
-        .toThrow(AppError);
+      const result = await service.validateQuestStep({
+        questId: 'quest1',
+        stepId: 'step1',
+        command: 'git wrong',
+        step: mockStep
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.step?.status).toBe(StepStatus.FAILED);
     });
 
-    it('should handle non-existent quests', async () => {
-      mockGitParser.parseCommand.mockResolvedValue({
-        action: 'init',
-        args: [],
-        rawCommand: 'git init',
-        isValid: true
+    it('should handle optional steps', async () => {
+      const optionalStep = {
+        ...mockStep,
+        isOptional: true
+      };
+
+      mockGitParser.validateCommandAgainstPattern.mockResolvedValue({
+        isValid: false,
+        message: 'Comando inválido'
       });
 
-      mockQuestService.getQuestById.mockResolvedValue(null);
-
-      await expect(service.validateCommand(mockRequest))
-        .rejects
-        .toThrow('Quest not found');
-    });
-
-    it('should validate quest step order', async () => {
-      mockGitParser.parseCommand.mockResolvedValue({
-        action: 'add',
-        args: ['.'],
-        rawCommand: 'git add .',
-        isValid: true
+      const result = await service.validateQuestStep({
+        questId: 'quest1',
+        stepId: 'step1',
+        command: 'git wrong',
+        step: optionalStep
       });
 
-      const mockStep1 = new QuestCommandStep();
-      mockStep1.id = 'step1';
-      mockStep1.stepNumber = 1;
-      mockStep1.expectedCommand = 'init';
-      mockStep1.commandRegex = '^git init$';
-
-      const mockStep2 = new QuestCommandStep();
-      mockStep2.id = 'step2';
-      mockStep2.stepNumber = 2;
-      mockStep2.expectedCommand = 'add';
-      mockStep2.commandRegex = '^git add';
-
-      mockQuestService.getQuestCommandSteps.mockResolvedValue([mockStep1, mockStep2]);
-
-      await expect(service.validateCommand({
-        ...mockRequest,
-        currentStep: 1
-      }))
-        .rejects
-        .toThrow('Invalid step command');
+      expect(result.success).toBe(true);
+      expect(result.step?.status).toBe(StepStatus.SKIPPED);
     });
   });
 });

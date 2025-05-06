@@ -1,123 +1,109 @@
 import { CacheService } from '../../services/CacheService';
 import Redis from 'ioredis';
-import { mockDeep } from 'jest-mock-extended';
+import { mock, MockProxy } from 'jest-mock-extended';
 
-jest.mock('ioredis', () => {
-  return jest.fn().mockImplementation(() => mockDeep<Redis>());
-});
+jest.mock('ioredis');
 
 describe('CacheService', () => {
   let cacheService: CacheService;
-  let mockRedis: jest.Mocked<Redis>;
+  let mockRedis: MockProxy<Redis>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    mockRedis = mock<Redis>();
+    // @ts-ignore
+    Redis.mockImplementation(() => mockRedis);
     cacheService = new CacheService();
-    mockRedis = new Redis() as jest.Mocked<Redis>;
-    (cacheService as any).redis = mockRedis;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('get', () => {
-    it('should return parsed data when key exists', async () => {
-      const mockData = { id: 1, name: 'test' };
-      mockRedis.get.mockResolvedValue(JSON.stringify(mockData));
+    it('should get value from cache', async () => {
+      const key = 'test-key';
+      const value = 'test-value';
+      mockRedis.get.mockResolvedValue(value);
 
-      const result = await cacheService.get('test-key');
-      expect(result).toEqual(mockData);
-      expect(mockRedis.get).toHaveBeenCalledWith('test-key');
+      const result = await cacheService.get(key);
+      expect(result).toBe(value);
+      expect(mockRedis.get).toHaveBeenCalledWith(key);
     });
 
-    it('should return null when key does not exist', async () => {
+    it('should return null for non-existent key', async () => {
       mockRedis.get.mockResolvedValue(null);
 
-      const result = await cacheService.get('non-existent-key');
+      const result = await cacheService.get('non-existent');
       expect(result).toBeNull();
     });
   });
 
   describe('set', () => {
-    it('should set cache with default expiration', async () => {
-      const value = { data: 'test' };
-      await cacheService.set('test-key', value);
+    it('should set value without TTL', async () => {
+      const key = 'test-key';
+      const value = 'test-value';
+      mockRedis.set.mockResolvedValue('OK');
 
-      expect(mockRedis.set).toHaveBeenCalledWith(
-        'test-key',
-        JSON.stringify(value),
-        'EX',
-        3600
-      );
+      await cacheService.set(key, value);
+      expect(mockRedis.set).toHaveBeenCalledWith(key, value);
     });
 
-    it('should set cache with custom expiration', async () => {
-      const value = { data: 'test' };
-      const customExpiration = 1800;
-      
-      await cacheService.set('test-key', value, customExpiration);
+    it('should set value with TTL', async () => {
+      const key = 'test-key';
+      const value = 'test-value';
+      const ttl = 3600;
+      mockRedis.setex.mockResolvedValue('OK');
 
-      expect(mockRedis.set).toHaveBeenCalledWith(
-        'test-key',
-        JSON.stringify(value),
-        'EX',
-        customExpiration
-      );
+      await cacheService.set(key, value, ttl);
+      expect(mockRedis.setex).toHaveBeenCalledWith(key, ttl, value);
     });
   });
 
-  describe('del', () => {
-    it('should delete cache key', async () => {
-      await cacheService.del('test-key');
-      expect(mockRedis.del).toHaveBeenCalledWith('test-key');
+  describe('delete', () => {
+    it('should delete key from cache', async () => {
+      const key = 'test-key';
+      mockRedis.del.mockResolvedValue(1);
+
+      await cacheService.delete(key);
+      expect(mockRedis.del).toHaveBeenCalledWith(key);
     });
   });
 
-  describe('invalidatePattern', () => {
-    it('should delete multiple keys matching pattern', async () => {
-      const mockKeys = ['key1', 'key2', 'key3'];
-      mockRedis.keys.mockResolvedValue(mockKeys);
+  describe('getObject', () => {
+    it('should get and parse JSON object', async () => {
+      const key = 'test-key';
+      const obj = { name: 'test', value: 123 };
+      mockRedis.get.mockResolvedValue(JSON.stringify(obj));
 
-      await cacheService.invalidatePattern('test*');
-
-      expect(mockRedis.keys).toHaveBeenCalledWith('test*');
-      expect(mockRedis.del).toHaveBeenCalledWith(...mockKeys);
+      const result = await cacheService.getObject(key);
+      expect(result).toEqual(obj);
     });
 
-    it('should not call del if no keys match pattern', async () => {
-      mockRedis.keys.mockResolvedValue([]);
-
-      await cacheService.invalidatePattern('test*');
-
-      expect(mockRedis.keys).toHaveBeenCalledWith('test*');
-      expect(mockRedis.del).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('getOrSet', () => {
-    it('should return cached data if it exists', async () => {
-      const cachedData = { id: 1, name: 'cached' };
-      mockRedis.get.mockResolvedValue(JSON.stringify(cachedData));
-
-      const callback = jest.fn();
-      const result = await cacheService.getOrSet('test-key', callback);
-
-      expect(result).toEqual(cachedData);
-      expect(callback).not.toHaveBeenCalled();
-    });
-
-    it('should call callback and cache result if no cached data exists', async () => {
-      const newData = { id: 2, name: 'new' };
+    it('should return null for non-existent object', async () => {
       mockRedis.get.mockResolvedValue(null);
-      const callback = jest.fn().mockResolvedValue(newData);
 
-      const result = await cacheService.getOrSet('test-key', callback);
+      const result = await cacheService.getObject('non-existent');
+      expect(result).toBeNull();
+    });
+  });
 
-      expect(result).toEqual(newData);
-      expect(callback).toHaveBeenCalled();
-      expect(mockRedis.set).toHaveBeenCalledWith(
-        'test-key',
-        JSON.stringify(newData),
-        'EX',
-        3600
-      );
+  describe('increment/decrement', () => {
+    it('should increment value', async () => {
+      const key = 'counter';
+      mockRedis.incr.mockResolvedValue(1);
+
+      const result = await cacheService.increment(key);
+      expect(result).toBe(1);
+      expect(mockRedis.incr).toHaveBeenCalledWith(key);
+    });
+
+    it('should decrement value', async () => {
+      const key = 'counter';
+      mockRedis.decr.mockResolvedValue(0);
+
+      const result = await cacheService.decrement(key);
+      expect(result).toBe(0);
+      expect(mockRedis.decr).toHaveBeenCalledWith(key);
     });
   });
 });
