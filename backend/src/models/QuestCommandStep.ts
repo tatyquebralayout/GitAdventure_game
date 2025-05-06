@@ -1,7 +1,7 @@
 // Model for the quest_command_steps table
 export interface QuestCommandStep {
-  id: number;
-  questId: number;
+  id: string;
+  questId: string;
   stepNumber: number;
   commandName: string;
   commandRegex: string;
@@ -14,7 +14,7 @@ export interface QuestCommandStep {
 
 // DTO for creating a new quest command step
 export interface CreateQuestCommandStepDto {
-  questId: number;
+  questId: string;
   stepNumber: number;
   commandName: string;
   commandRegex: string;

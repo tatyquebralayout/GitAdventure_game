@@ -4,14 +4,14 @@ import { Quest } from "./Quest";
 
 @Entity("user_progress")
 export class UserProgress {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
   @Column({ name: "user_id" })
   userId!: string;
 
   @Column({ name: "quest_id" })
-  questId!: number;
+  questId!: string;
 
   @Column({ name: "current_step", default: 1 })
   currentStep!: number;
