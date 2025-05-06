@@ -26,16 +26,15 @@ const LoadingPlaceholder = () => (
 // Define the main App with routing
 export default function App() {
   return (
-    <BrowserRouter>
-      {/* Wrap everything that might suspend in Suspense */}
-      <Suspense fallback={<LoadingPlaceholder />}>
-        <div className="app-container">
-          <div className="header">
-            <Header />
-          </div>
-          
-          {/* Context provider should wrap the routes that use it */}
-          <GitRepositoryProvider>
+    <GitRepositoryProvider>
+      <BrowserRouter>
+        {/* Wrap everything that might suspend in Suspense */}
+        <Suspense fallback={<LoadingPlaceholder />}>
+          <div className="app-container">
+            <div className="header">
+              <Header />
+            </div>
+            
             <Routes>
               {/* Página inicial redireciona para mundos */}
               <Route path="/" element={<Navigate to="/worlds" replace />} />
@@ -73,13 +72,13 @@ export default function App() {
                 }
               />
             </Routes>
-          </GitRepositoryProvider>
-          
-          <div className="footer">
-            <Footer />
+            
+            <div className="footer">
+              <Footer />
+            </div>
           </div>
-        </div>
-      </Suspense>
-    </BrowserRouter>
+        </Suspense>
+      </BrowserRouter>
+    </GitRepositoryProvider>
   );
 }
