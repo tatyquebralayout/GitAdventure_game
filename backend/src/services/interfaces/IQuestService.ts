@@ -3,10 +3,11 @@ import { QuestCommandStep } from '../../entities/QuestCommandStep';
 import { PlayerQuestStep } from '../../entities/PlayerQuestStep';
 import { QuestStatus } from '../../../shared/types/enums';
 
-export interface CommandValidationResult {
-  isValid: boolean;
-  message: string;
-  step?: QuestCommandStep;
+export interface QuestStepResult {
+  stepResult: PlayerQuestStep;
+  isComplete: boolean;
+  score: number;
+  bonusPoints?: number;
 }
 
 export interface QuestProgressUpdate {
@@ -15,13 +16,6 @@ export interface QuestProgressUpdate {
   status: QuestStatus;
   completedSteps: number;
   totalSteps: number;
-}
-
-export interface QuestStepResult {
-  stepResult: PlayerQuestStep;
-  isComplete: boolean;
-  score: number;
-  bonusPoints?: number;
 }
 
 export interface IQuestService {
@@ -43,12 +37,12 @@ export interface IQuestService {
   /**
    * Complete a quest step
    */
-  completeQuestStep(data: {
-    questId: string;
-    stepId: string;
-    userId: string;
-    command: string;
-  }): Promise<QuestStepResult>;
+  completeQuestStep(
+    questId: string,
+    stepId: string, 
+    userId: string,
+    command: string
+  ): Promise<QuestStepResult>;
 
   /**
    * Check if a quest is complete

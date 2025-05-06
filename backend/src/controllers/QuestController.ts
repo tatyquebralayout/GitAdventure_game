@@ -75,7 +75,7 @@ export class QuestController {
         throw new AppError('Command is required', 400);
       }
 
-      const result = await this.questService.completeQuestStep(userId, questId, stepId, command);
+      const result = await this.questService.completeQuestStep(questId, stepId, userId, command);
       res.json({ success: true, result });
     } catch (error) {
       next(error);

@@ -44,12 +44,7 @@ export const QuestTestHelpers = {
     command: string
   ) {
     const questService = TestUtils.getMockService<IQuestService>(SERVICE_TOKENS.QUEST_SERVICE);
-    return questService.completeQuestStep({
-      questId,
-      stepId,
-      userId,
-      command
-    });
+    return questService.completeQuestStep(questId, stepId, userId, command);
   }
 };
 

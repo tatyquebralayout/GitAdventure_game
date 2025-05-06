@@ -92,15 +92,9 @@ export class MockQuestService extends BaseMockService implements IQuestService {
     return this.createMockResponse(progress, 'startQuest');
   }
 
-  async completeQuestStep(data: {
-    questId: string;
-    stepId: string;
-    userId: string;
-    command: string;
-  }): Promise<QuestStepResult> {
+  async completeQuestStep(questId: string, stepId: string, userId: string, command: string): Promise<QuestStepResult> {
     await this.simulateDelay();
 
-    const { questId, stepId, userId, command } = data;
     const step = MockValidators.validateResourceExists(
       this.questSteps.get(stepId),
       'Quest step',
