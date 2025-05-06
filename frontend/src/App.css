@@ -1,0 +1,159 @@
+/* Reset e estilos básicos */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.4;
+  background-color: #f5f5f5;
+}
+
+/* Container principal do aplicativo */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 98%;
+  margin: 0 auto; 
+  padding: 10px; /* Reduzido de 20px */
+}
+
+/* Estilos do cabeçalho */
+.header {
+  background-color: #f8f9fa;
+  padding: 10px; /* Reduzido de 20px */
+  margin-bottom: 15px; /* Reduzido de 24px */
+  border-bottom: 1px solid #dee2e6;
+  text-align: center;
+  width: 100%;
+}
+
+/* Grid principal para o conteúdo */
+.content-grid {
+  display: flex;
+  flex: 1;
+  gap: 15px; /* Reduzido de 24px */
+  margin-bottom: 15px; /* Reduzido de 24px */
+  width: 100%;
+}
+
+/* Coluna esquerda (56% da largura) */
+.left-column {
+  flex: 56; /* Reduzido de 60 */
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Reduzido de 24px */
+}
+
+/* Coluna direita (44% da largura) */
+.right-column {
+  flex: 44; /* Aumentado de 40 para compensar redução da esquerda */
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Reduzido de 24px */
+}
+
+/* Áreas específicas */
+.dialog-area {
+  min-height: 120px; /* Reduzido de 140px */
+}
+
+.worldbuilding-area {
+  min-height: 220px; /* Reduzido de 260px */
+}
+
+.progress-area {
+  min-height: 60px; /* Reduzido de 80px */
+}
+
+.git-simulator-area {
+  min-height: 280px; /* Reduzido de 320px */
+}
+
+.terminal-simulator-area {
+  flex: 1;
+  min-height: 280px; /* Reduzido de 340px */
+  background-color: #222;
+  color: #0f0;
+  border-radius: 6px;
+}
+
+/* Estilos do rodapé */
+.footer {
+  background-color: #f8f9fa;
+  padding: 10px; /* Reduzido de 20px */
+  border-top: 1px solid #dee2e6;
+  text-align: center;
+  width: 100%;
+  margin-top: auto;
+}
+
+/* Estilo comum para cards */
+.card {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 12px; /* Reduzido de 20px */
+  height: 100%;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+
+/* Loading placeholder para componentes lazy loaded */
+.loading-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  background-color: #f5f5f5;
+  color: #666;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 1400px) {
+  /* Quando a tela for menor que 1400px, ajusta o max-width */
+  .app-container {
+    max-width: 99%;
+  }
+}
+
+@media (max-width: 1100px) {
+  .content-grid {
+    flex-direction: column;
+    gap: 12px; /* Reduzido de 20px */
+  }
+  
+  .left-column, .right-column {
+    width: 100%;
+  }
+  
+  /* Aumenta altura mínima do terminal em telas menores */
+  .terminal-simulator-area {
+    min-height: 320px; /* Reduzido de 380px */
+  }
+  
+  /* Aumenta altura mínima do git simulator em telas menores */
+  .git-simulator-area {
+    min-height: 320px; /* Reduzido de 360px */
+  }
+}
+
+@media (max-width: 600px) {
+  .app-container {
+    padding: 8px; /* Reduzido de 12px */
+    max-width: 100%; /* Usa toda a largura em telas muito pequenas */
+  }
+  
+  /* Garante que o terminal ainda tenha espaço suficiente mesmo em telas pequenas */
+  .terminal-simulator-area {
+    min-height: 320px; /* Reduzido de 400px */
+  }
+}

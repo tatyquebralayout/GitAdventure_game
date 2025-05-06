@@ -1,0 +1,62 @@
+# Dependências
+node_modules/
+.pnp
+.pnp.js
+
+# Arquivos de build
+dist/
+dist-ssr
+build
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testes
+coverage
+
+# Arquivos temporários de build
+.temp
+.tmp
+.cache
+
+# Vite
+.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE specific
+.vscode/
+.idea/
+
+# System files
+Thumbs.db
+
+# Monorepo-specific
+pnpm-lock.yaml
