@@ -1,10 +1,10 @@
 .progress-card {
-  height: 150px;
+  height: 300px;  /* Increased from 150px */
   display: flex;
   flex-direction: column;
   align-items: center;
   overflow-y: auto;
-  max-height: 150px;
+  max-height: 300px;  /* Also increased from 150px */
   padding: 8px;
 }
 
@@ -22,6 +22,33 @@
 }
 
 .progress-message {
-  padding: 5px;
   border-bottom: 1px solid #eee;
+  display: flex; /* Use flexbox for layout */
+  align-items: center; /* Vertically align items */
+  gap: 10px; /* Add space between elements */
+  padding: 8px 5px; /* Add new padding */
+}
+
+.progress-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+.progress-details {
+  flex-grow: 1; /* Allow details section to take available space */
+  display: flex;
+  flex-direction: column; /* Stack title/description if needed */
+}
+
+.progress-title {
+  font-weight: bold; /* Make title bold */
+}
+
+.progress-count {
+  font-size: 0.9em;
+  color: #555;
+  white-space: nowrap; /* Prevent count from wrapping */
+  margin-left: auto; /* Push count to the right */
+  padding-left: 10px; /* Add some space before the count */
 }
