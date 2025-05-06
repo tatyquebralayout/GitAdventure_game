@@ -16,7 +16,8 @@ interface GameState {
   reset: () => void;
 }
 
-export const useGame = create<GameState>((set, get) => ({
+// Renomeando para useGameStore para corresponder à importação em useGame.ts
+export const useGameStore = create<GameState>((set, get) => ({
   location: 'start',
   inventory: [],
   visitedLocations: new Set(['start']),
@@ -75,3 +76,6 @@ export const useGame = create<GameState>((set, get) => ({
     });
   },
 }));
+
+// Mantendo a exportação original como alias para compatibilidade com código existente que possa estar usando
+export const useGame = useGameStore;

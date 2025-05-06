@@ -11,7 +11,8 @@ interface FileSystemState {
   clear: () => void;
 }
 
-export const useFileSystem = create<FileSystemState>((set, get) => ({
+// Renomeando para useFileSystemStore para corresponder à importação em shellCommands.ts
+export const useFileSystemStore = create<FileSystemState>((set, get) => ({
   files: {},
   currentDirectory: '/',
   
@@ -56,3 +57,6 @@ export const useFileSystem = create<FileSystemState>((set, get) => ({
     set({ files: {}, currentDirectory: '/' });
   },
 }));
+
+// Mantendo a exportação original como alias para compatibilidade com código existente que possa estar usando
+export const useFileSystem = useFileSystemStore;

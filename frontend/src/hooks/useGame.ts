@@ -3,19 +3,19 @@ import { useCallback } from 'react';
 
 // Versão modificada do hook para evitar loops infinitos de renderização
 export const useGame = () => {
-  const location = useGameStore(state => state.currentLocation);
+  const location = useGameStore(state => state.location); // Changed from currentLocation
   const inventory = useGameStore(state => state.inventory);
   const visitedLocations = useGameStore(state => state.visitedLocations);
-  const gameFlags = useGameStore(state => state.gameFlags);
-  const moveToLocation = useGameStore(state => state.moveToLocation);
-  const addToInventory = useGameStore(state => state.addToInventory);
-  const removeFromInventory = useGameStore(state => state.removeFromInventory);
-  const setGameFlag = useGameStore(state => state.setGameFlag);
-  const resetGame = useGameStore(state => state.resetGame);
+  const gameFlags = useGameStore(state => state.flags); // Changed from gameFlags
+  const moveToLocation = useGameStore(state => state.move); // Changed from moveToLocation
+  const addToInventory = useGameStore(state => state.pickupItem); // Changed from addToInventory
+  const removeFromInventory = useGameStore(state => state.removeItem); // Changed from removeFromInventory
+  const setGameFlag = useGameStore(state => state.setFlag); // Changed from setGameFlag
+  const resetGame = useGameStore(state => state.reset); // Changed from resetGame
   
   // Wrappers para funções que checam o estado
   const hasVisited = useCallback(
-    (loc: string) => visitedLocations.includes(loc),
+    (loc: string) => visitedLocations.has(loc), // Changed from .includes() to .has()
     [visitedLocations]
   );
   
