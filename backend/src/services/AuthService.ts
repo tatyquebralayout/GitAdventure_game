@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import jwt, { Secret, SignOptions } from 'jsonwebtoken'; // Import Secret, SignOptions
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import { AppDataSource } from '../config/database';
 import { User } from '../entities/User';
 import { UserToken } from '../entities/UserToken';
@@ -12,17 +12,27 @@ interface TokenResponse {
 
 export class AuthService {
   private readonly userRepository = AppDataSource.getRepository(User);
-  private readonly tokenRepository = AppDataSource.getRepository(UserToken);
-  
-  // Define secrets and expiration times with correct types
-  private readonly JWT_SECRET: Secret = process.env.JWT_SECRET || 'fallback_secret';
-  private readonly JWT_REFRESH_SECRET: Secret = `${this.JWT_SECRET}_refresh`;
-  private readonly JWT_EXPIRES_IN: SignOptions['expiresIn'] = process.env.JWT_EXPIRES_IN as SignOptions['expiresIn'] || '7d';
-  private readonly JWT_REFRESH_EXPIRES_IN: SignOptions['expiresIn'] = process.env.JWT_REFRESH_EXPIRES_IN as SignOptions['expiresIn'] || '30d';
+  private readonly userTokenRepository = AppDataSource.getRepository(UserToken);
+  private readonly jwtSecret = process.env.JWT_SECRET as Secret;
+  private readonly jwtRefreshSecret = process.env.JWT_REFRESH_SECRET as Secret;
 
-  /**
-   * Registra um novo usuário
-   */
+  private generateAccessToken(userId: string): string {
+    return jwt.sign({ id: userId }, this.jwtSecret, { expiresIn: '15m' });
+  }
+
+  private generateRefreshToken(userId: string): string {
+    return jwt.sign({ id: userId }, this.jwtRefreshSecret, { expiresIn: '7d' });
+  }
+
+  private async saveUserTokens(userId: string, accessToken: string, refreshToken: string): Promise<void> {
+    const userToken = this.userTokenRepository.create({
+      userId,
+      accessToken,
+      refreshToken
+    });
+    await this.userTokenRepository.save(userToken);
+  }
+
   async register(username: string, email: string, password: string): Promise<Omit<User, 'password'>> {
     // Verificar se usuário já existe
     const userExists = await this.userRepository.findOne({
@@ -51,9 +61,6 @@ export class AuthService {
     return userWithoutPassword;
   }
 
-  /**
-   * Login de usuário
-   */
   async login(username: string, password: string): Promise<TokenResponse> {
     // Buscar usuário
     const user = await this.userRepository.findOne({ 
@@ -87,107 +94,42 @@ export class AuthService {
     };
   }
 
-  /**
-   * Renovar token usando refresh token
-   */
-  async refreshToken(refreshToken: string): Promise<TokenResponse> {
-    try {
-      // Verificar o token
-      const decoded = jwt.verify(refreshToken, this.JWT_REFRESH_SECRET) as { id: string };
-      
-      // Buscar token no banco de dados
-      const userToken = await this.tokenRepository.findOne({
-        where: { refreshToken },
-        relations: ['user']
-      });
+  async refreshToken(refreshToken: string): Promise<{ accessToken: string }> {
+    // Verificar se o refresh token é válido
+    const decoded = jwt.verify(refreshToken, this.jwtRefreshSecret) as { id: string };
+    
+    // Buscar token no banco
+    const userToken = await this.userTokenRepository.findOne({
+      where: { userId: decoded.id, refreshToken }
+    });
 
-      if (!userToken) {
-        throw new Error('Token inválido');
-      }
-
-      // Gerar novos tokens
-      const accessToken = this.generateAccessToken(decoded.id);
-      const newRefreshToken = this.generateRefreshToken(decoded.id);
-      
-      // Atualizar tokens
-      userToken.accessToken = accessToken;
-      userToken.refreshToken = newRefreshToken;
-      await this.tokenRepository.save(userToken);
-
-      // Retornar resposta
-      const { password: _unused, ...userWithoutPassword } = userToken.user;
-      
-      return {
-        accessToken,
-        refreshToken: newRefreshToken,
-        user: userWithoutPassword
-      };
-    } catch {
-      throw new Error('Erro ao renovar token');
+    if (!userToken) {
+      throw new Error('Invalid refresh token');
     }
+
+    // Gerar novo access token
+    const newAccessToken = this.generateAccessToken(decoded.id);
+
+    // Atualizar token no banco
+    userToken.accessToken = newAccessToken;
+    await this.userTokenRepository.save(userToken);
+
+    return { accessToken: newAccessToken };
   }
 
-  /**
-   * Logout de usuário (revoga os tokens)
-   */
   async logout(userId: string): Promise<void> {
-    await this.tokenRepository.delete({ userId });
+    // Remover todos os tokens do usuário
+    await this.userTokenRepository.delete({ userId });
   }
 
-  /**
-   * Obter perfil do usuário
-   */
   async getUserProfile(userId: string): Promise<Omit<User, 'password'> | null> {
-    const user = await this.userRepository.findOne({ 
-      where: { id: userId }
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'username', 'email', 'createdAt', 'updatedAt']
     });
 
-    if (!user) {
-      return null;
-    }
-
-    // Retornar usuário sem a senha
-    const { password: _unused, ...userWithoutPassword } = user;
-    return userWithoutPassword as Omit<User, 'password'>;
-  }
-
-  /**
-   * Gerar token de acesso
-   */
-  private generateAccessToken(userId: string): string {
-    const payload = { id: userId };
-    const options: SignOptions = {
-      expiresIn: this.JWT_EXPIRES_IN,
-    };
-    return jwt.sign(payload, this.JWT_SECRET, options);
-  }
-
-  /**
-   * Gerar refresh token
-   */
-  private generateRefreshToken(userId: string): string {
-    const payload = { id: userId };
-    const options: SignOptions = {
-      expiresIn: this.JWT_REFRESH_EXPIRES_IN,
-    };
-    return jwt.sign(payload, this.JWT_REFRESH_SECRET, options);
-  }
-
-  /**
-   * Salvar tokens do usuário
-   */
-  private async saveUserTokens(userId: string, accessToken: string, refreshToken: string): Promise<void> {
-    // Remover tokens antigos
-    await this.tokenRepository.delete({ userId });
-
-    // Criar novo registro
-    const userToken = this.tokenRepository.create({
-      userId,
-      accessToken,
-      refreshToken
-    });
-
-    await this.tokenRepository.save(userToken);
+    if (!user) return null;
+    return user;
   }
 }
 

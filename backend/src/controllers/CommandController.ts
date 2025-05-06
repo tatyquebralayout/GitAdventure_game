@@ -4,10 +4,9 @@ import { commandValidationService, ValidateCommandRequestDto } from '../services
 export class CommandController {
   public async validateCommand(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user?.id; // Access user ID via req.user?.id
+      const userId = req.user?.id;
       const { command, questId, currentStep } = req.body as ValidateCommandRequestDto;
       
-      // Validar campos obrigatórios
       if (!command || !questId) {
         res.status(400).json({ 
           success: false, 
@@ -16,25 +15,17 @@ export class CommandController {
         return;
       }
 
-      try {
-        const result = await commandValidationService.validateCommand({
-          command,
-          questId,
-          currentStep,
-          userId // Passar o userId para o serviço
-        });
-        
-        res.status(200).json({
-          success: true,
-          ...result
-        });
-      } catch (error) {
-        console.error('Error validating command:', error);
-        res.status(500).json({ 
-          success: false, 
-          message: 'Failed to validate command' 
-        });
-      }
+      const result = await commandValidationService.validateCommand({
+        command,
+        questId,
+        currentStep,
+        userId
+      });
+      
+      res.status(200).json({
+        success: true,
+        ...result
+      });
     } catch (error) {
       next(error);
     }

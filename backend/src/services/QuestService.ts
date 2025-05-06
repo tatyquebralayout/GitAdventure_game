@@ -14,9 +14,6 @@ export class QuestService {
   private playerQuestRepository = AppDataSource.getRepository(PlayerWorldsQuest);
   private playerStepRepository = AppDataSource.getRepository(PlayerQuestStep);
 
-  /**
-   * Obter quest por ID
-   */
   async getQuestById(id: string): Promise<Quest | null> {
     return this.questRepository.findOne({
       where: { id },
@@ -24,9 +21,6 @@ export class QuestService {
     });
   }
 
-  /**
-   * Obter narrativas de uma quest
-   */
   async getQuestNarratives(questId: string): Promise<QuestNarrative[]> {
     return this.narrativeRepository.find({
       where: { questId },
@@ -36,9 +30,6 @@ export class QuestService {
     });
   }
 
-  /**
-   * Obter passos de comando de uma quest
-   */
   async getQuestCommandSteps(questId: string): Promise<QuestCommandStep[]> {
     return this.commandStepRepository.find({
       where: { questId },
@@ -48,32 +39,29 @@ export class QuestService {
     });
   }
 
-  /**
-   * Iniciar uma quest para o jogador
-   */
   async startQuest(userId: string, worldId: string, questId: string): Promise<PlayerWorldsQuest> {
-    // Verificar se o mundo está iniciado para o jogador
+    // Check if player already has a world progress
     const playerWorld = await this.playerWorldRepository.findOne({
       where: { userId, worldId }
     });
 
     if (!playerWorld) {
-      throw new Error('Mundo não iniciado pelo jogador');
+      throw new Error('Player has not started this world');
     }
 
-    // Verificar se a quest já foi iniciada
-    const existingQuest = await this.playerQuestRepository.findOne({
+    // Check if player already started this quest
+    const existingQuestProgress = await this.playerQuestRepository.findOne({
       where: { 
         playerWorldId: playerWorld.id,
         questId
       }
     });
 
-    if (existingQuest) {
-      return existingQuest;
+    if (existingQuestProgress) {
+      return existingQuestProgress;
     }
 
-    // Criar nova quest para o jogador
+    // Create player quest progress
     const playerQuest = this.playerQuestRepository.create({
       playerWorldId: playerWorld.id,
       questId,
@@ -100,9 +88,6 @@ export class QuestService {
     return playerQuest;
   }
 
-  /**
-   * Completar um passo de quest
-   */
   async completeQuestStep(
     userId: string, 
     questId: string, 
@@ -132,25 +117,16 @@ export class QuestService {
       };
     }
 
-    // Obter o progresso do jogador nesta quest
-    const playerWorlds = await this.playerWorldRepository.find({
-      where: { userId },
-      relations: ['quests']
+    // Obter o progresso do jogador na quest
+    const playerQuest = await this.playerQuestRepository.findOne({
+      where: { questId },
+      relations: ['playerWorld']
     });
 
-    let playerQuest: PlayerWorldsQuest | null = null;
-    for (const pw of playerWorlds) {
-      const pq = pw.quests.find(q => q.questId === questId);
-      if (pq) {
-        playerQuest = pq;
-        break;
-      }
-    }
-
-    if (!playerQuest) {
+    if (!playerQuest || playerQuest.playerWorld.userId !== userId) {
       return { 
         success: false, 
-        message: 'Quest não iniciada pelo jogador', 
+        message: 'Progresso da quest não encontrado', 
         step: null 
       };
     }
@@ -197,20 +173,17 @@ export class QuestService {
     };
   }
 
-  /**
-   * Completar uma quest
-   */
   async completeQuest(userId: string, worldId: string, questId: string): Promise<PlayerWorldsQuest> {
-    // Obter o mundo do jogador
+    // Verificar se o jogador já tem progresso no mundo
     const playerWorld = await this.playerWorldRepository.findOne({
       where: { userId, worldId }
     });
 
     if (!playerWorld) {
-      throw new Error('Mundo não iniciado pelo jogador');
+      throw new Error('Progresso do mundo não encontrado');
     }
 
-    // Obter a quest do jogador
+    // Buscar o progresso da quest
     const playerQuest = await this.playerQuestRepository.findOne({
       where: { 
         playerWorldId: playerWorld.id,
@@ -219,14 +192,22 @@ export class QuestService {
     });
 
     if (!playerQuest) {
-      throw new Error('Quest não iniciada pelo jogador');
+      throw new Error('Progresso da quest não encontrado');
     }
 
-    // Atualizar status para 'completed'
-    playerQuest.status = 'completed';
-    await this.playerQuestRepository.save(playerQuest);
+    // Verificar se todos os passos foram completados
+    const playerSteps = await this.playerStepRepository.find({
+      where: { playerWorldsQuestsId: playerQuest.id }
+    });
 
-    return playerQuest;
+    const allCompleted = playerSteps.every(step => step.status === 'completed');
+    if (!allCompleted) {
+      throw new Error('Nem todos os passos da quest foram completados');
+    }
+
+    // Atualizar o status da quest
+    playerQuest.status = 'completed';
+    return this.playerQuestRepository.save(playerQuest);
   }
 }
 

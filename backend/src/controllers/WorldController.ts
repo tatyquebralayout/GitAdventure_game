@@ -5,9 +5,6 @@ import { AppError } from '../utils/AppError';
 export class WorldController {
   constructor(private worldService = new WorldService()) {}
 
-  /**
-   * Obter todos os mundos
-   */
   public async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const worlds = await this.worldService.getAllWorlds();
@@ -17,25 +14,21 @@ export class WorldController {
     }
   }
 
-  /**
-   * Obter mundo por ID
-   */
   public async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
       const world = await this.worldService.getWorldById(id);
+
       if (!world) {
         throw new AppError('World not found', 404);
       }
+
       res.json(world);
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * Obter todas as quests de um mundo
-   */
   public async getWorldQuests(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
@@ -46,9 +39,6 @@ export class WorldController {
     }
   }
 
-  /**
-   * Iniciar um mundo para o jogador
-   */
   public async startWorld(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
@@ -63,9 +53,6 @@ export class WorldController {
     }
   }
 
-  /**
-   * Completar um mundo
-   */
   public async completeWorld(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;

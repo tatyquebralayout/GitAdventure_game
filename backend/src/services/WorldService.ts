@@ -1,10 +1,10 @@
 import { AppDataSource } from '../config/database';
-import { World as WorldEntity } from '../entities/World'; // Rename import to avoid conflict
-import { PlayerWorld as PlayerWorldEntity } from '../entities/PlayerWorld'; // Rename import
+import { World as WorldEntity } from '../entities/World';
+import { PlayerWorld as PlayerWorldEntity } from '../entities/PlayerWorld';
 import { Quest } from '../entities/Quest';
 import { WorldQuest } from '../entities/WorldQuest';
 import { PlayerWorldsQuest } from '../entities/PlayerWorldsQuest';
-import { World, PlayerWorld } from '@shared/types/worlds'; // Import shared types
+import { World, PlayerWorld } from '@shared/types/worlds';
 
 export class WorldService {
   private worldRepository = AppDataSource.getRepository(WorldEntity);
@@ -13,9 +13,6 @@ export class WorldService {
   private worldQuestRepository = AppDataSource.getRepository(WorldQuest);
   private playerWorldQuestRepository = AppDataSource.getRepository(PlayerWorldsQuest);
   
-  /**
-   * Obter todos os mundos
-   */
   async getAllWorlds(): Promise<World[]> {
     return this.worldRepository.find({
       where: { status: 'published' },
@@ -25,18 +22,12 @@ export class WorldService {
     });
   }
 
-  /**
-   * Obter mundo por ID
-   */
   async getWorldById(id: string): Promise<World | null> {
     return this.worldRepository.findOne({
       where: { id }
     });
   }
 
-  /**
-   * Obter todas as quests de um mundo
-   */
   async getWorldQuests(worldId: string): Promise<Quest[]> {
     const worldQuests = await this.worldQuestRepository.find({
       where: { worldId },
@@ -47,20 +38,22 @@ export class WorldService {
     return worldQuests.map(wq => wq.quest);
   }
 
-  /**
-   * Iniciar um mundo para o jogador
-   */
   async startWorld(userId: string, worldId: string): Promise<PlayerWorld> {
-    // Verificar se o jogador já iniciou este mundo
-    const existingPlayerWorld = await this.playerWorldRepository.findOne({
+    const world = await this.worldRepository.findOne({ where: { id: worldId } });
+    if (!world) {
+      throw new Error('World not found');
+    }
+
+    // Check if player already started this world
+    const existingProgress = await this.playerWorldRepository.findOne({
       where: { userId, worldId }
     });
 
-    if (existingPlayerWorld) {
-      return existingPlayerWorld as PlayerWorld;
+    if (existingProgress) {
+      return existingProgress;
     }
 
-    // Criar novo progresso para o jogador
+    // Create player world progress
     const playerWorld = this.playerWorldRepository.create({
       userId,
       worldId,
@@ -69,14 +62,17 @@ export class WorldService {
 
     await this.playerWorldRepository.save(playerWorld);
 
-    // Obter as quests do mundo e criar progresso para cada uma
-    const worldQuests = await this.getWorldQuests(worldId);
-    
+    // Get all quests from world and create initial progress
+    const worldQuests = await this.worldQuestRepository.find({
+      where: { worldId },
+      relations: ['quest']
+    });
+
     if (worldQuests.length > 0) {
-      const playerQuests = worldQuests.map(quest => {
+      const playerQuests = worldQuests.map(worldQuest => {
         return this.playerWorldQuestRepository.create({
           playerWorldId: playerWorld.id,
-          questId: quest.id,
+          questId: worldQuest.quest.id,
           status: 'starting'
         });
       });
@@ -87,24 +83,17 @@ export class WorldService {
     return playerWorld as PlayerWorld;
   }
 
-  /**
-   * Completar um mundo
-   */
   async completeWorld(userId: string, worldId: string): Promise<PlayerWorld> {
-    // Obter progresso do jogador neste mundo
     const playerWorld = await this.playerWorldRepository.findOne({
       where: { userId, worldId }
     });
 
     if (!playerWorld) {
-      throw new Error('Mundo não foi iniciado pelo jogador');
+      throw new Error('World progress not found');
     }
 
-    // Atualizar status para 'completed'
     playerWorld.status = 'completed';
-    await this.playerWorldRepository.save(playerWorld);
-
-    return playerWorld as PlayerWorld;
+    return this.playerWorldRepository.save(playerWorld) as Promise<PlayerWorld>;
   }
 }
 

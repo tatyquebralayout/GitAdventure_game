@@ -1,14 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
-import { questService } from '../services/QuestService';
+import { questService, QuestService } from '../services/QuestService';
 
 export class QuestController {
-  /**
-   * Obter quest por ID
-   */
+  constructor(private questService: QuestService = questService) {}
+
   public async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const quest = await questService.getQuestById(id);
+      const quest = await this.questService.getQuestById(id);
 
       if (!quest) {
         throw new Error('Quest não encontrada');
@@ -20,35 +19,26 @@ export class QuestController {
     }
   }
 
-  /**
-   * Obter narrativa da quest
-   */
   public async getQuestNarratives(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const narratives = await questService.getQuestNarratives(id);
+      const narratives = await this.questService.getQuestNarratives(id);
       res.json({ success: true, narratives });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * Obter passos de comando da quest
-   */
   public async getQuestCommandSteps(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const steps = await questService.getQuestCommandSteps(id);
+      const steps = await this.questService.getQuestCommandSteps(id);
       res.json({ success: true, steps });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * Iniciar uma quest para o jogador
-   */
   public async startQuest(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id: questId } = req.params;
@@ -63,16 +53,13 @@ export class QuestController {
         throw new Error('ID do mundo é obrigatório');
       }
 
-      const playerQuest = await questService.startQuest(userId, worldId, questId);
+      const playerQuest = await this.questService.startQuest(userId, worldId, questId);
       res.json({ success: true, playerQuest });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * Completar um passo de quest
-   */
   public async completeQuestStep(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { questId, stepId } = req.params;
@@ -87,16 +74,13 @@ export class QuestController {
         throw new Error('Comando é obrigatório');
       }
 
-      const result = await questService.completeQuestStep(userId, questId, stepId, command);
+      const result = await this.questService.completeQuestStep(userId, questId, stepId, command);
       res.json({ success: true, result });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * Completar uma quest
-   */
   public async completeQuest(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id: questId } = req.params;
@@ -111,7 +95,7 @@ export class QuestController {
         throw new Error('ID do mundo é obrigatório');
       }
 
-      const playerQuest = await questService.completeQuest(userId, worldId, questId);
+      const playerQuest = await this.questService.completeQuest(userId, worldId, questId);
       res.json({ success: true, playerQuest });
     } catch (error) {
       next(error);
