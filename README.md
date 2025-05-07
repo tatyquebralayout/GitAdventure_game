@@ -1,26 +1,43 @@
 # GitAdventure Monorepo
 
-GitAdventure é uma aplicação interativa para aprender Git de forma gamificada, agora organizada em um monorepo moderno!
+Monorepo TypeScript moderno para o projeto GitAdventure, que ensina Git de forma gamificada.
 
-## Estrutura do Projeto
+## Estrutura
 
 ```
-GitAdventurev2/
-├── packages/
-│   ├── frontend/   # Aplicação React (Vite, TypeScript)
-│   │   └── src/
-│   ├── backend/    # API Express (TypeScript, TypeORM)
-│   │   └── src/
-│   └── shared/     # Tipos TypeScript compartilhados
-│       └── types/
-├── scripts/        # Scripts utilitários
-├── docs/           # Documentação
-├── .gitignore
-├── package.json    # Gerenciamento de workspaces
-├── pnpm-workspace.yaml
-├── tsconfig.base.json
-└── README.md
+packages/
+  backend/    # API Node.js/Express, com mocks prontos para integração
+  frontend/   # Frontend React + Vite, integração fácil com backend mock
+  shared/     # Tipos TypeScript compartilhados
+docs/         # Documentação de arquitetura e API
 ```
+
+## Scripts principais
+
+- `pnpm run dev:backend` — Sobe o backend em modo mock
+- `pnpm run dev:frontend` — Sobe o frontend (em desenvolvimento)
+- `pnpm run dev` — Sobe ambos em paralelo
+- `pnpm run build` — Builda ambos
+- `pnpm run lint` — Lint em todo o monorepo
+- `pnpm run type-check` — Checagem de tipos global
+- `pnpm run check:duplicates` — Busca arquivos duplicados
+- `pnpm run check:unused` — Busca arquivos não utilizados
+
+## Desenvolvimento
+
+- **Backend**: Totalmente mockável, pronto para integração com frontend em desenvolvimento.
+- **Frontend**: Consome endpoints mockados, facilitando testes e evolução incremental.
+- **Tipos compartilhados**: Use `@shared/types` para importar tipos comuns.
+
+## Documentação
+
+- **docs/architecture.md**: Arquitetura, decisões de design, fluxo de desenvolvimento.
+- **docs/api.md**: Endpoints disponíveis, exemplos de request/response, status de mocks.
+
+## Contribuição
+
+- Siga o padrão de commits e mantenha a documentação sempre atualizada.
+- Use os scripts de lint, type-check e limpeza antes de abrir PRs.
 
 ## Tecnologias
 - **Frontend:** React 18, Vite, TypeScript

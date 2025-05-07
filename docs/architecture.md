@@ -1,8 +1,52 @@
-# Architecture Documentation
+# Arquitetura do Monorepo GitAdventure
 
-## Overview
+## Visão Geral
 
-GitAdventure is an interactive Git learning platform built as a monorepo using pnpm workspaces. It consists of a React-based frontend and an Express.js backend, designed to provide an engaging, gamified learning experience for Git concepts.
+O projeto GitAdventure é organizado como um monorepo TypeScript moderno, facilitando o desenvolvimento incremental, integração entre frontend e backend, e centralização de tipos compartilhados.
+
+## Estrutura de Pastas
+
+```
+packages/
+  backend/    # API Node.js/Express, com mocks prontos para integração
+  frontend/   # Frontend React + Vite, integração fácil com backend mock
+  shared/     # Tipos TypeScript compartilhados
+scripts/      # Scripts utilitários de limpeza e automação
+docs/         # Documentação de arquitetura e API
+```
+
+## Princípios de Arquitetura
+
+- **Monorepo**: Um único repositório para frontend, backend e tipos compartilhados.
+- **Mocks**: O backend pode rodar totalmente em modo mock, facilitando o desenvolvimento do frontend e testes de integração.
+- **Tipos compartilhados**: Todos os tipos comuns ficam em `packages/shared/types`, importados via alias `@shared/types`.
+- **Automação**: Scripts para encontrar duplicidades, resíduos e arquivos não utilizados.
+- **Configuração centralizada**: ESLint, tsconfig e scripts padronizados para todo o monorepo.
+
+## Fluxo de Desenvolvimento
+
+1. **Desenvolvimento isolado**: Frontend e backend podem ser desenvolvidos e testados separadamente.
+2. **Integração fácil**: O frontend consome endpoints mockados do backend, garantindo previsibilidade.
+3. **Evolução incremental**: Endpoints e serviços podem ser migrados de mock para real sem quebrar o fluxo do time.
+4. **Testes e lint**: Scripts globais para lint, type-check e testes garantem qualidade contínua.
+
+## Boas Práticas
+
+- Sempre documente endpoints e fluxos mockados em `docs/api.md`.
+- Use tipos compartilhados para evitar duplicidade e bugs de tipagem.
+- Antes de abrir PRs, rode lint, type-check e scripts de limpeza.
+- Mantenha o README e a documentação sempre atualizados.
+
+## Como migrar de mock para produção
+
+1. Implemente o serviço real no backend.
+2. Troque a instância mock pela real no controller correspondente.
+3. Atualize a documentação e exemplos de resposta.
+4. Teste a integração com o frontend.
+
+---
+
+Para detalhes de endpoints e exemplos de uso, veja `docs/api.md`.
 
 ## System Architecture
 
