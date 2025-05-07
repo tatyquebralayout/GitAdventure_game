@@ -1,0 +1,1 @@
+import { GameState } from '@gitadventure/frontend/src/stores/gameStore'; 

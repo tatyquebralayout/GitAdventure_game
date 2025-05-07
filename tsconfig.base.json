@@ -11,9 +11,9 @@
     "target": "ES2020",
     "moduleResolution": "bundler",
     "paths": {
-      "@frontend/*": ["frontend/src/*"],
-      "@backend/*": ["backend/src/*"],
-      "@shared/*": ["shared/*"] // Add path for shared types
+      "@gitadventure/shared/*": ["./packages/shared/*"],
+      "@gitadventure/frontend/*": ["./packages/frontend/*"],
+      "@gitadventure/backend/*": ["./packages/backend/*"]
     }
   }
 }

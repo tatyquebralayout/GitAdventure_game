@@ -1,0 +1,10 @@
+{
+  "name": "@gitadventure/backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "test": "jest"
+  }
+} 
