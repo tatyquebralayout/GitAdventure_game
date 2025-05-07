@@ -1,8 +1,9 @@
 import { WorldFactory } from '../../mocks/factories/WorldFactory';
 import { QuestFactory } from '../../mocks/factories/QuestFactory';
-import { ModuleTheme, WorldDifficulty } from '../../../../shared/types/enums';
+import { ModuleTheme, WorldDifficulty } from '@shared/types';
 import { World } from '../../entities/World';
 import { Quest } from '../../entities/Quest';
+import { ModuleFactory } from '../../mocks/factories/ModuleFactory';
 
 describe('Mock Factories', () => {
   describe('WorldFactory', () => {

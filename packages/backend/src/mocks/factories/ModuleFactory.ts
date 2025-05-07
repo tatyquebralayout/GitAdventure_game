@@ -1,5 +1,5 @@
 import { Module } from '../../entities/Module';
-import { ModuleTheme } from '../../../shared/types/enums';
+import { ModuleTheme } from '@shared/types';
 import { faker } from '@faker-js/faker';
 
 export class ModuleFactory {

@@ -4,7 +4,7 @@ import { SERVICE_TOKENS } from '../../config/services';
 import { IAuthService } from '../../services/interfaces/IAuthService';
 import { IQuestService } from '../../services/interfaces/IQuestService';
 import { IWorldService } from '../../services/interfaces/IWorldService';
-import { QuestStatus, ModuleTheme } from '../../../../shared/types/enums';
+import { QuestStatus, ModuleTheme } from '@shared/types';
 
 describe('Mock Services Integration', () => {
   let authService: IAuthService;

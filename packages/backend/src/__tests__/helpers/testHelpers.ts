@@ -5,7 +5,7 @@ import { IWorldService } from '../../services/interfaces/IWorldService';
 import { World } from '../../entities/World';
 import { Quest } from '../../entities/Quest';
 import { QuestCommandStep } from '../../entities/QuestCommandStep';
-import { WorldDifficulty, ModuleTheme } from '../../../../shared/types/enums';
+import { WorldDifficulty, ModuleTheme } from '@shared/types';
 
 export const QuestTestHelpers = {
   /**

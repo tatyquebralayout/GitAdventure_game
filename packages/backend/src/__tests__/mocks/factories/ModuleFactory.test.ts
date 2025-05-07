@@ -1,6 +1,6 @@
 import { ModuleFactory } from '../../../mocks/factories/ModuleFactory';
 import { Module } from '../../../entities/Module';
-import { ModuleTheme } from '../../../../shared/types/enums';
+import { ModuleTheme } from '@shared/types';
 
 describe('ModuleFactory', () => {
   describe('create()', () => {

@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { PlayerWorldsQuest } from './PlayerWorldsQuest';
 import { QuestCommandStep } from './QuestCommandStep';
-import { StepStatus } from '../../../shared/types/enums';
+import { StepStatus } from '@shared/types';
 
 @Entity('player_quest_steps')
 export class PlayerQuestStep {

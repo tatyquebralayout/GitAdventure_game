@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { QuestModule } from './QuestModule';
-import { ModuleTheme } from '../../../shared/types/enums';
+import { ModuleTheme } from '@shared/types';
 
 @Entity('modules')
 export class Module {

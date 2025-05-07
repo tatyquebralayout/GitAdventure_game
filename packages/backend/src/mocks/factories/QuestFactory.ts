@@ -1,6 +1,6 @@
 import { Quest } from '../../entities/Quest';
 import { QuestCommandStep } from '../../entities/QuestCommandStep';
-import { ModuleTheme } from '../../../../shared/types/enums';
+import { ModuleTheme } from '@shared/types';
 import { faker } from '@faker-js/faker';
 
 export class QuestFactory {

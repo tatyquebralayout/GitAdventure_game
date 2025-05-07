@@ -1,5 +1,7 @@
 {
   "name": "@gitadventure/shared",
   "version": "0.1.0",
-  "private": true
+  "private": true,
+  "main": "types/index.ts",
+  "types": "types/index.ts"
 } 

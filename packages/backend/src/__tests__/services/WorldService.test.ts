@@ -4,7 +4,7 @@ import { World } from '../../entities/World';
 import { PlayerWorld } from '../../entities/PlayerWorld';
 import { WorldQuest } from '../../entities/WorldQuest';
 import { CacheService } from '../../services/CacheService';
-import { ModuleTheme } from '../../../shared/types/enums';
+import { ModuleTheme } from '@shared/types';
 
 jest.mock('../../config/database', () => ({
   AppDataSource: {

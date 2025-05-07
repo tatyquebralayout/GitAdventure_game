@@ -6,7 +6,7 @@ import { Quest } from '../../entities/Quest';
 import { QuestCommandStep } from '../../entities/QuestCommandStep';
 import { PlayerQuestStep } from '../../entities/PlayerQuestStep';
 import { ServiceError, ServiceErrorCode } from '../../errors/ServiceError';
-import { QuestStatus, StepStatus } from '../../../../shared/types/enums';
+import { QuestStatus, StepStatus } from '@shared/types';
 import { QuestFactory } from '../factories/QuestFactory';
 import { MockValidators, MockDataGenerators, MockTimingUtils } from './mockUtils';
 

@@ -18,7 +18,10 @@
     "preview": "pnpm --filter frontend run preview",
     "type-check": "tsc --noEmit",
     "check:duplicates": "node scripts/find-duplicates.cjs",
-    "check:unused": "node scripts/find-unused.cjs"
+    "check:unused": "node scripts/find-unused.cjs",
+    "fix-imports": "node scripts/fix-imports.cjs",
+    "validate-imports": "node scripts/validate-imports.cjs",
+    "precommit": "pnpm validate-imports && pnpm lint"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

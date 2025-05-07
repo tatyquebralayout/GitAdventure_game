@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { PlayerWorld } from './PlayerWorld';
 import { Quest } from './Quest';
 import { PlayerQuestStep } from './PlayerQuestStep';
-import { QuestStatus } from '../../../shared/types/enums';
+import { QuestStatus } from '@shared/types';
 
 @Entity('player_worlds_quests')
 export class PlayerWorldsQuest {

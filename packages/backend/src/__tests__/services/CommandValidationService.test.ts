@@ -2,7 +2,7 @@ import { CommandValidationService } from '../../services/CommandValidationServic
 import { GitCommandParser } from '../../services/GitCommandParser';
 import { CacheService } from '../../services/CacheService';
 import { LoggerService } from '../../services/LoggerService';
-import { StepStatus } from '../../../shared/types/enums';
+import { StepStatus } from '@shared/types';
 import { mock } from 'jest-mock-extended';
 
 jest.mock('../../services/GitCommandParser');

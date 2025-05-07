@@ -9,7 +9,7 @@ import { WorldQuest } from '../entities/WorldQuest';
 import { PlayerWorldsQuest } from '../entities/PlayerWorldsQuest';
 import { AppError } from '../utils/AppError';
 import { injectable, inject } from 'tsyringe';
-import { ModuleTheme, WorldDifficulty } from '../../../shared/types/enums';
+import { ModuleTheme, WorldDifficulty } from '@shared/types';
 import { CacheService } from './CacheService';
 
 @injectable()

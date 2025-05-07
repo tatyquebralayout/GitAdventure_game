@@ -1,5 +1,5 @@
 import { QuestFactory } from '../../../mocks/factories/QuestFactory';
-import { ModuleTheme } from '../../../../shared/types/enums';
+import { ModuleTheme } from '@shared/types';
 import { Quest } from '../../../entities/Quest';
 import { QuestCommandStep } from '../../../entities/QuestCommandStep';
 

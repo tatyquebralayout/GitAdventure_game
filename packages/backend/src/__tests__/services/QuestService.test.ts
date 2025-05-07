@@ -6,7 +6,7 @@ import { PlayerQuestStep } from '../../entities/PlayerQuestStep';
 import { PlayerWorldsQuest } from '../../entities/PlayerWorldsQuest';
 import { CacheService } from '../../services/CacheService';
 import { LoggerService } from '../../services/LoggerService';
-import { QuestStatus, StepStatus } from '../../../shared/types/enums';
+import { QuestStatus, StepStatus } from '@shared/types';
 import { AppError } from '../../utils/AppError';
 
 jest.mock('../../config/database', () => ({

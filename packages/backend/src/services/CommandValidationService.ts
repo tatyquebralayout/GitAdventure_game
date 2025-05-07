@@ -1,6 +1,6 @@
 import { QuestCommandStep } from '../entities/QuestCommandStep';
 import { PlayerQuestStep } from '../entities/PlayerQuestStep';
-import { StepStatus } from '../../../shared/types/enums';
+import { StepStatus } from '@shared/types';
 import { inject, injectable } from 'tsyringe';
 import { GitCommandParser } from './GitCommandParser';
 import { CacheService } from './CacheService';

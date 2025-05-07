@@ -1,7 +1,7 @@
 import { Quest } from '../../entities/Quest';
 import { QuestCommandStep } from '../../entities/QuestCommandStep';
 import { PlayerQuestStep } from '../../entities/PlayerQuestStep';
-import { QuestStatus } from '../../../shared/types/enums';
+import { QuestStatus } from '@shared/types';
 
 export interface QuestStepResult {
   stepResult: PlayerQuestStep;

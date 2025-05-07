@@ -38,6 +38,7 @@ Thank you for considering contributing to GitAdventure! We welcome contributions
     *   Follow the existing code style.
     *   Ensure your code passes linting checks (if configured, e.g., `pnpm lint`).
     *   Write clear and concise code with appropriate comments (TSDoc/JSDoc).
+    *   Import types using the alias `@shared/types`.
 5.  **Commit Changes:** Commit your changes with clear and descriptive commit messages.
 6.  **Push Changes:** Push your branch to your fork:
     ```bash
@@ -53,3 +54,32 @@ If you find a bug or have a feature request, please open an issue on the main Gi
 ## Questions?
 
 Feel free to ask questions by opening an issue.
+
+## Coding Standards
+
+### Importações dos Tipos Compartilhados
+
+Para manter a consistência no código e facilitar a manutenção, sempre use o alias `@shared/types` para importar tipos compartilhados:
+
+```typescript
+// ✅ CORRETO - Use este formato
+import { ModuleTheme, WorldDifficulty } from '@shared/types';
+
+// ❌ INCORRETO - Não use caminhos relativos para shared
+import { ModuleTheme } from '../../../shared/types/enums';
+
+// ❌ INCORRETO - Não use imports diretos dos arquivos específicos
+import { ModuleTheme } from '@gitadventure/shared/types/enums';
+```
+
+Temos scripts para ajudar a manter essa padronização:
+
+```bash
+# Verifica se há problemas com importações
+pnpm validate-imports
+
+# Corrige automaticamente os problemas encontrados
+pnpm fix-imports
+```
+
+O CI executa a validação de importações em cada pull request.

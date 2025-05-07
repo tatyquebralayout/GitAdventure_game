@@ -5,7 +5,7 @@ import { IWorldService, WorldProgress, WorldFilters } from '../../services/inter
 import { World } from '../../entities/World';
 import { PlayerWorld } from '../../entities/PlayerWorld';
 import { ServiceError, ServiceErrorCode } from '../../errors/ServiceError';
-import { ModuleTheme, WorldDifficulty } from '../../../../shared/types/enums';
+import { ModuleTheme, WorldDifficulty } from '@shared/types';
 import { WorldFactory } from '../factories/WorldFactory';
 import { MockValidators, MockDataGenerators, MockTimingUtils } from './mockUtils';
 
