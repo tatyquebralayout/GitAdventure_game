@@ -3,14 +3,13 @@ import { container } from 'tsyringe';
 import { AuthService } from '../services/AuthService';
 import { AppError } from '../utils/AppError';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        username: string;
-      };
-    }
+// Module augmentation para Express Request
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: {
+      id: string;
+      username: string;
+    };
   }
 }
 

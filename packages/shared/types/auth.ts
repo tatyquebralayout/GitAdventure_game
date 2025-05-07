@@ -1,43 +1,39 @@
-import { User } from '../entities/User';
+// Tipos compartilhados de autenticação para uso em contratos de API/DTO
+// Não usar para manipulação de dados do banco
 
-/**
- * Payload stored in JWT tokens
- */
 export interface TokenPayload {
   userId: string;
   iat?: number;
   exp?: number;
 }
 
-/**
- * Response returned from login and token refresh operations
- */
+export interface UserShared {
+  id: string;
+  username: string;
+  email: string;
+  experience: number;
+  level: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface TokenResponse {
   accessToken: string;
   refreshToken: string;
-  user: Omit<User, 'password'>;
+  user: UserShared;
 }
 
-/**
- * Registration request data
- */
 export interface RegistrationData {
   username: string;
   email: string;
   password: string;
 }
 
-/**
- * Login request data
- */
 export interface LoginData {
   username: string;
   password: string;
 }
 
-/**
- * Token refresh request data
- */
 export interface RefreshTokenData {
   refreshToken: string;
-}
+} 

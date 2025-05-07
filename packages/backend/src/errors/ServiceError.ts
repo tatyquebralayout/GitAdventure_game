@@ -54,7 +54,7 @@ const ERROR_CODE_TO_HTTP_STATUS: Record<ServiceErrorCode, number> = {
 };
 
 interface ServiceErrorDetails {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -84,8 +84,20 @@ export class ServiceError extends Error {
   /**
    * Creates an error response object suitable for sending to clients
    */
-  public toResponse() {
-    const response: any = {
+  public toResponse(): {
+    status: string;
+    code: ServiceErrorCode;
+    message: string;
+    details?: unknown;
+    mock?: boolean;
+  } {
+    const response: {
+      status: string;
+      code: ServiceErrorCode;
+      message: string;
+      details?: unknown;
+      mock?: boolean;
+    } = {
       status: 'error',
       code: this.code,
       message: this.message
@@ -105,7 +117,7 @@ export class ServiceError extends Error {
   /**
    * Helper method to determine if an error is a ServiceError
    */
-  static isServiceError(error: any): error is ServiceError {
+  static isServiceError(error: unknown): error is ServiceError {
     return error instanceof ServiceError;
   }
 }

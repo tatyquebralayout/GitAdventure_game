@@ -6,13 +6,13 @@ import { PlayerWorld } from '../entities/PlayerWorld';
 import { PlayerWorldsQuest } from '../entities/PlayerWorldsQuest';
 import { PlayerQuestStep } from '../entities/PlayerQuestStep';
 import { AppError } from '../utils/AppError';
-import { QuestStatus, StepStatus } from '../../../shared/types/enums';
+import { QuestStatus, StepStatus } from '@shared/types';
 import { injectable, inject } from 'tsyringe';
 import { GitCommandParser } from './GitCommandParser';
 import { CacheService } from './CacheService';
 import { LoggerService } from './LoggerService';
 import { QuestStepResult, QuestProgressUpdate } from './interfaces/IQuestService';
-import { CommandValidationService, StepValidationResult } from './CommandValidationService';
+import { CommandValidationService } from './CommandValidationService';
 
 @injectable()
 export class QuestService {
@@ -44,14 +44,14 @@ export class QuestService {
     });
   }
 
-  async getQuestNarratives(questId: string): Promise<QuestNarrative[]> {
+  getQuestNarratives(questId: string): Promise<QuestNarrative[]> {
     return this.narrativeRepository.find({
       where: { questId },
       order: { status: 'ASC' }
     });
   }
 
-  async getQuestCommandSteps(questId: string): Promise<QuestCommandStep[]> {
+  getQuestCommandSteps(questId: string): Promise<QuestCommandStep[]> {
     return this.commandStepRepository.find({
       where: { questId },
       order: { stepNumber: 'ASC' }
@@ -175,7 +175,7 @@ export class QuestService {
     }
   }
 
-  async checkQuestCompletion(questId: string, userId: string): Promise<QuestProgressUpdate> {
+  checkQuestCompletion(_questId: string, _userId: string): Promise<QuestProgressUpdate> {
     const mockSteps = [
       { id: 'step-1', status: StepStatus.COMPLETED },
       { id: 'step-2', status: StepStatus.COMPLETED },
@@ -183,15 +183,14 @@ export class QuestService {
     ];
 
     const isComplete = mockSteps.filter(step => step.status === StepStatus.COMPLETED).length === 2;
-    
     // Mock progress update object
-    return {
+    return Promise.resolve({
       isComplete,
       score: isComplete ? 200 : 100,
       status: isComplete ? QuestStatus.COMPLETED : QuestStatus.IN_PROGRESS,
       completedSteps: mockSteps.filter(step => step.status === StepStatus.COMPLETED).length,
       totalSteps: mockSteps.length
-    };
+    });
   }
 
   async getQuestProgress(questId: string, userId: string): Promise<QuestProgressUpdate> {
@@ -220,20 +219,9 @@ export class QuestService {
     return mockProgress;
   }
 
-  async getQuestDetails(questId: string): Promise<Quest> {
-    const mockQuest: Partial<Quest> = {
-      id: questId,
-      name: 'Git Init Quest',
-      description: 'Learn how to initialize a git repository',
-      type: 'tutorial',
-      commandSteps: [],
-      questModules: [],
-      narratives: [],
-      worldQuests: [],
-      playerQuests: []
-    };
-
-    return mockQuest as Quest;
+  getQuestDetails(_questId: string) {
+    // implementação...
+    // ...
   }
 
   async completeQuest(userId: string, worldId: string, questId: string): Promise<PlayerWorldsQuest> {

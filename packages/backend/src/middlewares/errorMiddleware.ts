@@ -4,87 +4,76 @@ import { ServiceError } from '../errors/ServiceError';
 import { LoggerService } from '../services/LoggerService';
 
 export const errorMiddleware: ErrorRequestHandler = (
-  error: any, // Keep as any for broader compatibility, type guards will handle specifics
+  error: unknown,
   req: Request,
   res: Response,
-  next: NextFunction // Add next to the signature, even if not always called
-): void => { // Explicitly set return type to void
+  _next: NextFunction
+): void => {
   const logger = new LoggerService();
 
-  // Handle ServiceError with proper status codes and formatting
+  // Handle ServiceError com type guard
   if (ServiceError.isServiceError(error)) {
-    // error is now confirmed to be ServiceError
-    logger.error(`Service error at ${req.method} ${req.path}`, error);
-
+    logger.error(`Service error at ${String(req.method)} ${String(req.path)}`, error);
     res.status(error.httpStatus).json(error.toResponse());
-    return; // Explicit return to satisfy void
+    return;
   }
 
-  // Handle TypeORM errors
-  if ((error as any).code === '23505') {
-    res.status(409).json({
-      status: 'error',
-      message: 'Resource already exists'
-    });
-    return; // Explicit return
+  // TypeORM errors
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const code = (error as { code?: string }).code;
+    if (code === '23505') {
+      res.status(409).json({ status: 'error', message: 'Resource already exists' });
+      return;
+    }
+    if (code === '23503') {
+      res.status(400).json({ status: 'error', message: 'Invalid reference to related resource' });
+      return;
+    }
   }
 
-  if ((error as any).code === '23503') {
-    res.status(400).json({
-      status: 'error',
-      message: 'Invalid reference to related resource'
-    });
-    return; // Explicit return
+  // JWT errors
+  if (typeof error === 'object' && error !== null && 'name' in error) {
+    const name = (error as { name?: string }).name;
+    if (name === 'TokenExpiredError') {
+      res.status(401).json({ status: 'error', message: 'Token has expired' });
+      return;
+    }
+    if (name === 'JsonWebTokenError') {
+      res.status(401).json({ status: 'error', message: 'Invalid token' });
+      return;
+    }
+    if (name === 'ValidationError') {
+      res.status(400).json({
+        status: 'error',
+        message: 'Validation failed',
+        details: (error as { constraints?: unknown }).constraints
+      });
+      return;
+    }
   }
 
-  // Handle JWT errors
-  if (error.name === 'TokenExpiredError') {
-    res.status(401).json({
-      status: 'error',
-      message: 'Token has expired'
-    });
-    return; // Explicit return
-  }
-
-  if (error.name === 'JsonWebTokenError') {
-    res.status(401).json({
-      status: 'error',
-      message: 'Invalid token'
-    });
-    return; // Explicit return
-  }
-
-  // Handle validation errors
-  if ((error as any).isJoi) {
+  // Joi validation errors
+  if (typeof error === 'object' && error !== null && 'isJoi' in error && (error as { isJoi?: boolean }).isJoi) {
     res.status(400).json({
       status: 'error',
       message: 'Validation error',
-      details: (error as any).details
+      details: (error as { details?: unknown }).details
     });
-    return; // Explicit return
-  }
-
-  if (error.name === 'ValidationError') {
-    res.status(400).json({
-      status: 'error',
-      message: 'Validation failed',
-      details: (error as any).constraints
-    });
-    return; // Explicit return
+    return;
   }
 
   // Log unhandled errors
-  logger.error(`Unhandled error at ${req.method} ${req.path}`, error);
+  const method = typeof req.method === 'string' ? req.method : '';
+  const path = typeof req.path === 'string' ? req.path : '';
+  logger.error(`Unhandled error at ${method} ${path}`, error);
 
-  // Return generic error in production, detailed error in development
-  const responseMessage = process.env.NODE_ENV === 'production' 
+  const responseMessage = process.env.NODE_ENV === 'production'
     ? 'Internal server error'
-    : error.message;
+    : (typeof error === 'object' && error !== null && 'message' in error ? (error as { message?: string }).message : 'Unknown error');
 
   res.status(500).json({
     status: 'error',
     message: responseMessage,
-    ...(process.env.NODE_ENV === 'development' ? { stack: error.stack } : {})
+    ...(process.env.NODE_ENV === 'development' && typeof error === 'object' && error !== null && 'stack' in error ? { stack: (error as { stack?: string }).stack } : {})
   });
-  // No explicit return here as it's the end of the function and matches void
 };

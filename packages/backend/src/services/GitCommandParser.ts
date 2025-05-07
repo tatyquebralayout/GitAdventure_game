@@ -1,5 +1,4 @@
 import { injectable } from 'tsyringe';
-import { AppError } from '../utils/AppError';
 
 export interface ParsedCommand {
   command: string;
@@ -50,33 +49,28 @@ export class GitCommandParser {
     return { command, args, options };
   }
 
-  async validateCommandAgainstPattern(
+  validateCommandAgainstPattern(
     command: string,
     pattern: string,
     ignoreFlags: boolean = false
-  ): Promise<ValidationResult> {
+  ): ValidationResult {
     const normalizedCommand = command.trim();
     const regexPattern = pattern
       .replace(/\s+/g, '\\s+')
       .replace(/\[([^\]]+)\]/g, '(?:$1)?')
       .replace(/<([^>]+)>/g, '(.+)');
-    
     const regex = new RegExp(`^${regexPattern}$`);
-    
     if (ignoreFlags) {
       const parsedCommand = this.parse(normalizedCommand);
       const baseCommand = [parsedCommand.command, ...parsedCommand.args].join(' ');
       const matches = baseCommand.match(regex);
-      
       return {
         isValid: !!matches,
         matches: matches ? matches.slice(1) : undefined,
         message: matches ? 'Comando válido' : 'Comando não corresponde ao padrão esperado'
       };
     }
-    
     const matches = normalizedCommand.match(regex);
-    
     return {
       isValid: !!matches,
       matches: matches ? matches.slice(1) : undefined,
@@ -84,25 +78,20 @@ export class GitCommandParser {
     };
   }
 
-  async validateSemantics(command: ParsedCommand): Promise<ValidationResult> {
+  validateSemantics(command: ParsedCommand): ValidationResult {
     switch (command.command) {
       case 'init':
         return { isValid: true, message: '' };
-        
       case 'add':
         if (command.args.length === 0) {
           return { isValid: false, message: 'No files specified for add command' };
         }
         return { isValid: true, message: '' };
-        
       case 'commit':
         if (!command.options['m']) {
           return { isValid: false, message: 'Commit requires a message (-m)' };
         }
         return { isValid: true, message: '' };
-        
-      // Add other command validations as needed
-      
       default:
         return { isValid: true, message: '' };
     }

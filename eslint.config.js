@@ -20,8 +20,8 @@ export default tseslint.config(
       parserOptions: {
         project: [
           './tsconfig.json',
-          './frontend/tsconfig.json',
-          './backend/tsconfig.json'
+          './packages/frontend/tsconfig.json',
+          './packages/backend/tsconfig.json'
         ],
         tsconfigRootDir: '.',
       },
@@ -57,7 +57,7 @@ export default tseslint.config(
           allowNumber: true,
           allowBoolean: true,
           allowAny: false,
-          allowNullable: false,
+          allowNullish: false,
         }
       ],
       '@typescript-eslint/no-unsafe-assignment': 'warn',

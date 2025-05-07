@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { questService, QuestService } from '../services/QuestService';
+import { QuestService } from '../services/QuestService';
 import { AppError } from '../utils/AppError';
 
 export class QuestController {

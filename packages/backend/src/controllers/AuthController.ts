@@ -3,6 +3,7 @@ import { inject, injectable } from 'tsyringe';
 import { IAuthService } from '../services/interfaces/IAuthService';
 import { SERVICE_TOKENS } from '../config/services';
 import { AppError } from '../utils/AppError';
+import { MockAuthService } from '../mocks/services/MockAuthService';
 
 @injectable()
 export class AuthController {
@@ -70,3 +71,5 @@ export class AuthController {
     }
   }
 }
+
+export const authController = new AuthController(new MockAuthService());

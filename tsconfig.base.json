@@ -13,7 +13,8 @@
     "paths": {
       "@gitadventure/shared/*": ["./packages/shared/*"],
       "@gitadventure/frontend/*": ["./packages/frontend/*"],
-      "@gitadventure/backend/*": ["./packages/backend/*"]
+      "@gitadventure/backend/*": ["./packages/backend/*"],
+      "@shared/types": ["./packages/shared/types/index.ts"]
     }
   }
 }

@@ -36,7 +36,7 @@ export class LoggerService {
     this.logger.info(message, meta);
   }
 
-  error(message: string, error?: Error | string): void {
+  error(message: string, error?: unknown): void {
     if (error instanceof Error) {
       this.logger.error(message, {
         error: {
@@ -44,8 +44,12 @@ export class LoggerService {
           stack: error.stack
         }
       });
-    } else {
+    } else if (typeof error === 'string') {
       this.logger.error(message, { error });
+    } else if (error !== undefined) {
+      this.logger.error(message, { error: JSON.stringify(error) });
+    } else {
+      this.logger.error(message);
     }
   }
 

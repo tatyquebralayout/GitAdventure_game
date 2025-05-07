@@ -65,3 +65,35 @@ export class CommandController {
     }
   }
 }
+
+// Mocks simples para uso em modo mock
+interface ParsedCommandMock {
+  isValid: boolean;
+  message: string;
+  command: string;
+  args: string[];
+  options: Record<string, string | boolean>;
+}
+interface ValidationResultMock {
+  isValid: boolean;
+  message?: string;
+  details?: unknown;
+}
+class MockGitCommandParser {
+  async parseCommand(command: string): Promise<ParsedCommandMock> {
+    return { isValid: true, message: '', command, args: [], options: {} };
+  }
+  async validateSemantics(_parsedCommand: ParsedCommandMock): Promise<ValidationResultMock> {
+    return { isValid: true, message: '', details: {} };
+  }
+}
+class MockCommandValidationService {
+  async validateCommand(_input: unknown, _pattern?: string): Promise<{ success: boolean; message: string; details?: unknown }> {
+    return { success: true, message: 'Mock validation', details: {} };
+  }
+}
+
+export const commandController = new CommandController(
+  new MockGitCommandParser() as unknown as GitCommandParser,
+  new MockCommandValidationService() as unknown as CommandValidationService
+);

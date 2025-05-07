@@ -2,7 +2,7 @@ import { World } from '../../entities/World';
 import { Quest } from '../../entities/Quest';
 import { WorldQuest } from '../../entities/WorldQuest';
 import { QuestFactory } from './QuestFactory';
-import { WorldDifficulty, WorldStatus, ModuleTheme } from '../../../../shared/types/enums';
+import { WorldDifficulty, WorldStatus, ModuleTheme } from '@shared/types';
 import { faker } from '@faker-js/faker';
 
 export class WorldFactory {

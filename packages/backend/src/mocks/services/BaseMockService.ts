@@ -54,13 +54,14 @@ export abstract class BaseMockService {
   /**
    * Helper method to generate mock errors with consistent formatting
    */
-  protected createMockError(message: string, code?: number, details?: Record<string, any>): Error {
-    const error = new Error(`${this.mockPrefix} ${message}`);
+  protected createMockError(message: string, code?: number, details?: Record<string, unknown>): Error {
+    type CustomError = Error & { code?: number; details?: Record<string, unknown> };
+    const error: CustomError = new Error(`${this.mockPrefix} ${message}`);
     if (code) {
-      (error as any).code = code;
+      error.code = code;
     }
     if (details) {
-      (error as any).details = details;
+      error.details = details;
     }
     return error;
   }
@@ -68,7 +69,7 @@ export abstract class BaseMockService {
   /**
    * Helper method to log mock operations
    */
-  protected logMockOperation(operation: string, details?: Record<string, any>): void {
+  protected logMockOperation(operation: string, details?: Record<string, unknown>): void {
     const config = this.registry.getConfig();
     if (this.isMockMode && config.enableLogging) {
       this.logger.debug(`${this.mockPrefix} ${operation}`, details);

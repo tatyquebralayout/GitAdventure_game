@@ -30,7 +30,7 @@ export const MockValidators = {
   validateResourceNotExists<T>(
     resource: T | null | undefined,
     resourceType: string,
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     isMock = true
   ): void {
     if (resource) {
@@ -100,9 +100,14 @@ export const MockTypeUtils = {
   /**
    * Remove sensitive fields from an object
    */
-  removeSensitiveFields<T>(obj: T, fields: string[]): Partial<T> {
+  removeSensitiveFields<T extends object>(obj: T, fields: (keyof T)[]): Partial<T> {
     const result = { ...obj };
-    fields.forEach(field => delete (result as any)[field]);
+    for (const field of fields) {
+      if (field in result) {
+        // @ts-expect-error: Removendo campo sensível
+        result[field] = undefined;
+      }
+    }
     return result;
   },
 

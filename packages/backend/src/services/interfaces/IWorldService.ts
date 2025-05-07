@@ -1,6 +1,6 @@
 import { World } from '../../entities/World';
 import { PlayerWorld } from '../../entities/PlayerWorld';
-import { ModuleTheme, WorldDifficulty } from '../../../shared/types/enums';
+import { ModuleTheme, WorldDifficulty } from '@shared/types';
 
 export interface WorldProgress {
   completedQuests: number;

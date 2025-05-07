@@ -1,4 +1,3 @@
-import { AppDataSource } from '../config/database';
 import { QuestCommandStep } from '../entities/QuestCommandStep';
 import { PlayerQuestStep } from '../entities/PlayerQuestStep';
 import { StepStatus } from '../../../shared/types/enums';
@@ -46,7 +45,7 @@ export class CommandValidationService {
    * @param pattern The regex pattern to validate against
    * @returns Validation result with success status and matches if any
    */
-  async validateCommand(command: string, pattern: string): Promise<ValidationResult> {
+  validateCommand(command: string, pattern: string): ValidationResult {
     try {
       // Parse and normalize the command
       const normalizedCommand = command.trim().toLowerCase();
@@ -74,13 +73,11 @@ export class CommandValidationService {
    * @param input Validation input with quest and step info
    * @returns Step validation result
    */
-  async validateQuestStep(input: StepValidationInput): Promise<StepValidationResult> {
+  validateQuestStep(input: StepValidationInput): StepValidationResult {
     try {
       const { questId, stepId, command, step } = input;
-      
       // Validate the command against the expected pattern
-      const commandValidation = await this.validateCommand(command, step.commandRegex || '');
-      
+      const commandValidation = this.validateCommand(command, step.commandRegex || '');
       if (!commandValidation.success) {
         return {
           success: false,
@@ -88,7 +85,6 @@ export class CommandValidationService {
           step: null
         };
       }
-      
       // Create a step progress object
       const stepProgress = new PlayerQuestStep();
       stepProgress.id = `mock-${questId}-${stepId}`;
@@ -101,7 +97,6 @@ export class CommandValidationService {
       stepProgress.attempts = 1;
       stepProgress.score = 100;
       stepProgress.bonusPoints = 50;
-      
       return {
         success: true,
         message: 'Command validation successful',

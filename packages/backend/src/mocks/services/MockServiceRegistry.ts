@@ -37,7 +37,7 @@ export class MockServiceRegistry {
   };
   private logger: LoggerService;
   private initialized: boolean = false;
-  private mockStores: Map<string, any> = new Map();
+  private mockStores: Map<string, unknown> = new Map();
 
   private constructor() {
     this.logger = new LoggerService();
@@ -69,14 +69,18 @@ export class MockServiceRegistry {
    * Reset all mock data stores
    */
   reset(): void {
-    this.mockStores.forEach(store => store.clear());
+    this.mockStores.forEach(store => {
+      if (store && typeof (store as { clear?: () => void }).clear === 'function') {
+        (store as { clear: () => void }).clear();
+      }
+    });
     this.logger.info('[MockRegistry] All mock stores reset');
   }
 
   /**
    * Register a mock data store
    */
-  registerStore(name: string, store: any): void {
+  registerStore(name: string, store: unknown): void {
     this.mockStores.set(name, store);
     this.logger.debug(`[MockRegistry] Store registered: ${name}`);
   }
